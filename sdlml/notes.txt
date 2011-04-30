@@ -1,0 +1,5 @@
+
+Interesting: SDL patch that allows arbitrary scaling of video:
+http://garni.ch/dosbox/
+
+http://www.libsdl.org/extras/win32/gcc.html

@@ -1,0 +1,18 @@
+
+Need a coherent way to specify the initialization flags to SDL_Init,
+which is in sdlml.c. We could:
+   * expose an init function that the programmer has to call
+   * functorize SDL over this flag so that it initializes itself
+     like it currently does, but when the functor is instantiated (once!) 
+   * leave a C symbol undefined and require that the client provide
+     this symbol at link time (it's the flagset to use)
+
+SDL_AUDIODRIVER=waveout works but has ridiculous latency.
+dsound doesn't work, but should have better latency. can we make it work?
+ (this worked at one point, wtf?)
+ (oh, you have to use the pre-built SDL dll from escape in order
+  to get dsound support.)
+
+
+libjpeg on mingwin...
+

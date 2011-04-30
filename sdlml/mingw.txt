@@ -1,0 +1,64 @@
+[[ NOTE, the version in explat has more up-to-date info on vista
+   and other problems you might have. Probably that file should
+   replace this one and give unified instructions for compiling
+   sdlml programs on windows. ]]
+
+
+(* install first *)
+get MinGW-something.exe from SOURCEFORGE PAGE
+
+get MSYS.exe by searching on google for "msys" and getting the 1.0.10
+exe (or newer?) from prdownloads
+
+
+(* vs tools... *)
+dumpbin /imports file.exe
+        /dependents
+
+you also need zlib and libpng and libjpeg and libtiff. (If you try to skip jpeg and tiff, configure will work but linking will fail??)
+zlib builds with ./configure; make; make install
+libpng builds with ./configure CFLAGS=-I/usr/local/include LIBS=-L/usr/local/lib ; make; make install
+  (since zlib puts its stuff in /usr/local for whatever reason..)
+
+libjpeg builds with ./configure ; make; mkdir /usr/local/man/man1 ; make install ; make install-lib
+ (* maybe those second to last two aren't necessary, but I did them search for install-lib *)
+
+libtiff builds with ./configure ; make ; make install
+                     (you may get illegal instructions in NTVDM??)
+
+[the mingw "ports" do not work for me and anyway are only available for png]
+
+
+
+to build SDL_image, first
+export SDL_CONFIG=/path/to/explat/SDL/sdl-config
+./configure CFLAGS=-I/usr/local/include LIBS=-L/usr/local/lib ; make; make install
+
+Then in /usr/local/bin/ copy libpng-3.dll to libpng13.dll   (?)
+
+OK, you're set!
+
+
+
+Note: according to 
+  http://www.spacejack.org/games/mingw/mingw-sdl.html
+      it's possible to just use the MSVC binary library (.lib)?
+
+
+
+To get directsound support (much lower latency), use the DLL file from
+escape. Don't build your own! Then you have to export SDL_AUDIODRIVER=dsound
+before running. (Could do this with setenv I guess..)
+
+
+--------------------------------------------------
+upgrading
+
+GO HERE IGNORE THE OTHER PAGES
+http://sourceforge.net/project/showfiles.php?group_id=2435
+
+
+Go to "current" "mingw" and get newest one
+run that exe and it will update
+
+--------------------------------------------------

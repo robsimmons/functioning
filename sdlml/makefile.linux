@@ -1,0 +1,19 @@
+
+default : test.exe
+
+sdlml.o : sdlml.c
+	gcc -DLINUX -O `sdl-config --cflags` -c $< -o $@
+
+sdlml_console.o : sdlml.c
+	gcc -DLINUX -DCONSOLE_MODE -O `sdl-config --cflags` -c $< -o $@
+
+sdlnet.o : sdlnet.c
+	gcc -DLINUX -O `sdl-config --cflags` -c $< -o $@
+
+test.exe : test.cm sdlml_console.o sdlnet.o *.sml
+	mlton -link-opt "-lSDL_image -lSDL_net -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true' -output $@ $< sdlml_console.o sdlnet.o
+
+# -lSDL_net
+
+clean :
+	rm -f core.* *~ *.exe *.o

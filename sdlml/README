@@ -1,0 +1,13 @@
+SDLML            Tom 7               29 Aug 2010
+
+This is a set of wrappers (and utilities) for using the Simple
+Directmedia Layer (SDL) in Standard ML (SML).
+
+
+There have been several contributors:
+
+   Dr. Tom Murphy VII, Ph.D., CEO
+   Rob Arnold (SDL mixer basics)
+   Bill Kendrick (PNG saving code, via Tux Paint)
+   Ruy Ley-Wild (SML port of my C++ Bresenham's algorithm implementation)
+   Adam Goode (Patches to my C++ SDL utilities, some of which made it here)

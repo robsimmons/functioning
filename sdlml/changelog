@@ -1,0 +1,11 @@
+2007-10-10  Tom 7  <Tom@WARPZONE>
+
+    * Since several projects were using different branches of sdlml,
+      I branched it into a single unified directory.
+
+2007-02-02  Tom 7  <Tom@LOLO>
+
+    * sdl.sml: Fixed the values of the sdlk datatype. Everything should
+      work now. Added an sdlktos function that was useful during debugging
+      and might be useful to clients too.
+
