@@ -1,0 +1,38 @@
+group is
+
+(* to compile with sml/nj.
+   not likely to work! *)
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+ sml-lib/port/port-nj.sml
+#else
+ (* assume we are using mlton then *)
+ sml-lib/port/mlton.sml
+#endif
+
+sml-lib/util/util-sig.sml
+sml-lib/util/util.sml
+
+sml-lib/util/listutil-sig.sml
+sml-lib/util/listutil.sml
+
+sml-lib/util/stringutil-sig.sml
+sml-lib/util/stringutil.sml
+
+sdlml/sdl-sig.sml
+sdlml/sdl.sml
+
+sdlml/font-sig.sml
+sdlml/font.sml
+
+sml-lib/util/fsutil-sig.sml
+sml-lib/util/fsutil.sml
+
+(* Has effect, must come first. *)
+functioning/prelude.sml
+
+functioning/graphics.sml
+functioning/game.sig
+examples/redstar/graphics.sml
+examples/redstar/game.sml
+functioning/game-functor.sml
