@@ -1,0 +1,18 @@
+Group is
+
+(* Get some useful bits from the Tom7 SML library *)
+../sml-lib/port/mlton.sml
+../sml-lib/util/util.cm
+
+(* Import SDL/ML wrappers *)
+../sdlml/sdl-sig.sml
+../sdlml/sdl.sml
+
+../sdlml/font-sig.sml
+../sdlml/font.sml
+
+../sdlml/sdlmix-sig.sml
+../sdlml/sdlmix.sml
+
+../sdlml/pngsave-sig.sml
+../sdlml/pngsave.sml
