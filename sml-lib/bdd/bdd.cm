@@ -1,0 +1,64 @@
+
+group is
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+ ../port/nj.sml
+#else
+ ../port/mlton.sml
+#endif
+
+  settings.sml
+
+  math-sig.sml
+  math.sml
+
+  types.sml
+  ops.sml
+
+  circle-sig.sml
+  circle.sml
+
+  polygon-sig.sml
+  polygon.sml
+
+  shape-sig.sml
+  shape.sml
+
+  distance-sig.sml
+  distance.sml
+
+  collision-sig.sml
+  collision.sml
+
+  dynamic-tree-sig.sml
+  dynamic-tree.sml
+
+  broad-phase-sig.sml
+  broad-phase.sml
+
+  time-of-impact-sig.sml
+  time-of-impact.sml
+
+  dynamics.sml
+
+  contact-sig.sml
+  contact.sml
+
+  fixture-sig.sml
+  fixture.sml
+
+  body-sig.sml
+  body.sml
+
+  toi-solver-sig.sml
+  toi-solver.sml
+
+  contact-solver-sig.sml
+  contact-solver.sml
+
+  island-sig.sml
+  island.sml
+
+  world-sig.sml
+  world.sml

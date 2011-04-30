@@ -1,0 +1,7 @@
+
+ * compare-refs : which are (stamp, 'a ref) pairs
+ * fdesc leak in FSUtil somewhere??? -- see icfp04
+
+ * add to mlton wiki
+
+ * sdlml from explat/t7eshero, complete

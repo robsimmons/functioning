@@ -1,0 +1,34 @@
+sml-lib XML library                   23 May 2010
+
+
+This is a library for parsing XML files. Computer scientists and
+standards committees now universally regret the design of XML, since
+it is insanely complicated. The FXP library is a XML parser for SML
+which is also very complicated, because it inherits all of the
+complexity of XML and exposes it via a fairly fancy API. It is
+difficult to use because of its extreme genericity and unusual SML
+style, although ironically it bakes in a few annoying assumptions
+(such as that the XML it is parsing is always on disk). So, if you
+want to live XML, this is your thing. If like most computer scientists
+you just want to open up an XML file and enjoy programming, then
+you should use sml-lib's wrappers.
+
+For sml-lib I defined a very simple datatype for XML, then give you a
+function that parses a file on disk or string in memory into this data
+structure. You don't get the stream parsing stuff, you don't get DTD
+verification or support for weird encodings, or external entity
+definitions, but you probably don't want that stuff. On the plus side,
+you get pretty decent support for XML (including support for local
+entities and CDATA and other weird stuff) and you won't even feel the
+urge to shoot yourself once. Enjoy!
+
+I have made some local modifications to FXP to support this.
+  - I completely disabled remote URIs. These were only supported via
+    shell commands to wget, and required system-specific configuration,
+    which is a pain.
+  - I modified the Uri implementation and decodeFile to support
+    in-memory XML documents via the new and non-standard "raw-data:<data>"
+    URI.
+
+(PS. Despite the headaches, thanks to the FXP authors for all their
+useful work on FXP!)

@@ -1,0 +1,145 @@
+
+Notes from my porting project, to send to the author; most are just
+typos:
+
+
+b2Collision.h:
+
+  "///< not use for Type::e_points"
+  There's no manifold type e_points (any more?)
+
+b2PolygonShape.cpp:
+
+  "It's location doesn't" -> "Its location doesn't"
+  (in both copies of this code :))
+
+b2Distance.h:
+
+  The comment for the b2DistanceInput struct is incomplete. (?)
+
+  The comment for b2Distance mentions b2EdgeShape, which doesn't seem
+  to exist. Moreover, the code doesn't care about shapes at all; it
+  just uses the proxies in the input.
+
+b2Distance.cpp:
+
+  Is the break inside b2Distance ("ensure progress") supposed to
+  be commented out? If it is, then there's some dead code, like all
+  of the distanceSqr calculations.
+
+  In the guts of the GJK loop, the declaration
+  b2Vec2 wBLocal;
+  is dead.
+
+  "still no overlapped" -> "still not overlapped"
+
+b2DynamicTree.h:
+
+  "perform a exact" -> "perform an exact"
+
+  The comment
+
+    // Separating axis for segment (Gino, p80).
+    // |dot(v, p1 - c)| > dot(|v|, h)
+
+  appears out of place in the RayCast function before it is repeated
+  in a meaningful spot.
+
+b2DynamicTree.cpp:
+
+  The "find the best sibling" loop is an if..do..while which is
+  exactly equivalent to a simpler while loop.
+
+  
+b2BroadPhase.h:
+
+  "call UpdatePairs to finalized" -> "call UpdatePairs to finalize"
+
+b2BroadPhase.cpp:
+
+  "and add them pair buffer" -> "and add them to the pair buffer"
+
+b2TimeOfImpact.cpp:
+
+  The return value of b2SeparationFunction::Initialize isn't used.
+  This might be better as a constructor.
+  
+  None of the axisA and axisB variables are used in
+  b2SeparationFunction::Evaluate, nor are the computations trivial. Am
+  I missing something?
+
+b2Fixture.h
+
+  "@param xf the shape world transform." There's no such parameter.
+
+  "This AABB may be enlarge" -> "... enlarged"
+
+
+b2Body.h
+
+  "Creates a fixture and attach it to this body" -> 
+  "Create" or "attaches" (both times)
+
+b2Body.cpp
+
+  in SetMassData, the assignment m_invMass = 0.0 is always overwritten
+  a few lines later.
+
+  in CreateFixture, the line
+	fixture->m_body = this;
+  is redundant because b2Fixture::Create already sets to this to
+  the parent body.
+
+manual.html:
+
+Several of the examples in the manual.html write "b2Transfrom" instead
+of "b2Transform".
+
+In the graphic illustrating "contact manifolds", the caption in the
+diagram for circle-polygon collision says "two points, one normal",
+which isn't right.
+
+In the fixture density section, this sentence was abandoned:
+
+"The mass of a body is automatically adjusted when you "
+
+
+b2Contact.cpp
+
+In b2Contact::AddType the argument is called "destoryFcn" instead of
+"destroyFcn".
+
+b2World.h
+
+
+The documentation for "DestroyBody" is kind of nonsensical because it
+is mostly a copy of CreateBody.
+
+Incomplete comment for GetContactList:
+	/// @warning contacts are 
+
+
+b2World.cpp:
+
+In SolveTOI(b2Body *), the bool flag "solved" near the end is unused.
+Not sure if you meant to use it in the flag update that follows or if
+it's just dead.
+
+b2ContactSolver.cpp:
+
+// We can't expect minSpeparation
+   "minSpeparation" -> "minSeparation"
+
+b2TOISolver.cpp:
+
+	m_count = NULL;
+
+should be m_count = 0, since this is an int.
+
+
+b2Math.h:
+
+The b2Sweep::Normalize method does not work as advertised; for example
+if the angle is slightly negative, then floor of a0/2pi is -1, and a0
+becomes 2pi + a0. a may be larger than 2pi. This is probably just a
+problem with the documentation.

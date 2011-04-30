@@ -1,0 +1,19 @@
+
+group is
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+#else
+#endif
+
+../../util/stream-sig.sml
+../../util/stream.sml
+../../parse/pos-sig.sml
+../../parse/pos.sml
+../../parse/parse-sig.sml
+../../parse/parse.sml
+
+svg-sig.sml
+svg.sml
+
+svg-test.sml

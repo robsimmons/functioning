@@ -1,0 +1,94 @@
+
+Test time-of-impact, dynamic-tree, and broad-phase.
+
+
+Replace awkward vec2normalize with calls to vec2normalized.
+
+Generally: Track down imperative access to vec2, mat22, and transform.
+Replace with functional ones.
+
+Replace vec2 with real * real.
+Replace mat22 with real^4.
+
+Replace initialize_manifold everywhere with create_world_manifold.
+Make create_world_manifold more direct.
+
+The type manifold should probably be a datatype. It seems to be used
+that way, and it's annoying to allocate empty arrays and let them go unused.
+
+
+in dynamics, make contact fixture_{a,b} non-optional. I bet they are always SOME after initialization
+
+maybe some more things that can be made non-optional.
+
+looks like I wrote common/*.cpp in a number of comments where I meant collision/*.cpp.
+
+be consistent about broadphase vs. broad_phase in identifiers
+
+Will want to compare the performance of the metautil strategies.
+References for each individual field is likely to perform better?
+
+Should probably use metautil for some other structures, like in the
+dynamic tree, and for BDDMath.sweep.
+
+export each module's exception.
+
+for dynamics.sml, I think it should probably just be
+defining the types (opaquely!) with get_ and set_ functions.
+Then we can have e.g. body-internal.sml that writes the
+utilities in terms of bodycell, then we can seal to World.Body.body later.
+Better to do this after all the code is in place, though.
+
+I believe it's actually better, performance-wise, to use ref fields
+instead of functional record update, as I have. Once done, slot in
+two implementations and compare. Since I also use refs for identity
+in a non-trivial way, might want to make a second 'a mutable type
+that's a copy of ref to avoid confusion in the code. (e.g. sometimes
+you will NEED to do make_mutable (!r) for correctness.)
+
+Lots of places in the code use arrays that can only hold 0, 1, or 2 values,
+or sometimes just 1 or 2 (contacts). These should be replaced with
+efficient implementations (e.g. datatype 'a tiny_array = One of 'a 
+| Two of 'a * 'a) to reduce bounds checking and storage overhead,
+and to improve inlining and specialization.
+
+For that matter, there are a bunch of other places where a struct is
+essentially a disjoint union, and we store more data than we need to,
+and pay the cost of initializing fields we'll never use, etc.
+
+There are several conceptual staging problems, like where we have to
+define one function in dynamics.sml for ContactManager in world.sml so
+that it can be referred to by body.sml, which world.sml also depends
+on. Come up with an idea here and explain it, rather than just moving
+things into dynamics when they need to be there.
+
+make actual assert macros
+
+can the contact in a contact edge be non-optional? It seems box2d assumes
+it to be non-null in most places
+
+Potential bugs:
+
+check that FLAG_ISLAND (etc.) are fully qualified, since if a
+structure is open we might accidentally refer to the wrong one, which
+if it has a different value would be a very nightmarish thing to track
+down
+
+make sure everywhere that calls functions that are defined as pure get/set 
+in dynamics but overridden in thing.sml are calling the right version.
+  - body - set_active
+  - body - reset_mass_data
+
+
++-------------------------------------------------+
+|                                                 |
+|    This is all that's left                      |
+|                                                 |
++-------------------------------------------------+
+
+body - deleting fixtures; can test without, of course
+
+joints - everything. I just stubbed it out so that
+I could write the calling code, but none have
+been implemented. Should be able to test without
+joints.

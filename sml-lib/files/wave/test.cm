@@ -1,0 +1,12 @@
+group is
+
+#if (defined(SMLNJ_VERSION))
+ $/basis.cm
+#else
+#endif
+
+  ../reader-sig.sml
+  ../reader.sml
+
+  wave-sig.sml
+  wave.sml
