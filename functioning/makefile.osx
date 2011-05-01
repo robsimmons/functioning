@@ -28,7 +28,7 @@ game: bin/sdlml.o bin/sdlmain.o
 	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) game.cm bin/sdlml.o bin/sdlmain.o
 
 .PHONY:app
-app: 
+app: game
 	rm -rf /tmp/Func.app
 	mkdir -p /tmp/Func.app/Contents/MacOS
 	cp -R ${RELEASEFILES} /tmp/Func.app/Contents/MacOS/
