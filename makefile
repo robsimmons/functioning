@@ -1,4 +1,5 @@
 OUTPUT_EXE=game.exe
+MAKE=make
 
 # You shouldn't have to edit anything below this line
 
@@ -15,8 +16,11 @@ game: bin/sdlml.o
 	mlton -link-opt "-lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true' -output $(OUTPUT_EXE) game.cm bin/sdlml.o
 
 .PHONY: examples/*
-examples/*: bin/sdlml.o
-	mlton -link-opt "-lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true' -output $(OUTPUT_EXE) $@/sources.cm bin/sdlml.o
+	$(MAKE) $@/
+
+.PHONY: examples/*/
+examples/*/: bin/sdlml.o
+	mlton -link-opt "-lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true' -output $(OUTPUT_EXE) $@sources.cm bin/sdlml.o
 
 .PHONY: clean
 clean:
