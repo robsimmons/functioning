@@ -3,3 +3,4 @@ syntax: glob
 */hg
 *~
 bin/*
+makefile

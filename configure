@@ -1,0 +1,8 @@
+case `uname -s` in
+    Darwin)
+      ln -s functioning/makefile.osx
+      ;;
+    *)
+      ln -s functioning/makefile.linux
+      ;;
+esac
