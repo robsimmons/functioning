@@ -1,17 +1,23 @@
-default : game
+OUTPUT_EXE=game.exe
 
+# You shouldn't have to edit anything below this line
 
-sdlml.o : sdlml/sdlml.c
-	gcc -DLINUX -O `sdl-config --cflags` -c sdlml/sdlml.c -o sdlml.o
+default: game
 
-game    : sdlml.o *.sml functioning/*.sml makefile
-	mlton -link-opt "-lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true' -output game.exe game.cm sdlml.o
+bin: bin
+	mkdir bin
 
-starbot : sdlml.o *.sml functioning/*.sml examples/starbot/*.sml makefile
-	mlton -link-opt "-lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true' -output game.exe examples/starbot/sources.cm sdlml.o
+bin/sdlml.o: bin sdlml/sdlml.c
+	gcc -DLINUX -O `sdl-config --cflags` -c sdlml/sdlml.c -o bin/sdlml.o
 
-redstar : sdlml.o *.sml functioning/*.sml examples/redstar/*.sml makefile
-	mlton -link-opt "-lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true' -output game.exe examples/redstar/sources.cm sdlml.o
+.PHONY: game 
+game: bin/sdlml.o
+	mlton -link-opt "-lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true' -output $(OUTPUT_EXE) game.cm bin/sdlml.o
 
-clean :
-	rm -f core core.* *~ *.exe *.o
+.PHONY: examples/*
+examples/*: bin/sdlml.o
+	mlton -link-opt "-lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true' -output $(OUTPUT_EXE) $@/sources.cm bin/sdlml.o
+
+.PHONY: clean
+clean:
+	rm -f core core.* *~ *.exe *.o bin/*
