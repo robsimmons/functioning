@@ -9,12 +9,6 @@ struct
 
   val initstate = {xpos = width div 2, ypos = height div 2}
   
-  fun requireimage s =
-      case SDL.Image.load s of
-            NONE => (print ("couldn't open " ^ s ^ "\n");
-                      raise Fail "image not found")
-          | SOME p => p
-
   fun initscreen screen =
   (
     SDL.blitall (star, screen, #xpos initstate, #ypos initstate); 
@@ -38,6 +32,10 @@ struct
     | keyDown _ s = SOME s
 
   fun keyUp _ s = SOME s
+
+  fun handle_event (SDL.E_KeyDown k) s = keyDown k s
+    | handle_event (SDL.E_KeyUp k) s = keyUp k s
+    | handle_event _ s = SOME s
 
   (* fun tick {xpos=x, ypos=y} = SOME {xpos=x+1, ypos=y} *)
   fun tick s = SOME s
