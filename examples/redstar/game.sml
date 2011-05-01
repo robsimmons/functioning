@@ -33,8 +33,8 @@ struct
 
   fun keyUp _ s = SOME s
 
-  fun handle_event (SDL.E_KeyDown k) s = keyDown k s
-    | handle_event (SDL.E_KeyUp k) s = keyUp k s
+  fun handle_event (SDL.E_KeyDown {sym=k}) s = keyDown k s
+    | handle_event (SDL.E_KeyUp {sym=k}) s = keyUp k s
     | handle_event _ s = SOME s
 
   (* fun tick {xpos=x, ypos=y} = SOME {xpos=x+1, ypos=y} *)
