@@ -16,10 +16,10 @@ default: game
 bin:
 	mkdir bin
 
-bin/sdlmain.o: sdlml/sdlmain.m sdlml/sdlmain.h
+bin/sdlmain.o: bin sdlml/sdlmain.m sdlml/sdlmain.h
 	gcc -O $(CPPFLAGS) -c sdlml/sdlmain.m -o bin/sdlmain.o
 
-bin/sdlml.o: sdlml/sdlml.c
+bin/sdlml.o: bin sdlml/sdlml.c
 	gcc -O $(CPPFLAGS) -c sdlml/sdlml.c -o bin/sdlml.o
 
 .PHONY: game
