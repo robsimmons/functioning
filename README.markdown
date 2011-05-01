@@ -1,5 +1,3 @@
--*- markdown -*-
-
 Functioning: Games in Standard ML
 =================================
 
