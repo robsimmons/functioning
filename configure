@@ -1,8 +1,8 @@
 case `uname -s` in
     Darwin)
-      ln -s functioning/makefile.osx
+      ln -s functioning/makefile.osx makefile
       ;;
     *)
-      ln -s functioning/makefile.linux
+      ln -s functioning/makefile.linux makefile
       ;;
 esac
