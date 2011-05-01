@@ -7,7 +7,6 @@ sig
   val width : int 
   val height : int
   val render : screen -> state -> unit
-  val keyDown : SDL.sdlk -> state -> state option
-  val keyUp : SDL.sdlk -> state -> state option
+  val handle_event : SDL.event -> state -> state option
   val tick : state -> state option
 end
