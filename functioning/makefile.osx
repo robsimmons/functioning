@@ -1,58 +1,74 @@
-#                              -*- makefile -*-
+OUTPUT_APP=Awesome
+OUTPUT_EXE=game.exe
+MAKE=make
 
-default : explat.exe
+# You shoudln't have to edit anything below this line
+
+default: game
+
+bin:
+	mkdir bin
+
+bin/sdlml.o: sdlml/sdlml.c
+	gcc -O $(CPPFLAGS) -c sdlml/sdlml.c -o bin/sdlml.o
+
+.PHONY: game
+game: bin/sdlml.o
+	export MACOSX_DEPLOYMENT_TARGET=${VERSION_TARGET}
+	mlton -verbose 1 -cc-opt "-g -Dmain=SDL_main" -link-opt "-arch i386 -F${FRAMEWORKS} -framework SDL_net -framework SDL_image ${LIBS} -framework SDL -framework OpenGL -framework AGL -framework IOKit -framework Carbon -framework Cocoa -framework SDL_mixer" -default-ann 'allowFFI true' -output $@ xtracredit.cm sdlml.o sdlmix.o sdlmain.o messagebox_fake.o
 
 VERSION_TARGET=10.2
 FRAMEWORKS=OSX_build/Frameworks
-# -arch ppc won't work with mlton, sorry
 CPPFLAGS = -arch i386 -I/usr/local/include -I${FRAMEWORKS}/SDL.framework/Versions/Current/Headers -I${FRAMEWORKS}/SDL_net.framework/Versions/Current/Headers -I${FRAMEWORKS}/SDL_mixer.framework/Versions/Current/Headers -I${FRAMEWORKS}/SDL_image.framework/Versions/Current/Headers -D_THREAD_SAFE -DOSX
 LIBS=-L/usr/lib
-# also once was /usr/local/lib on PPC?
 
-sdlml.o : ../sdlml/sdlml.c
-	gcc -O $(CPPFLAGS) -c ../sdlml/sdlml.c -o sdlml.o
-
-messagebox_fake.o : messagebox_fake.c
-	gcc -O $(CPPFLAGS) -c $< -o $@
 
 #  -arch ppc linkopt won't work, sorry
-explat.exe : sdlml.o explat.cm *.sml ../sdlml/*.sml sdlmain.o messagebox_fake.o
+xtracredit.exe : sdlml.o sdlmix.o xtracredit.cm *.sml ../sdlml/*.sml sdlmain.o messagebox_fake.o
 	export MACOSX_DEPLOYMENT_TARGET=${VERSION_TARGET}
-	mlton -verbose 1 -cc-opt "-g -Dmain=SDL_main" -link-opt "-arch i386 -F${FRAMEWORKS} -framework SDL_net -framework SDL_image ${LIBS} -framework SDL -framework OpenGL -framework AGL -framework IOKit -framework Carbon -framework Cocoa -framework SDL_mixer" -default-ann 'allowFFI true' -output $@ explat.cm sdlml.o sdlmain.o messagebox_fake.o
+	mlton -verbose 1 -cc-opt "-g -Dmain=SDL_main" -link-opt "-arch i386 -F${FRAMEWORKS} -framework SDL_net -framework SDL_image ${LIBS} -framework SDL -framework OpenGL -framework AGL -framework IOKit -framework Carbon -framework Cocoa -framework SDL_mixer" -default-ann 'allowFFI true' -output $@ xtracredit.cm sdlml.o sdlmix.o sdlmain.o messagebox_fake.o
 
 genscore.exe : genscore.sml genscore.cm
 	mlton -output $@ -default-ann 'allowFFI true' genscore.cm
 
-RELEASEFILES=explat.exe icon.png world.0.*
+RELEASEFILES=xtracredit.exe icon.png room.*.* world.txt lightmap.*.png COPYING
 
 # XXX some of this mixer crap is an escape mistake. actually,
 # I'm not using mixer am I?
-app : explat.exe
-	rm -rf /tmp/Explat.app
-	mkdir /tmp/Explat.app
-	mkdir /tmp/Explat.app/Contents
-	mkdir /tmp/Explat.app/Contents/MacOS
-	mkdir /tmp/Explat.app/Contents/MacOS/testgraphics
-	cp -R OSX_build/* /tmp/Explat.app/Contents/
-	cp ${RELEASEFILES} /tmp/Explat.app/Contents/MacOS/
-	cp -R testgraphics /tmp/Explat.app/Contents/MacOS/
-	mkdir /tmp/Explat.app/Contents/MacOS/OSX_build
-	mkdir /tmp/Explat.app/Contents/MacOS/OSX_build/Frameworks
-	rm -rf /tmp/Explat.app/Contents/Frameworks/SDL_mixer.framework
-	ln -s ../MacOS/OSX_build/Frameworks/SDL_mixer.framework /tmp/Explat.app/Contents/Frameworks/SDL_mixer.framework
-	cp -R OSX_build/Frameworks/SDL_mixer.framework /tmp/Explat.app/Contents/MacOS/OSX_build/Frameworks/
-	rm -f /tmp/Explat.app/Contents/Frameworks/SDL.framework/Headers/*.h
-	rm -f /tmp/Explat.app/Contents/Frameworks/SDL_image.framework/Headers/*.h
-	rm -f /tmp/Explat.app/Contents/Frameworks/SDL_net.framework/Headers/*.h
-	rm -f /tmp/Explat.app/Contents/MacOS/OSX_build/SDL_mixer.framework/Headers/*.h
-	rm -rf `find /tmp/Explat.app -name CVS`
-	rm -rf `find /tmp/Explat.app -name .DS_Store`
-	rm -rf `find /tmp/Explat.app -name .svn`
+app : xtracredit.exe
+	rm -rf /tmp/Xtracredit.app
+	mkdir /tmp/Xtracredit.app
+	mkdir /tmp/Xtracredit.app/Contents
+	mkdir /tmp/Xtracredit.app/Contents/MacOS
+	mkdir /tmp/Xtracredit.app/Contents/MacOS/music
+	mkdir /tmp/Xtracredit.app/Contents/MacOS/graphics
+	cp -R OSX_build/* /tmp/Xtracredit.app/Contents/
+	cp ${RELEASEFILES} /tmp/Xtracredit.app/Contents/MacOS/
+	cp -R graphics /tmp/Xtracredit.app/Contents/MacOS/
+	cp -R music /tmp/Xtracredit.app/Contents/MacOS/
+	mkdir /tmp/Xtracredit.app/Contents/MacOS/OSX_build
+	mkdir /tmp/Xtracredit.app/Contents/MacOS/OSX_build/Frameworks
+	rm -rf /tmp/Xtracredit.app/Contents/Frameworks/SDL_mixer.framework
+	ln -s ../MacOS/OSX_build/Frameworks/SDL_mixer.framework /tmp/Xtracredit.app/Contents/Frameworks/SDL_mixer.framework
+	cp -R OSX_build/Frameworks/SDL_mixer.framework /tmp/Xtracredit.app/Contents/MacOS/OSX_build/Frameworks/
+	rm -f /tmp/Xtracredit.app/Contents/Frameworks/SDL.framework/Headers/*.h
+	rm -f /tmp/Xtracredit.app/Contents/Frameworks/SDL_image.framework/Headers/*.h
+	rm -f /tmp/Xtracredit.app/Contents/Frameworks/SDL_net.framework/Headers/*.h
+	rm -f /tmp/Xtracredit.app/Contents/MacOS/OSX_build/SDL_mixer.framework/Headers/*.h
+	rm -rf `find /tmp/Xtracredit.app -name CVS`
+	rm -rf `find /tmp/Xtracredit.app -name .DS_Store`
+	rm -rf `find /tmp/Xtracredit.app -name .svn`
+	rm -rf `find /tmp/Xtracredit.app -name *.ogg` # Don't need OGG versions for mac.
 
 desktop : app
-	rm -rf ~/Desktop/Explat.app.old
-	-mv ~/Desktop/Explat.app ~/Desktop/Explat.app.old
-	cp -R /tmp/Explat.app ~/Desktop/
+	rm -rf ~/Desktop/Xtracredit.app.old
+	-mv ~/Desktop/Xtracredit.app ~/Desktop/Xtracredit.app.old
+	cp -R /tmp/Xtracredit.app ~/Desktop/
+
+here : app
+	rm -rf Xtracredit.app.old
+	-mv Xtracredit.app Xtracredit.app.old
+	cp -R /tmp/Xtracredit.app .
 
 clean :
 	rm -f core.* *~ *.exe *.o
