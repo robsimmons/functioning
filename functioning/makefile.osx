@@ -1,4 +1,5 @@
 OUTPUT_APP=Awesome
+ICON=media/graphics/ExplatTheRobot.icns
 OUTPUT_EXE=game.exe
 MAKE=make
 
@@ -11,7 +12,7 @@ LIBS=-L/usr/lib
 MLTON_FLAGS=-verbose 1 -cc-opt "-g -Dmain=SDL_main" -link-opt "-arch i386 -F${FRAMEWORKS} -framework SDL_net -framework SDL_image ${LIBS} -framework SDL -framework OpenGL -framework AGL -framework IOKit -framework Carbon -framework Cocoa -framework SDL_mixer" -default-ann 'allowFFI true'
 RELEASEFILES=$(OUTPUT_EXE) media COPYING
 
-default: game
+default: desktop
 
 bin:
 	mkdir bin
@@ -30,10 +31,19 @@ game: bin/sdlml.o bin/sdlmain.o
 .PHONY:app
 app: game
 	rm -rf /tmp/Func.app
+
+    # Start by making a Func.app directory, put OSX basics in it
+	mkdir -p /tmp/Func.app
+	cp -R functioning/OSX /tmp/Func.app/Contents # Frameworks, PkgInfo
+	functioning/plistgen.sh $(OUTPUT_EXE) $(OUTPUT_APP) #Info.plist
+
+    # The resources directory just contains the icon
+	mkdir -p /tmp/Func.app/Contents/Resources
+	cp $(ICON) /tmp/Func.app/Contents/Resources/$(OUTPUT_APP).icns
+
+    # The MacOS directory contains all the interesting application goodies
 	mkdir -p /tmp/Func.app/Contents/MacOS
 	cp -R ${RELEASEFILES} /tmp/Func.app/Contents/MacOS/
-	cp -R functioning/OSX/* /tmp/Func.app/Contents
-	functioning/plistgen.sh $(OUTPUT_EXE) $(OUTPUT_APP) > /tmp/Func.app/Contents/Info.plist
 
     # Cleanup 
 	rm -f /tmp/Func.app/Contents/Frameworks/SDL.framework/Headers/*.h
@@ -45,25 +55,12 @@ app: game
 	rm -rf `find /tmp/Func.app -name .svn`
 	rm -rf `find /tmp/Func.app -name *.ogg`
 
-# 	cp -R OSX_build/* /tmp/$(OUTPUT_APP).app/Contents/
-# 	cp ${RELEASEFILES} /tmp/$(OUTPUT_APP).app/Contents/MacOS/
-# 	cp -R graphics /tmp/$(OUTPUT_APP).app/Contents/MacOS/
-# 	cp -R music /tmp/$(OUTPUT_APP).app/Contents/MacOS/
-# 	mkdir /tmp/$(OUTPUT_APP).app/Contents/MacOS/OSX_build
-# 	mkdir /tmp/$(OUTPUT_APP).app/Contents/MacOS/OSX_build/Frameworks
-# 	rm -rf /tmp/$(OUTPUT_APP).app/Contents/Frameworks/SDL_mixer.framework
-# 	ln -s ../MacOS/OSX_build/Frameworks/SDL_mixer.framework /tmp/$(OUTPUT_APP).app/Contents/Frameworks/SDL_mixer.framework
-# 	cp -R OSX_build/Frameworks/SDL_mixer.framework /tmp/$(OUTPUT_APP).app/Contents/MacOS/OSX_build/Frameworks/
-# 	rm -rf `find /tmp/$(OUTPUT_APP).app -name CVS`
-# 	rm -rf `find /tmp/$(OUTPUT_APP).app -name .DS_Store`
-# 	rm -rf `find /tmp/$(OUTPUT_APP).app -name .svn`
-# 	rm -rf `find /tmp/$(OUTPUT_APP).app -name *.ogg` # Don't need OGG versions for mac.
-
 .PHONY: desktop
 desktop: app
 	rm -rf ~/Desktop/$(OUTPUT_APP).app.old
 	-mv ~/Desktop/$(OUTPUT_APP).app ~/Desktop/$(OUTPUT_APP).app.old
 	cp -R /tmp/Func.app ~/Desktop/$(OUTPUT_APP).app
 
+.PHONY: clean
 clean:
 	rm -f core core.* *~ *.exe bin/*
