@@ -17,11 +17,9 @@ bin/sdlml.o: bin sdlml/sdlml.c
 game: bin/sdlml.o
 	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) game.cm bin/sdlml.o
 
-.PHONY: examples/*/
+.PHONY: examples/*/ examples/*
 examples/*/: bin/sdlml.o
 	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) $@sources.cm bin/sdlml.o
-
-.PHONY: examples/*
 examples/*:
 	$(MAKE) $@/
 

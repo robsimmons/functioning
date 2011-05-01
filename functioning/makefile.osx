@@ -12,7 +12,7 @@ LIBS=-L/usr/lib
 MLTON_FLAGS=-verbose 1 -cc-opt "-g -Dmain=SDL_main" -link-opt "-arch i386 -F${FRAMEWORKS} -framework SDL_net -framework SDL_image ${LIBS} -framework SDL -framework OpenGL -framework AGL -framework IOKit -framework Carbon -framework Cocoa -framework SDL_mixer" -default-ann 'allowFFI true'
 RELEASEFILES=$(OUTPUT_EXE) media COPYING
 
-default: desktop
+default: game
 
 bin:
 	mkdir bin
@@ -27,9 +27,18 @@ bin/sdlml.o: bin sdlml/sdlml.c
 game: bin/sdlml.o bin/sdlmain.o
 	export MACOSX_DEPLOYMENT_TARGET=${VERSION_TARGET}
 	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) game.cm bin/sdlml.o bin/sdlmain.o
+	$(MAKE) desktop
+
+.PHONY: examples/* examples/*/
+examples/*:
+	$(MAKE) $@/
+examples/*/: bin/sdlml.o bin/sdlmain.o
+	export MACOSX_DEPLOYMENT_TARGET=${VERSION_TARGET}
+	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) $@sources.cm bin/sdlml.o bin/sdlmain.o
+	$(MAKE) desktop
 
 .PHONY:app
-app: game
+app: 
 	rm -rf /tmp/Func.app
 
     # Start by making a Func.app directory, put OSX basics in it
