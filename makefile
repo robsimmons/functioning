@@ -4,7 +4,7 @@ OUTPUT_EXE=game.exe
 
 default: game
 
-bin: bin
+bin: 
 	mkdir bin
 
 bin/sdlml.o: bin sdlml/sdlml.c
