@@ -16,13 +16,16 @@ default: game
 bin:
 	mkdir bin
 
+bin/sdlmain.o: sdlml/sdlmain.m sdlml/sdlmain.h
+	gcc -O $(CPPFLAGS) -c sdlml/sdlmain.m -o bin/sdlmain.o
+
 bin/sdlml.o: sdlml/sdlml.c
 	gcc -O $(CPPFLAGS) -c sdlml/sdlml.c -o bin/sdlml.o
 
 .PHONY: game
-game: bin/sdlml.o
+game: bin/sdlml.o bin/sdlmain.o
 	export MACOSX_DEPLOYMENT_TARGET=${VERSION_TARGET}
-	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) game.cm bin/sdlml.o
+	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) game.cm bin/sdlml.o bin/sdlmain.o
 
 .PHONY:app
 app: 
