@@ -29,14 +29,21 @@ game: bin/sdlml.o bin/sdlmain.o
 
 .PHONY:app
 app: 
-	rm -rf /tmp/Functioning.app
-	mkdir -p /tmp/Functioning.app/Contents/MacOS
-	cp -R ${RELEASEFILES} /tmp/Functioning.app/Contents/MacOS/
-	cp -R functioning/OSX/* 
-	cp -R media /tmp/Functioning.app/Contents/MacOS
-	rm -rf `find /tmp/Functioning.app -name CVS`
-	rm -rf `find /tmp/Functioning.app -name .DS_Store`
-	rm -rf `find /tmp/Functioning.app -name .svn`
+	rm -rf /tmp/Func.app
+	mkdir -p /tmp/Func.app/Contents/MacOS
+	cp -R ${RELEASEFILES} /tmp/Func.app/Contents/MacOS/
+	cp -R functioning/OSX/* /tmp/Func.app/Contents
+	functioning/plistgen.sh $(OUTPUT_EXE) $(OUTPUT_APP) > /tmp/Func.app/Contents/Info.plist
+
+    # Cleanup 
+	rm -f /tmp/Func.app/Contents/Frameworks/SDL.framework/Headers/*.h
+	rm -f /tmp/Func.app/Contents/Frameworks/SDL_image.framework/Headers/*.h
+	rm -f /tmp/Func.app/Contents/Frameworks/SDL_net.framework/Headers/*.h
+	rm -f /tmp/Func.app/Contents/MacOS/OSX_build/SDL_mixer.framework/Headers/*.h
+	rm -rf `find /tmp/Func.app -name CVS`
+	rm -rf `find /tmp/Func.app -name .DS_Store`
+	rm -rf `find /tmp/Func.app -name .svn`
+	rm -rf `find /tmp/Func.app -name *.ogg`
 
 # 	cp -R OSX_build/* /tmp/$(OUTPUT_APP).app/Contents/
 # 	cp ${RELEASEFILES} /tmp/$(OUTPUT_APP).app/Contents/MacOS/
@@ -47,10 +54,6 @@ app:
 # 	rm -rf /tmp/$(OUTPUT_APP).app/Contents/Frameworks/SDL_mixer.framework
 # 	ln -s ../MacOS/OSX_build/Frameworks/SDL_mixer.framework /tmp/$(OUTPUT_APP).app/Contents/Frameworks/SDL_mixer.framework
 # 	cp -R OSX_build/Frameworks/SDL_mixer.framework /tmp/$(OUTPUT_APP).app/Contents/MacOS/OSX_build/Frameworks/
-# 	rm -f /tmp/$(OUTPUT_APP).app/Contents/Frameworks/SDL.framework/Headers/*.h
-# 	rm -f /tmp/$(OUTPUT_APP).app/Contents/Frameworks/SDL_image.framework/Headers/*.h
-# 	rm -f /tmp/$(OUTPUT_APP).app/Contents/Frameworks/SDL_net.framework/Headers/*.h
-# 	rm -f /tmp/$(OUTPUT_APP).app/Contents/MacOS/OSX_build/SDL_mixer.framework/Headers/*.h
 # 	rm -rf `find /tmp/$(OUTPUT_APP).app -name CVS`
 # 	rm -rf `find /tmp/$(OUTPUT_APP).app -name .DS_Store`
 # 	rm -rf `find /tmp/$(OUTPUT_APP).app -name .svn`
@@ -60,7 +63,7 @@ app:
 desktop: app
 	rm -rf ~/Desktop/$(OUTPUT_APP).app.old
 	-mv ~/Desktop/$(OUTPUT_APP).app ~/Desktop/$(OUTPUT_APP).app.old
-	cp -R /tmp/Focusing.app ~/Desktop/
+	cp -R /tmp/Func.app ~/Desktop/$(OUTPUT_APP).app
 
 clean:
 	rm -f core core.* *~ *.exe bin/*

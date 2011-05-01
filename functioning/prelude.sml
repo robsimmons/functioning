@@ -1,5 +1,17 @@
+structure Prelude = struct
+
+   val root = (FSUtil.chdir_excursion 
+               (CommandLine.name())
+                (fn _ =>
+                 OS.FileSys.getDir ()))
+
+   val () = Posix.FileSys.chdir root
+
+end
+
 (* When running without a console on some platforms (e.g. mingw),
-   print will raise an exception. Redefine print so that it *)
+   print will raise an exception. Redefine print so that it just does nothing
+   if actually printing would cause errors. *)
 val print_works = 
     let in
         (* unfortunately this cannot be the empty string, or it
