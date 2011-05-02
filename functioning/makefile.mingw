@@ -1,25 +1,29 @@
+OUTPUT_EXE=game.exe
+MAKE=make
 
-default : explat.exe
+# You shouldn't have to edit anything below this line
 
+MLTON_FLAGS=@MLton max-heap 200m -- -cc-opt "-I/usr/local/include" -link-opt "`SDL/sdl-config --libs` -lSDL_image -ltiff -lpng -ljpeg -lz" -default-ann 'allowFFI true'
 
-sdlml.o : ../sdlml/sdlml.c
-	gcc -O -I SDL/include `SDL/sdl-config --cflags` -c ../sdlml/sdlml.c -o sdlml.o
+default: game
 
-explat.exe : sdlml.o *.sml explat.cm messagebox_fake.o
-	mlton @MLton max-heap 200m -- -cc-opt "-I/usr/local/include" -link-opt "`SDL/sdl-config --libs` -lSDL_image -ltiff -lpng -ljpeg -lz" -output explat.exe -default-ann 'allowFFI true' explat.cm sdlml.o messagebox_fake.o
+bin:
+	mkdir bin
 
+bin/sdlml.o: bin sdlml/sdlml.c
+	gcc -DLINUX -O `sdl-config --cflags` -c sdlml/sdlml.c -o bin/sdlml.o
 
-# -verbose 3
-#  cliptest.exe : sdlml.o *.sml cliptest.cm
-#  	mlton @MLton max-heap 200m -- -cc-opt "-I/usr/local/include" -link-opt "`SDL/sdl-config --libs` -lSDL_image -ltiff -lpng -ljpeg -lz" -output cliptest.exe -default-ann 'allowFFI true' cliptest.cm sdlml.o
-#  
-#  
-#  # the order of these libraries and object files is really important! Weird things will
-#  # happen if it's wrong!
-#  #  -lz -ltiff -lpng -ljpeg
-#  ctest : ctest.c
-#  	gcc -O `SDL/sdl-config --cflags` -c ctest.c -o ctest.o
-#  	gcc ctest.o `SDL/sdl-config --libs` -lSDL_image -o ctest
-#  
-#  clean :
-#  	rm -f *.o cliptest.exe core
+.PHONY: game
+game: bin/sdlml.o
+	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) game.cm bin/sdlml.o 
+
+.PHONY: examples/*/ examples/*
+examples/*/: bin/sdlml.o
+	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) $@sources.cm bin/sdlml.o
+examples/*:
+	$(MAKE) $@/
+
+.PHONY:clean
+clean:
+	rm -f core core.* *~ *.exe *.o bin/*
+
