@@ -16,7 +16,7 @@ struct
 
   structure BW = BDDWorld( 
                  struct type fixture_data = unit
-                        type body_data = unit
+                        type body_data = string
                         type joint_data = unit
                  end
                  )
@@ -38,7 +38,7 @@ struct
                                         fixed_rotation = true,
                                         bullet = false,
                                         active = true,
-                                        data = (),
+                                        data = "hello world",
                                         inertia_scale = 1.0
                                       })
 
@@ -63,7 +63,7 @@ struct
                          fixed_rotation = true,
                          bullet = false,
                          active = true,
-                         data = (),
+                         data = "ground",
                          inertia_scale = 1.0
                        })
 
@@ -98,27 +98,33 @@ struct
 
   val lasttime = ref (Time.now ())
 
-  fun showtime screen = 
+  fun dophysics () = 
       let val now = Time.now ()
           val diff = Time.-(now, !lasttime)
           val () = lasttime := now
           val millis = IntInf.toString (Time.toMilliseconds (diff))
           val () = BW.World.step (world, Time.toReal diff,
                                   10, 10)
-          val p = BW.Body.get_position textbody
-          val (x, y) = worldToScreen p
-          val () = Font.Normal.draw (screen, x, y, "hello world: " ^ millis);
-          val p = BW.Body.get_position groundbody
-          val (x, y) = worldToScreen p
-          val () = Font.Normal.draw (screen, x, y, "down here! ")
       in () end
+      
 
-
+  fun drawbodies screen bl = 
+      ( case bl of
+            SOME b =>
+            let 
+                val p = BW.Body.get_position b
+                val txt = BW.Body.get_data b
+                val (x, y) = worldToScreen p
+                val () = Font.Normal.draw (screen, x, y, txt);
+            in drawbodies screen (BW.Body.get_next b) end
+          | NONE => ()
+      )
 
   fun render screen () =
   (
     SDL.clearsurface (screen, SDL.color (0w0,0w0,0w0,0w0));
-    showtime screen;
+    dophysics ();
+    drawbodies screen (BW.World.get_body_list world);
     SDL.flip screen
   )
 
@@ -131,7 +137,7 @@ struct
     | handle_event (SDL.E_KeyUp {sym=k}) s = keyUp k s
     | handle_event _ s = SOME s
 
-  (* fun tick {xpos=x, ypos=y} = SOME {xpos=x+1, ypos=y} *)
+
   fun tick s = SOME s
 end
 
