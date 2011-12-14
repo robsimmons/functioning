@@ -14,65 +14,84 @@ struct
                      Real.fromInt pixelsPerMeter)
 
 
-  structure BW = BDDWorld( 
-                 struct type fixture_data = unit
-                        type body_data = string
-                        type joint_data = unit
-                 end
-                 )
+  structure B = BDDWorld( 
+                struct type fixture_data = unit
+                       type body_data = string
+                       type joint_data = unit
+                end
+                )
   
   val gravity = BDDMath.vec2 (0.0, 0.0) 
-  val world = BW.World.world (gravity, true)
+  val world = B.World.world (gravity, true)
+
+
+  fun create_text_body (text : string)
+                       (p : BDDMath.vec2)
+                       (v : BDDMath.vec2)
+                       (density : real) : unit = 
+      let val body = B.World.create_body
+                         (world,
+                          {typ = B.Body.Dynamic,
+                           position = p,
+                           angle = 0.0,
+                           linear_velocity = v,
+                           angular_velocity = 0.0,
+                           linear_damping = 0.0,
+                           angular_damping = 0.0,
+                           allow_sleep = false,
+                           awake = true,
+                           fixed_rotation = true,
+                           bullet = false,
+                           active = true,
+                           data = text,
+                           inertia_scale = 1.0
+                         })
+          val fixture = B.Body.create_fixture_default
+                            (body,
+                             BDDShape.Polygon (BDDPolygon.box (1.0, 0.5)),
+                             (),
+                             density)
+          val () = B.Fixture.set_restitution (fixture, 1.0)
+      in () end
 
   val zero = BDDMath.vec2 (0.0, 0.0) 
-  val textbody = BW.World.create_body (world,
-                                       {typ = BW.Body.Dynamic,
-                                        position = zero,
-                                        angle = 0.0,
-                                        linear_velocity = BDDMath.vec2 (0.0, ~2.0),
-                                        angular_velocity = 0.0,
-                                        linear_damping = 0.0,
-                                        angular_damping = 0.0,
-                                        allow_sleep = false,
-                                        awake = true,
-                                        fixed_rotation = true,
-                                        bullet = false,
-                                        active = true,
-                                        data = "hello world",
-                                        inertia_scale = 1.0
-                                      })
+  val () = create_text_body "hello world" zero
+                            (BDDMath.vec2 (1.0, ~2.0))
+                            1.0
+  val () = create_text_body "ground" 
+                            (BDDMath.vec2 (0.0, ~10.0))
+                            zero
+                            1000.0
+  val () = create_text_body "ground" 
+                            (BDDMath.vec2 (~5.0, ~10.0))
+                            zero
+                            1000.0
+  val () = create_text_body "ground" 
+                            (BDDMath.vec2 (5.0, ~10.0))
+                            zero
+                            1000.0
 
-  val textfix = BW.Body.create_fixture_default
-                    (textbody,
-                     BDDShape.Polygon (BDDPolygon.box (0.2, 0.2)),
-                     (),
-                     20.0)
-  val () = BW.Fixture.set_restitution (textfix, 1.0)
+  val () = create_text_body "wall" 
+                            (BDDMath.vec2 (10.0, 0.0))
+                            zero
+                            1000.0 
+  val () = create_text_body "wall" 
+                            (BDDMath.vec2 (~10.0, 0.0))
+                            zero
+                            1000.0
 
-  val groundbody = BW.World.create_body
-                       (world,
-                        {typ = BW.Body.Dynamic,
-                         position = BDDMath.vec2 (0.0, ~10.0),
-                         angle = 0.0,
-                         linear_velocity = zero,
-                         angular_velocity = 0.0,
-                         linear_damping = 0.0,
-                         angular_damping = 0.0,
-                         allow_sleep = false,
-                         awake = true,
-                         fixed_rotation = true,
-                         bullet = false,
-                         active = true,
-                         data = "ground",
-                         inertia_scale = 1.0
-                       })
-
-  val groundfix = BW.Body.create_fixture_default
-                      (groundbody,
-                       BDDShape.Polygon (BDDPolygon.box (50.0, 0.5)),
-                       (),
-                       0.2)
-  val () = BW.Fixture.set_restitution (groundfix, 1.0)
+  val () = create_text_body "sky" 
+                            (BDDMath.vec2 (0.0, 10.0))
+                            zero
+                            1000.0
+  val () = create_text_body "sky" 
+                            (BDDMath.vec2 (~5.0, 10.0))
+                            zero
+                            1000.0
+  val () = create_text_body "sky" 
+                            (BDDMath.vec2 (5.0, 10.0))
+                            zero
+                            1000.0
 
 (*
   The box2d world has as its origin the center of the screen.
@@ -80,11 +99,12 @@ struct
   fun worldToScreen (v : BDDMath.vec2) : int * int =
       let open BDDMath
           val (xw, yw) = (vec2x v, vec2y v)
-          val x = Real.*(Real.fromInt pixelsPerMeter,
-                         xw + (meter_width / 2.0))
-          val y = Real.*(Real.fromInt pixelsPerMeter,
-                         Real.~(yw) + (meter_height / 2.0))
-          val (xi, yi) = (Real.round x, Real.round y)
+          open Real
+          val x = (fromInt pixelsPerMeter) *
+                  (xw + (meter_width / 2.0))
+          val y = (fromInt pixelsPerMeter) *
+                  (~yw + (meter_height / 2.0))
+          val (xi, yi) = (round x, round y)
       in
           (xi, yi)
       end
@@ -103,8 +123,8 @@ struct
           val diff = Time.-(now, !lasttime)
           val () = lasttime := now
           val millis = IntInf.toString (Time.toMilliseconds (diff))
-          val () = BW.World.step (world, Time.toReal diff,
-                                  10, 10)
+          val () = B.World.step (world, Time.toReal diff,
+                                 10, 10)
       in () end
       
 
@@ -112,11 +132,11 @@ struct
       ( case bl of
             SOME b =>
             let 
-                val p = BW.Body.get_position b
-                val txt = BW.Body.get_data b
+                val p = B.Body.get_position b
+                val txt = B.Body.get_data b
                 val (x, y) = worldToScreen p
                 val () = Font.Normal.draw (screen, x, y, txt);
-            in drawbodies screen (BW.Body.get_next b) end
+            in drawbodies screen (B.Body.get_next b) end
           | NONE => ()
       )
 
@@ -124,7 +144,7 @@ struct
   (
     SDL.clearsurface (screen, SDL.color (0w0,0w0,0w0,0w0));
     dophysics ();
-    drawbodies screen (BW.World.get_body_list world);
+    drawbodies screen (B.World.get_body_list world);
     SDL.flip screen
   )
 
