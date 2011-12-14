@@ -3,6 +3,11 @@ Group is
 ../../functioning/sources.cm
 ../../sml-lib/bdd/bdd.cm
 
+
+../../sml-lib/crypt/mersenne-twister-sig.sml
+../../sml-lib/crypt/mersenne-twister.sml
+
+
 font.sml
 game.sml
 
