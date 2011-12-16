@@ -5,6 +5,10 @@ MAKE=make
 
 MLTON_FLAGS=-link-opt "-lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true'
 
+# Static linking should look something like this.
+# ("sdl-config --static-libs" might help you.)
+#MLTON_FLAGS=-link-opt "/usr/lib/libSDL_image.a /usr/lib/libtiff.a /usr/lib/libjpeg.a /usr/lib/libz.a /usr/lib/libSDL.a /usr/lib/libdirectfb.a /usr/lib/libfusion.a /usr/lib/libdirect.a -lpthread -lm -ldl -lasound -lm -ldl -lpthread -lesd -lpulse-simple -lpulse -laa -L/usr/lib -lcaca" -default-ann 'allowFFI true'
+
 default: game
 
 bin: 
