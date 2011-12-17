@@ -10,6 +10,7 @@ struct
   infix 6 :+: :-: %-% %+% +++
   infix 7 *: *% +*: +*+ #*% @*:
 
+  structure T = BDDDynamicsTypes
   structure D = BDDDynamics
   structure CS = BDDContactSolver
 
@@ -28,8 +29,8 @@ struct
               let val ba = D.F.get_body (D.C.get_fixture_a c)
                   val bb = D.F.get_body (D.C.get_fixture_b c)
               in case (D.B.get_typ ba, D.B.get_typ bb) of
-                  (D.Static, _) => false
-                | (_, D.Static) => false
+                  (T.Static, _) => false
+                | (_, T.Static) => false
                 | _ => true
               end
           (* PERF: Too much allocation. *)
@@ -61,7 +62,7 @@ struct
                     contacts : ('b, 'f, 'j) D.contact list,
                     joints : ('b, 'f, 'j) D.joint list,
                     world : ('b, 'f, 'j) D.world,
-                    step : D.time_step,
+                    step : BDDDynamicsTypes.time_step,
                     gravity : BDDMath.vec2,
                     allow_sleep : bool) : unit =
       let
@@ -73,9 +74,9 @@ struct
           val bodies = Vector.fromList bodies
           val joints = Vector.fromList joints
 
-          val () = print ("Solve island with " ^ 
-                          Int.toString (Vector.length bodies) ^ " bodies and " ^
-                          Int.toString (length contacts) ^ " contacts\n")
+          val () = dprint (fn () => "Solve island with " ^ 
+                           Int.toString (Vector.length bodies) ^ " bodies and " ^
+                           Int.toString (length contacts) ^ " contacts\n")
           (* Contacts are partitioned so that constraints with
              static bodies are solved last. *)
           val contacts = partition_contacts_to_vector contacts
@@ -84,7 +85,7 @@ struct
           val () = Vector.app 
               (fn body =>
                case D.B.get_typ body of
-                   D.Dynamic =>
+                   T.Dynamic =>
                      let
                      in
                          D.B.set_linear_velocity 
@@ -125,10 +126,10 @@ struct
                                   #dt step * D.B.get_angular_damping body,
                                   0.0, 1.0));
 
-                         print ("  vel: " ^ vtos (D.B.get_linear_velocity body) ^ 
-                                " " ^ rtos (D.B.get_angular_velocity body) ^ "\n" ^
-                                "  xf: " ^ xftos (D.B.get_xf body) ^ "\n" ^
-                                "  sweep: " ^ sweeptos (D.B.get_sweep body) ^ "\n")
+                         dprint (fn () => "  vel: " ^ vtos (D.B.get_linear_velocity body) ^ 
+                                 " " ^ rtos (D.B.get_angular_velocity body) ^ "\n" ^
+                                 "  xf: " ^ xftos (D.B.get_xf body) ^ "\n" ^
+                                 "  sweep: " ^ sweeptos (D.B.get_sweep body) ^ "\n")
                      end
                  | _ => ()) bodies
 
@@ -147,7 +148,7 @@ struct
                    Vector.app (fn j => 
                                D.J.solve_velocity_constraints (j, step))
                               joints;
-                   print ("* Vel iter " ^ Int.toString i ^ "\n");
+                   dprint (fn () => "* Vel iter " ^ Int.toString i ^ "\n");
                    CS.solve_velocity_constraints solver
                end)
 
@@ -157,7 +158,7 @@ struct
           (* Integrate positions. *)
           fun integrate_onebody b =
             case D.B.get_typ b of
-               D.Static => ()
+               T.Static => ()
              | _ =>
                let 
                  (* Check for large velocities. *)
@@ -182,15 +183,15 @@ struct
                           else ()
 
                  val () =
-                     print ("  new vel: " ^ vtos (D.B.get_linear_velocity b) ^ 
-                            " " ^ rtos (D.B.get_angular_velocity b) ^ "\n")
+                     dprint (fn () => "  new vel: " ^ vtos (D.B.get_linear_velocity b) ^ 
+                             " " ^ rtos (D.B.get_angular_velocity b) ^ "\n")
 
 
                  val sweep = D.B.get_sweep b
 
                in
-                 print ("  dt: " ^ rtos (#dt step) ^ "\n");
-                 print ("  orig sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
+                 dprint (fn () => "  dt: " ^ rtos (#dt step) ^ "\n");
+                 dprint (fn () => "  orig sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
 
                  (* Store positions for continuous collision. *)
                  sweep_set_c0 (sweep, sweepc sweep);
@@ -202,15 +203,15 @@ struct
                  sweep_set_a (sweep, sweepa sweep +
                               #dt step * D.B.get_angular_velocity b);
 
-                 print ("  uync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
-                 print ("  uync xf: " ^ xftos (D.B.get_xf b) ^ "\n");
+                 dprint (fn () => "  uync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
+                 dprint (fn () => "  uync xf: " ^ xftos (D.B.get_xf b) ^ "\n");
 
                  (* Compute new transform. *)
                  D.B.synchronize_transform b;
 
-                 print ("  sync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
+                 dprint (fn () => "  sync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
 
-                 print ("  sync xf: " ^ xftos (D.B.get_xf b) ^ "\n")
+                 dprint (fn () => "  sync xf: " ^ xftos (D.B.get_xf b) ^ "\n")
 
                  (* Note: shapes are synchronized later. *)
                end
@@ -253,7 +254,7 @@ struct
 
               fun sleep_one_body (b : ('b, 'f, 'j) D.body) : unit =
                   case D.B.get_typ b of
-                      D.Static => ()
+                      T.Static => ()
                     | _ =>
                       (* Stays awake if it's not allowed to auto_sleep,
                          or it has too much velocity. *)

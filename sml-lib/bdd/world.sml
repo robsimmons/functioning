@@ -19,6 +19,7 @@ struct
 
   exception BDDWorld of string
 
+  structure T = BDDDynamicsTypes
   structure D = BDDDynamics
   structure Body = BDDBody(Arg)
   structure Fixture = BDDFixture(Arg)
@@ -116,8 +117,8 @@ struct
   struct
 
     open D.W
-    type contact_impulse = D.contact_impulse
-    datatype raycast_action = datatype D.raycast_action
+    type contact_impulse = T.contact_impulse
+    datatype raycast_action = datatype T.raycast_action
 
     (* Should probably expose this *)
     fun default_collision_filter (fixture_a : fixture, 
@@ -139,31 +140,31 @@ struct
       end
 
     fun world (gravity, do_sleep) : world =
-        ref (D.W { flags = FLAG_CLEAR_FORCES,
-                   body_list = NONE,
-                   joint_list = NONE,
-                   body_count = 0,
-                   joint_count = 0,
-                   gravity = gravity,
-                   allow_sleep = do_sleep,
+        D.W.new { flags = FLAG_CLEAR_FORCES,
+                  body_list = NONE,
+                  joint_list = NONE,
+                  body_count = 0,
+                  joint_count = 0,
+                  gravity = gravity,
+                  allow_sleep = do_sleep,
                     
-                   ground_body = NONE,
-                   goodbye_joint_hook = ignore,
-                   goodbye_fixture_hook = ignore,
+                  ground_body = NONE,
+                  goodbye_joint_hook = ignore,
+                  goodbye_fixture_hook = ignore,
                     
-                   inv_dt0 = 0.0,
+                  inv_dt0 = 0.0,
                    
-                   warm_starting = true,
-                   continuous_physics = true,
+                  warm_starting = true,
+                  continuous_physics = true,
                    
-                   broad_phase = BDDBroadPhase.broadphase (),
-                   contact_list = NONE,
-                   contact_count = 0,
-                   should_collide = default_collision_filter,
-                   begin_contact = ignore,
-                   end_contact = ignore,
-                   pre_solve = ignore,
-                   post_solve = ignore })
+                  broad_phase = BDDBroadPhase.broadphase (),
+                  contact_list = NONE,
+                  contact_count = 0,
+                  should_collide = default_collision_filter,
+                  begin_contact = ignore,
+                  end_contact = ignore,
+                  pre_solve = ignore,
+                  post_solve = ignore }
 
 
     fun get_proxy_count world =
@@ -357,6 +358,10 @@ void b2World::DestroyJoint(b2Joint* j)
 }
 *)
 
+    fun oeq e (NONE, NONE) = true
+      | oeq e (SOME a, SOME b) = e (a, b)
+      | oeq _ _ = false
+
     fun destroy_body (body : body) : unit =
       let val world = D.B.get_world body
       in if is_locked world
@@ -403,7 +408,7 @@ void b2World::DestroyJoint(b2Joint* j)
                  NONE => ()
                | SOME next => D.B.set_prev (next, prev)
 
-             val () = if get_body_list world = SOME body
+             val () = if oeq D.B.eq (get_body_list world, SOME body)
                       then set_body_list (world, next)
                       else ()
 
@@ -466,19 +471,20 @@ void b2World::DestroyJoint(b2Joint* j)
         end
     (* Find islands, integrate and solve constraints, solve position
        constraints. *)
-    fun solve (world : world, step : D.time_step) =
+    fun solve (world : world, step : T.time_step) =
       let
         (* Port note: Box2D creates an island on the stack and keeps reusing 
            it. I made it just be a function, for simplicity. 
            PERF: Did doing this make some of the counts dead? *)
-        val () = print "SOLVE.\n"
+        val () = dprint (fn () => "SOLVE.\n")
 
         (* XXX just debug *)
         val () = oapp D.B.get_next 
             (fn b =>
              let in
-                 print ("Presolve sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
-                        "            xf: " ^ xftos (D.B.get_xf b) ^ "\n")
+                 dprint (fn () => 
+                         "Presolve sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
+                         "            xf: " ^ xftos (D.B.get_xf b) ^ "\n")
              end)
             (get_body_list world)
         (* XXX end just debug *)
@@ -513,15 +519,16 @@ void b2World::DestroyJoint(b2Joint* j)
          then ()
          else if not (Body.get_awake seed) orelse not (Body.get_active seed)
          then ()
-         else if D.B.get_typ seed = D.Static
+         else if D.B.get_typ seed = T.Static
          (* Must be dynamic or kinematic. *)
          then ()
          else
          let 
            val XXX_xf = transformposition (Body.get_transform seed)
-           val () = print ("Try seed @" ^
-                           Real.fmt (StringCvt.FIX (SOME 2)) (vec2x XXX_xf) ^ "," ^
-                           Real.fmt (StringCvt.FIX (SOME 2)) (vec2y XXX_xf) ^ "\n")
+           val () = dprint (fn () =>
+                            "Try seed @" ^
+                            Real.fmt (StringCvt.FIX (SOME 2)) (vec2x XXX_xf) ^ "," ^
+                            Real.fmt (StringCvt.FIX (SOME 2)) (vec2y XXX_xf) ^ "\n")
 
            (* Accumulates arguments for island solver. *)
            val bodies = ref nil
@@ -544,7 +551,7 @@ void b2World::DestroyJoint(b2Joint* j)
                in
                    (* To keep islands as small as possible, we don't
                       propagate islands across static bodies. *)
-                   if D.B.get_typ b = D.Static
+                   if D.B.get_typ b = T.Static
                    then ()
                    else
                    let
@@ -556,10 +563,11 @@ void b2World::DestroyJoint(b2Joint* j)
                            val fixture_a = D.C.get_fixture_a contact
                            val fixture_b = D.C.get_fixture_b contact
                        in 
-                         print (" .. edge " ^
-                                (if (D.C.get_flag (contact, D.C.FLAG_TOUCHING))
-                                 then "touching"
-                                 else "not-touching") ^ "\n");
+                         dprint (fn () => 
+                                 " .. edge " ^
+                                 (if (D.C.get_flag (contact, D.C.FLAG_TOUCHING))
+                                  then "touching"
+                                  else "not-touching") ^ "\n");
 
                          (* Has this contact already been added to an
                             island? Is it enabled and touching? Are
@@ -625,7 +633,7 @@ void b2World::DestroyJoint(b2Joint* j)
              
              (* Post solve cleanup: Allow static bodies to participate in 
                 other islands. *)
-             app (fn b => if D.B.get_typ b = D.Static
+             app (fn b => if D.B.get_typ b = T.Static
                           then D.B.clear_flag (b, D.B.FLAG_ISLAND)
                           else ()) (!bodies)
          end
@@ -634,7 +642,7 @@ void b2World::DestroyJoint(b2Joint* j)
        fun one_sync (b : body) =
            (* If the body was not in an island, then it didn't move. *)
            if not (D.B.get_flag (b, D.B.FLAG_ISLAND)) orelse
-              D.B.get_typ b = D.Static
+              D.B.get_typ b = T.Static
            then ()
            (* Otherwise update its fixtures for the broad phase. *)
            else D.B.synchronize_fixtures (b, get_broad_phase world)
@@ -661,11 +669,11 @@ void b2World::DestroyJoint(b2Joint* j)
            collisions when objects rotate through each other. *)
         fun loop iter =
           let
-              val () = print ("(iter " ^ itos iter ^ ")\n")
+              val () = dprint (fn () => "(iter " ^ itos iter ^ ")\n")
               fun one_edge ce =
                   (* n.b. weird behavior if contact 
                      was not initialized *)
-                if D.E.get_contact ce = !toi_contact  
+                if oeq D.C.eq (D.E.get_contact ce, !toi_contact)
                 then ()
                 else
                   let val other = !! (D.E.get_other ce)
@@ -679,8 +687,8 @@ void b2World::DestroyJoint(b2Joint* j)
                           then (* Bullets only perform TOI with bodies that have their TOI resolved. *)
                                not (D.B.get_flag (other, D.B.FLAG_TOI)) orelse
                                (* No repeated hits on non-static bodies *)
-                               (typ <> D.Static andalso D.C.get_flag (contact, D.C.FLAG_BULLET_HIT))
-                          else typ = D.Dynamic)
+                               (typ <> T.Static andalso D.C.get_flag (contact, D.C.FLAG_BULLET_HIT))
+                          else typ = T.Dynamic)
                       then ()
                       else (* check for a disabled contact *)
                       if not (D.C.get_flag (contact, D.C.FLAG_ENABLED))
@@ -699,8 +707,8 @@ void b2World::DestroyJoint(b2Joint* j)
                           else let val body_a = D.F.get_body fixture_a
                                    val body_b = D.F.get_body fixture_b
 
-                                   val () = print ("sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^ "\n")
-                                   val () = print ("sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n")
+                                   val () = dprint (fn () => "sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^ "\n")
+                                   val () = dprint (fn () => "sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n")
 
                                    (* Compute the time of impact in interval [0, minTOI] *)
                                    val toi_input = 
@@ -710,24 +718,24 @@ void b2World::DestroyJoint(b2Joint* j)
                                          sweepb = BDDMath.sweepcopy (D.B.get_sweep body_b),
                                          tmax = !toi }
 
-                                   val () = print ("tmax: " ^ rtos (!toi) ^ " toi test:\n");
+                                   val () = dprint (fn () => "tmax: " ^ rtos (!toi) ^ " toi test:\n");
                                    val toires = BDDTimeOfImpact.time_of_impact toi_input
                                in
-                                   print ("2sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^ "\n");
-                                   print ("2sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n");
+                                   dprint (fn () => "2sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^ "\n");
+                                   dprint (fn () => "2sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n");
 
                                    case toires of
                                      (BDDTimeOfImpact.STouching, t) =>
                                          if t < !toi
                                          then let in
-                                                print ("  yes at " ^ rtos t ^ "\n");
+                                                dprint (fn () => "  yes at " ^ rtos t ^ "\n");
                                                 toi_contact := SOME contact;
                                                 toi := t;
                                                 toi_other := SOME other;
                                                 found := true
                                               end
-                                         else print "  not in time\n"
-                                   | _ => print "  not touching\n";
+                                         else dprint (fn () => "  not in time\n")
+                                   | _ => dprint (fn () => "  not touching\n");
 
                                    count := !count + 1
                                end
@@ -739,18 +747,19 @@ void b2World::DestroyJoint(b2Joint* j)
                then loop (iter + 1)
                else
                    (* XXX *)
-                   print (Int.toString (iter + 1) ^ " iters, " ^
-                          Int.toString (!count) ^ " count\n")
+                   dprint (fn () => Int.toString (iter + 1) ^ " iters, " ^
+                           Int.toString (!count) ^ " count\n")
            end
         val () = loop 0
 
       in
-        print ((case !toi_contact of
-                    NONE => "NO "
-                  | SOME _ => "YES ") ^
-               (case !toi_other of
-                    NONE => "NO"
-                  | SOME _ => "YES") ^ "\n");
+        dprint (fn () => 
+                (case !toi_contact of
+                     NONE => "NO "
+                   | SOME _ => "YES ") ^
+                     (case !toi_other of
+                          NONE => "NO"
+                        | SOME _ => "YES") ^ "\n");
         case (!toi_contact, !toi_other) of
             (NONE, NONE) => D.B.advance (body, 1.0)
           | (SOME _, NONE) => raise BDDWorld "impossible"
@@ -771,6 +780,7 @@ void b2World::DestroyJoint(b2Joint* j)
           (* Update all the valid contacts on this body and build a contact island. 
              Port note: This was a fixed array in Box2D. *)
           val contacts = ref nil
+          (* Port note: 'count' var reused in Box2D. *)
           val ncontacts = ref 0
           fun one_edge ce =
             if !ncontacts >= BDDSettings.max_toi_contacts
@@ -783,35 +793,35 @@ void b2World::DestroyJoint(b2Joint* j)
                  in
                      (* Only perform correction with static bodies, so the
                         body won't get pushed out of the world. *)
-                     if typ = D.Dynamic
-                     then ()
+                     if typ = T.Dynamic
+                     then dprint (fn () => "* skipped -- dynamic\n")
                      else
                      (* Check for a disabled contact. *)
                      if not (D.C.get_flag (contact, D.C.FLAG_ENABLED))
-                     then ()
+                     then dprint (fn () => "* skipped -- disabled\n")
                      else
                      (* Cull sensors. *)
                      if Fixture.is_sensor fixture_a orelse 
                         Fixture.is_sensor fixture_b
-                     then ()
+                     then dprint (fn () => "* skipped -- sensors\n")
                      else
                      let in
                          (* The contact likely has some new contact points. The listener
                             gives the client a chance to disable the contact. *)
-                         if contact <> toi_contact
+                         if not (D.C.eq (contact, toi_contact))
                          then Contact.update (contact, world)
-                         else ();
+                         else dprint (fn () => "* (not update)\n");
                          
                          (* Did the user disable the contact? *)
-                         if D.C.get_flag (contact, D.C.FLAG_ENABLED)
-                         then ()
+                         if not (D.C.get_flag (contact, D.C.FLAG_ENABLED))
+                         then dprint (fn () => "* skipped -- disabled during callback\n")
                          else
                          if not (Contact.is_touching contact)
-                         then ()
+                         then dprint (fn () => "* skipped -- not touching\n")
                          else 
                              let in
                                  contacts := contact :: !contacts;
-                                 count := !count + 1
+                                 ncontacts := !ncontacts + 1
                              end
                      end
                  end
@@ -826,7 +836,9 @@ void b2World::DestroyJoint(b2Joint* j)
               then ()
               else loop (iter + 1)
         in
-          if D.B.get_typ toi_other <> D.Static
+          loop 0;
+          dprint (fn () => "(done toi-solving)\n");
+          if D.B.get_typ toi_other <> T.Static
           then D.C.set_flag (toi_contact, D.C.FLAG_BULLET_HIT)
           else ()
         end
@@ -837,7 +849,7 @@ void b2World::DestroyJoint(b2Joint* j)
        Time is not conserved. *)
     fun solve_toi (world : world) : unit =
       let
-          val () = print "SOLVE_TOI()\n"
+          val () = dprint (fn () => "SOLVE_TOI()\n")
 
         (* Prepare all contacts. *)
           fun onecontact c =
@@ -855,9 +867,9 @@ void b2World::DestroyJoint(b2Joint* j)
                If a body was not in an island then it did not move. *)
             if not (D.B.get_flag (b, D.B.FLAG_ISLAND)) orelse
                (case D.B.get_typ b of
-                    D.Kinematic => true
-                  | D.Static => true
-                  | D.Dynamic => false) 
+                    T.Kinematic => true
+                  | T.Static => true
+                  | T.Dynamic => false) 
             then D.B.set_flag (b, D.B.FLAG_TOI)
             else D.B.clear_flag (b, D.B.FLAG_TOI)
           val () = oapp D.B.get_next onebody_toi (get_body_list world)
@@ -868,7 +880,7 @@ void b2World::DestroyJoint(b2Joint* j)
             then ()
             else if Body.get_bullet b
                  then ()
-                 else (print "Collide non-bullet.\n";
+                 else (dprint (fn () => "Collide non-bullet.\n");
                        solve_toi_body (world, b);
                        D.B.set_flag (b, D.B.FLAG_TOI))
           val () = oapp D.B.get_next onebody_nonbullet (get_body_list world)
@@ -879,7 +891,7 @@ void b2World::DestroyJoint(b2Joint* j)
             then ()
             else if not (Body.get_bullet b)
                  then ()
-                 else (print "Collide bullet.\n";
+                 else (dprint (fn () => "Collide bullet.\n");
                        solve_toi_body (world, b);
                        D.B.set_flag (b, D.B.FLAG_TOI))
           val () = oapp D.B.get_next onebody_bullet (get_body_list world)
@@ -912,20 +924,20 @@ void b2World::DestroyJoint(b2Joint* j)
             val name2 = (* getfixturename (Contact.get_fixture_b c) *) "name2"
             val rtos = Real.fmt (StringCvt.FIX (SOME 2))
         in
-            print ("New " ^ name1 ^ "-" ^ name2 ^ " Contact! ");
+            dprint (fn () => "New " ^ name1 ^ "-" ^ name2 ^ " Contact! ");
             if Contact.is_touching c
-            then print "touching "
+            then dprint (fn () => "touching ")
             else ();
-            print (Int.toString point_count ^ " points: ");
+            dprint (fn () => itos point_count ^ " points: ");
             for 0 (point_count - 1) 
             (fn i =>
              let val pt = Array.sub(#points world_manifold, i)
                  (* val (x, y) = vectoscreen pt *)
              in
-                 print (vtos pt ^ ", ")
+                 dprint (fn () => vtos pt ^ ", ")
              end);
 
-            print "\n"
+            dprint (fn () => "\n")
         end
           val () = oapp Contact.get_next onecontact (D.W.get_contact_list world)
 
@@ -959,20 +971,20 @@ void b2World::DestroyJoint(b2Joint* j)
             val name2 = (* getfixturename (Contact.get_fixture_b c) *) "name2"
             (* val rtos = Real.fmt (StringCvt.FIX (SOME 2)) *)
         in
-            print ("Post-collide " ^ name1 ^ "-" ^ name2 ^ " Contact! ");
+            dprint (fn () => "Post-collide " ^ name1 ^ "-" ^ name2 ^ " Contact! ");
             if Contact.is_touching c
-            then print "touching "
+            then dprint (fn () => "touching ")
             else ();
-            print (Int.toString point_count ^ " points: ");
+            dprint (fn () => itos point_count ^ " points: ");
             for 0 (point_count - 1) 
             (fn i =>
              let val pt = Array.sub(#points world_manifold, i)
                  (* val (x, y) = vectoscreen pt *)
              in
-                 print (vtos pt ^ ", ")
+                 dprint (fn () => vtos pt ^ ", ")
              end);
 
-            print "\n"
+            dprint (fn () => "\n")
         end
           val () = oapp Contact.get_next onecontact2 (D.W.get_contact_list world)
 
@@ -987,8 +999,9 @@ void b2World::DestroyJoint(b2Joint* j)
           val () = oapp D.B.get_next 
               (fn b =>
                let in
-                   print ("Postsolve sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
-                          "             xf: " ^ xftos (D.B.get_xf b) ^ "\n")
+                   dprint (fn () =>
+                           "Postsolve sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
+                           "             xf: " ^ xftos (D.B.get_xf b) ^ "\n")
                end)
               (get_body_list world)
           (* XXX end just debug *)
@@ -1003,8 +1016,9 @@ void b2World::DestroyJoint(b2Joint* j)
           val () = oapp D.B.get_next 
               (fn b =>
                let in
-                   print ("Posttoi sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
-                          "           xf: " ^ xftos (D.B.get_xf b) ^ "\n")
+                   dprint (fn () =>
+                           "Posttoi sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
+                           "           xf: " ^ xftos (D.B.get_xf b) ^ "\n")
                end)
               (get_body_list world)
           (* XXX end just debug *)

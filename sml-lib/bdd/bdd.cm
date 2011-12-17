@@ -40,6 +40,11 @@ group is
   time-of-impact-sig.sml
   time-of-impact.sml
 
+  dynamics-types.sml
+
+  cells-sig.sml
+  cells.sml
+
   dynamics.sml
 
   contact-sig.sml

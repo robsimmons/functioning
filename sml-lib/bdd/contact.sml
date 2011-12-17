@@ -19,8 +19,10 @@ struct
   infix 7 *: *% +*: +*+ #*% @*:
 
   structure D = BDDDynamics
+(*
   datatype bodycell = datatype D.bodycell
   datatype body_type = datatype D.body_type
+*)
   structure DT = BDDDynamicsTypes(Arg)
   open DT
   type filter = D.filter
@@ -51,7 +53,7 @@ struct
      fields are flattened into world. *)
   fun update (c : contact, world : world) =
     let
-      val () = print "-> Update contact.\n"
+      val () = dprint (fn () => "-> Update contact.\n")
 
       val old_manifold = get_manifold c
       (* Re-enable this contact. *)
@@ -71,6 +73,7 @@ struct
       val xf_a = D.B.get_xf body_a
       val xf_b = D.B.get_xf body_b
     in
+      dprint (fn () => "  xfa " ^ xftos xf_a ^ " xfb " ^ xftos xf_b ^ "\n");
       (* Is this contact a sensor? *)
       if sensor
       then
@@ -137,7 +140,9 @@ struct
 
       if not sensor andalso !touching
       then D.W.get_pre_solve world (c, old_manifold)
-      else ()
+      else ();
+
+      dprint (fn () => "<- done updating contact\n")
     end
 
 end

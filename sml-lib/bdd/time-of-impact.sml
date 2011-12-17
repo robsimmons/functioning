@@ -24,6 +24,11 @@ struct
     | STouching
     | SSeparated
 
+  fun stos SFailed = "failed"
+    | stos SOverlapped = "overlapped"
+    | stos STouching = "touching"
+    | stos SSeparated = "separated"
+
   datatype separation_type = TPoints | TFaceA | TFaceB
   type separation_function = 
       { proxya : distance_proxy,
@@ -34,9 +39,15 @@ struct
         local_point : vec2,
         axis : vec2 }
 
-  (* Port note: Original separates construction and initialization. Initialization
-     returns the magnitude of the axis, but it is unused. Removed here. *)
-  fun separation_function (cache, proxya, sweepa, proxyb, sweepb) : separation_function =
+  fun typtos TPoints = "points"
+    | typtos TFaceA = "facea"
+    | typtos TFaceB = "faceb"
+
+  (* Port note: Original separates construction and initialization. 
+     Initialization returns the magnitude of the axis, but it is unused. 
+     Removed here. *)
+  fun separation_function (cache, proxya, sweepa, proxyb, sweepb) :
+      separation_function =
     let
         val count = !(#count cache)
         (* PERF assertion *)
@@ -64,7 +75,8 @@ struct
                   proxyb = proxyb,
                   sweepa = sweepa,
                   sweepb = sweepb,
-                  (* PERF uninitialized in original; consider datatype taking args *)
+                  (* PERF uninitialized in original; consider datatype taking 
+                     args *)
                   local_point = vec2 (0.0, 0.0),
                   axis = axis }
             end
@@ -206,6 +218,8 @@ struct
         val xfa : transform = sweep_transform (sweepa, t)
         val xfb : transform = sweep_transform (sweepb, t)
     in
+        dprint (fn () => "    ev: xfa " ^ xftos xfa ^ " xfb " ^ xftos xfb ^ 
+               " t " ^ rtos t ^ " typ " ^ typtos typ ^ "\n");
         case typ of
             TPoints =>
               let
@@ -248,8 +262,13 @@ struct
                   *)
                   val local_point_a : vec2 = #vertex proxya indexa
                   val point_a : vec2 = xfa @*: local_point_a
+
+                  val sep = dot2(point_a :-: point_b, normal)
               in
-                  dot2(point_a :-: point_b, normal)
+                  dprint (fn () =>
+                          "    pa " ^ vtos point_a ^ " pb " ^ vtos point_b ^ " n " ^
+                          vtos normal ^ " sep " ^ rtos sep ^ "\n");
+                  sep
               end
     end
 
@@ -269,8 +288,8 @@ struct
 
       (* Large rotations can make the root finder fail, so we normalize the
          sweep angles. *)
-      val () = print ("TOI sweepa: " ^ sweeptos sweepa ^ "\n")
-      val () = print ("TOI sweepb: " ^ sweeptos sweepb ^ "\n")
+      val () = dprint (fn () => "TOI sweepa: " ^ sweeptos sweepa ^ "\n")
+      val () = dprint (fn () => "TOI sweepb: " ^ sweeptos sweepb ^ "\n")
       val () = sweep_normalize sweepa
       val () = sweep_normalize sweepb
 
@@ -295,10 +314,11 @@ struct
          This loop terminates when an axis is repeated (no progress is made). *)
       fun outer_loop iter =
         let
-            val () = print ("sa: " ^ sweeptos sweepa ^ " time " ^ rtos (!t1) ^ "\n")
+            val () = dprint (fn () => "outer loop #" ^ itos iter ^ "\n")
+            val () = dprint (fn () => "sa: " ^ sweeptos sweepa ^ " time " ^ rtos (!t1) ^ "\n")
             val xfa : transform = sweep_transform (sweepa, !t1)
             val xfb : transform = sweep_transform (sweepb, !t1)
-            val () = print ("xfa: " ^ xftos xfa ^ "\n")
+            val () = dprint (fn () => "xfa: " ^ xftos xfa ^ "\n")
 
             (* FIXME HERE tom: I think that xfa and xfb have diverged, specifically
                the rotations. *)
@@ -308,12 +328,13 @@ struct
             val { distance, ... } = 
                 BDDDistance.distance (distance_input (xfa, xfb), cache)
         in
-            print ("  toi distance: " ^ rtos distance ^ "\n");
+            dprint (fn () => "  toi distance: " ^ rtos distance ^ " targ " ^ rtos target ^ " tol " ^
+                    rtos tolerance ^ "\n");
             (* If the shapes are overlapped, we give up on continuous collision. *)
             if distance < 0.0
             then (SOverlapped, 0.0) (* Failure! *)
             else if distance < target + tolerance
-            then (print "  toi initial touching\n";
+            then (dprint (fn () => "  toi initial touching\n");
                   (STouching, !t1) (* Victory! *))
             else
             let
@@ -336,6 +357,10 @@ struct
                       val (s2 : real, indexa : int, indexb : int) = 
                           find_min_separation (fcn, !t2)
                   in
+                      dprint (fn () => "  inner_loop #" ^ itos push_back_iter ^ 
+                              ": t2 " ^ rtos (!t2) ^ " s2 " ^ rtos s2 ^
+                              " a " ^ itos indexa ^ " b " ^ itos indexb ^ "\n");
+
                       (* Is the final configuration separated? *)
                       if s2 > target + tolerance
                       then SOME (SSeparated, tmax) (* Victory! *)
@@ -348,6 +373,7 @@ struct
                       let
                           (* Compute the initial separation of the witness points. *)
                           val s1 : real = evaluate (fcn, indexa, indexb, !t1)
+                          val () = dprint (fn () => "    evaluated: " ^ rtos s1 ^ "\n");
                       in
                           (* Check for initial overlap. This might happen if the root finder
                              runs out of iterations. *)
@@ -356,13 +382,13 @@ struct
                           (* Check for touching *)
                           else if s1 <= target + tolerance
                           (* Victory! t1 should hold the TOI (could be 0.0). *)
-                          then (print ("  toi touching at " ^ rtos (!t1) ^ "\n");
+                          then (dprint (fn () => "  toi touching at " ^ rtos (!t1) ^ "\n");
                                 SOME (STouching, !t1))
                           else
                           let
                               (* Compute 1D root of: f(x) - target = 0 *)
                               fun root_loop (s1, s2, a1, a2, root_iters) =
-                                  if root_iters > 50
+                                  if root_iters < 50
                                   then 
                                   let
                                       (* Use a mix of the secant rule and bisection. *)
@@ -372,6 +398,11 @@ struct
                                               1 => a1 + (target - s1) * (a2 - a1) / (s2 - s1)
                                               (* Bisection to guarantee progress *)
                                             | _ => 0.5 * (a1 + a2)
+                                      val () = dprint (fn () => "      rl #" ^ itos root_iters ^
+                                                      " s1 " ^ rtos s1 ^ " s2 " ^
+                                                      rtos s2 ^ " a1 " ^ rtos a1 ^ 
+                                                      " a2 " ^ rtos a2 ^ " t " ^
+                                                      rtos t ^ "\n");
                                       val s : real = evaluate (fcn, indexa, indexb, t)
                                   in
                                       if Real.abs (s - target) < tolerance
@@ -406,7 +437,10 @@ struct
                   | SOME ret => ret
             end
         end
+
+      val (s, r) = outer_loop 0
     in
-        outer_loop 0
+      dprint (fn () => "  toi returns: " ^ stos s ^ ": " ^ rtos r ^ "\n");
+      (s, r)
     end
 end

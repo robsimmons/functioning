@@ -25,8 +25,8 @@ struct
 
   (* Port note: contacts arrive (in a list) in the reverse order that
      they would appear in the array in Box2D. *)
-  fun solver (contacts : ('b, 'f, 'j) BDDDynamics.contact list,
-              body : ('b, 'f, 'j) BDDDynamics.body) : ('b, 'f, 'j) solver =
+  fun solver (contacts : ('b, 'f, 'j) D.contact list,
+              body : ('b, 'f, 'j) D.body) : ('b, 'f, 'j) solver =
      let
         (* PERF. Probably not necessary. *)
         val contacts = rev contacts
@@ -62,6 +62,7 @@ struct
                                 (Array.sub(#points manifold, j))) }
             end
      in
+        dprint (fn () => "* toi initialize " ^ itos (length contacts) ^ "\n");
         { constraints = Array.fromList (map onecontact contacts),
           toi_body = body }
      end
@@ -135,6 +136,8 @@ struct
      Obviously it would be better to factor out this common routine. *)
   fun solve (solver : ('b, 'f, 'j) solver, baumgarte : real) : bool =
     let
+      val () = dprint (fn () => "* toi solve " ^ 
+                       itos (Array.length (#constraints solver)) ^ "\n")
       val min_separation = ref 0.0
       fun oneconstraint (c : ('b, 'f, 'j) constraint) =
         let
@@ -143,7 +146,7 @@ struct
 
             (* Only the TOI body should move. *)
             val (mass_a, mass_b) =
-                if body_a = #toi_body solver
+                if D.B.eq (body_a, #toi_body solver)
                 then (D.B.get_mass body_a, 0.0)
                 else (0.0, D.B.get_mass body_b)
 
@@ -154,6 +157,8 @@ struct
 
             (* Solve normal constraints. *)
         in
+            dprint (fn () => "  ma " ^ rtos mass_a ^ " mb " ^ rtos mass_b ^
+                    " pc " ^ itos (#point_count c) ^ "\n");
             for 0 (#point_count c - 1)
             (fn j =>
              let
@@ -184,18 +189,33 @@ struct
                  val impulse : real = if k > 0.0 then ~ capital_c / k else 0.0
                  val p : vec2 = impulse *: normal
 
+(*
                  fun update_sweep (body, inv_mass, inv_i, r) =
-                   let
-                     val sweep : sweep = D.B.get_sweep body
+                   let val sweep : sweep = D.B.get_sweep body
                    in
                      sweep_set_a (sweep, sweepa sweep - 
                                   (inv_i * cross2vv (r, p)));
                      sweep_set_c (sweep, sweepc sweep :-: (inv_mass *: p));
                      D.B.synchronize_transform body
                    end
+*)
+
+                 val sweep_a = D.B.get_sweep body_a
+                 val () = sweep_set_c (sweep_a, sweepc sweep_a :-: inv_mass_a *: p);
+                 val () = sweep_set_a (sweep_a, sweepa sweep_a - inv_i_a * cross2vv (r_a, p))
+                 val () = D.B.synchronize_transform body_a
+
+                 val sweep_b = D.B.get_sweep body_b
+                 val () = sweep_set_c (sweep_b, sweepc sweep_b :+: inv_mass_b *: p);
+                 val () = sweep_set_a (sweep_b, sweepa sweep_b + inv_i_b * cross2vv (r_b, p))
+                 val () = D.B.synchronize_transform body_b
+
              in
+                 (*
                  update_sweep (body_a, inv_mass_a, inv_i_a, r_a);
                  update_sweep (body_b, inv_mass_b, inv_i_b, r_b)
+                 *)
+                 ()
              end)
         end
     in

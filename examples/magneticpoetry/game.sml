@@ -82,7 +82,7 @@ struct
                  Real.round (meter_height * (Real.fromInt pixelsPerMeter))
           val body = B.World.create_body
                          (world,
-                          {typ = B.Body.Dynamic,
+                          {typ = B.Body.Static,
                            position = p,
                            angle = 0.0,
                            linear_velocity = zero,
@@ -117,7 +117,7 @@ struct
                  Real.round (meter_width * (Real.fromInt pixelsPerMeter))
           val body = B.World.create_body
                          (world,
-                          {typ = B.Body.Dynamic,
+                          {typ = B.Body.Static,
                            position = p,
                            angle = 0.0,
                            linear_velocity = zero,

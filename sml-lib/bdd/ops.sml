@@ -79,7 +79,8 @@ struct
     fun aabbtos { lowerbound, upperbound } =
         "(low: " ^ vtos lowerbound ^ " up: " ^ vtos upperbound ^ ")"
 
-    val print = ignore
+    fun dprint f = print (f ())
+    val dprint = ignore
   end
 
 end

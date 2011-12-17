@@ -7,8 +7,8 @@ struct
 
   exception BDDMath of string
 
-    (* XXX *)
-    fun rtos r = Real.fmt (StringCvt.FIX (SOME 4)) r
+  (* XXX *)
+  fun rtos r = Real.fmt (StringCvt.FIX (SOME 4)) r
 
   (* This function is used to ensure that a floating point number is
      not a NaN or infinity. *)
@@ -36,6 +36,26 @@ struct
   val sqrt = Math.sqrt
   val atan2 = Math.atan2
   val abs = Real.abs
+
+  (* Doesn't seem to work. Triggers assertions. *)
+  (*
+  local
+      val B = 1.273239545 (* 4/pi *)
+      val C = ~0.405284734569 (* -4/(pi^2) *)
+      val P = 0.225 (* empirical; weighted fraction
+                       between the parabola and
+                       its square *)
+  in
+      fun fastsin (x : real) =
+        let 
+            val y = B * x + C * x * abs x
+            (* Adds precision *)
+            val y = P * (y * abs y - y) + y
+        in
+            y
+        end
+  end
+*)
 
   (* A 2D column vector. *)
   type vec2 = { x : real ref, y : real ref }
@@ -145,7 +165,6 @@ struct
       let val c = Math.cos angle
           val s = Math.sin angle
       in
-          (* print ("c: " ^ rtos c ^ " s: " ^ rtos s ^ "\n"); *)
           (* FUN BUG "right": if this is (c, s, ~s, c), then polygons stand
              themselves up instead of falling over (angular impulses
              are reversed). *)
@@ -162,7 +181,6 @@ struct
       let val c = Math.cos angle
           val s = Math.sin angle
       in
-          (* print ("c: " ^ rtos c ^ " s: " ^ rtos s ^ "\n");*)
           vec2set(col1, c, 
                         s);
                              vec2set(col2, ~s, 
@@ -502,12 +520,14 @@ struct
       let 
           val twopi = 2.0 * BDDSettings.pi
           val d = twopi * real (Real.floor(!a0 / twopi))
-          val () = print ("sweep_normalize: " ^ rtos (!a0) ^
-                          " a0 / 2pi " ^ rtos (!a0 / twopi) ^
-                          " floor " ^ Int.toString (Real.floor(!a0 / twopi)) ^
-                          " d " ^ rtos d ^ 
-                          " res: " ^ rtos (!a0 - d) ^ 
-                          " " ^ rtos (!a - d) ^ "\n")
+(*
+          val () = dprint (fn () => "sweep_normalize: " ^ rtos (!a0) ^
+                           " a0 / 2pi " ^ rtos (!a0 / twopi) ^
+                           " floor " ^ Int.toString (Real.floor(!a0 / twopi)) ^
+                           " d " ^ rtos d ^ 
+                           " res: " ^ rtos (!a0 - d) ^ 
+                           " " ^ rtos (!a - d) ^ "\n")
+*)
       in
           a0 := !a0 - d;
           a := !a - d;
