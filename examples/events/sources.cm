@@ -2,6 +2,9 @@ Group is
 
 ../../functioning/sources.cm
 
+../../sdlml/sdlmix-sig.sml
+../../sdlml/sdlmix.sml
+
 graphics.sml
 game.sml
 main.sml

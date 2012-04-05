@@ -14,6 +14,8 @@ struct
   val height = 600
   val star = Graphics.redstar
   val robot = Graphics.robot
+  val SOME music = SDLMusic.load "media/audio/pf.mp3"
+  val _ = SDLMusic.loop music
   
   (* Initialization *)
   val initstate =
@@ -56,6 +58,8 @@ struct
     | handle_event (SDL.E_KeyUp {sym = k}) s = keyUp k s
     | handle_event SDL.E_Quit s = NONE
     | handle_event _ s = SOME s
+
+  val ticks_per_second = 60.0
 
   fun tick {key = k, things = locs} =
     let

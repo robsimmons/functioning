@@ -61,7 +61,7 @@ struct
                                         height = pixel_height},
                            inertia_scale = 1.0
                          })
-          val density = mass / meter_width * meter_height
+          val density = mass / (meter_width * meter_height)
           val fixture = B.Body.create_fixture_default
                             (body,
                              BDDShape.Polygon
@@ -223,6 +223,8 @@ struct
     SDL.flip screen
   )
 
+  val ticks_per_second = 60.0
+
   val lasttime = ref (Time.now ())
 
   fun dophysics () = 
@@ -230,7 +232,7 @@ struct
           val diff = Time.-(now, !lasttime)
           val () = lasttime := now
           val millis = IntInf.toString (Time.toMilliseconds (diff))
-          val () = B.World.step (world, Time.toReal diff,
+          val () = B.World.step (world, 1.0 / ticks_per_second,
                                  10, 10)
       in () end
       
@@ -268,7 +270,6 @@ struct
   fun render screen () =
   (
     SDL.clearsurface (screen, SDL.color (0w0,0w0,0w0,0w0));
-    dophysics ();
     drawbodies screen (B.World.get_body_list world);
     SDL.flip screen
   )
@@ -283,7 +284,7 @@ struct
     | handle_event _ s = SOME s
 
 
-  fun tick s = SOME s
+  fun tick s = (dophysics (); SOME s)
 end
 
 structure Main =

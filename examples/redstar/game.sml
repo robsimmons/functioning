@@ -39,5 +39,7 @@ struct
 
   (* fun tick {xpos=x, ypos=y} = SOME {xpos=x+1, ypos=y} *)
   fun tick s = SOME s
+
+  val ticks_per_second = 60.0
 end
 
