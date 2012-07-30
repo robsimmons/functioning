@@ -14,8 +14,8 @@ struct
   val height = 600
   val star = Graphics.redstar
   val robot = Graphics.robot
-  val SOME music = SDLMusic.load "media/audio/pf.mp3"
-  val _ = SDLMusic.loop music
+(*  val SOME music = SDLMusic.load "media/audio/pf.mp3"
+  val _ = SDLMusic.loop music *)
   
   (* Initialization *)
   val initstate =
