@@ -1,6 +1,9 @@
 functor RunGame (Game : GAME) =
 struct
-  val screen = SDL.makescreen (Game.width, Game.height)
+  val screen =
+      if Game.use_gl
+      then SDL.makeglscreen (Game.width, Game.height)
+      else SDL.makescreen (Game.width, Game.height)
 
   val last_simulated_time = ref (Time.zeroTime)
 

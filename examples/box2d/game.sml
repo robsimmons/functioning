@@ -7,6 +7,7 @@ struct
   (* Constants *)
   val width = 800
   val height = 600
+  val use_gl = false
   val pixelsPerMeter = 20
   val meter_height = (Real.fromInt height /
                       Real.fromInt pixelsPerMeter)

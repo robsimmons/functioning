@@ -7,6 +7,7 @@ sig
   val width : int 
   val height : int
   val render : screen -> state -> unit
+  val use_gl : bool
   val handle_event : SDL.event -> state -> state option
 
   (* Take one step of game logic. Typically this is much cheaper than

@@ -12,6 +12,7 @@ struct
   (* Constant parameters *)
   val width = 800
   val height = 600
+  val use_gl = false
   val star = Graphics.redstar
   val robot = Graphics.robot
 (*  val SOME music = SDLMusic.load "media/audio/pf.mp3"

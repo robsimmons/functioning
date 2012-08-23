@@ -1020,6 +1020,9 @@ struct
     fun flip p = fl (!!p)
   end
 
+  val glflip = _import "SDL_GL_SwapBuffers" : unit -> unit ;
+
+
   local 
     val mkfscreen = _import "ml_makefullscreen" : int * int -> ptr ;
   in
@@ -1037,6 +1040,19 @@ struct
     val mkscreen = _import "ml_makescreen" : int * int -> ptr ;
   in
     fun makescreen (w, h) =
+      let
+        val p = mkscreen (w, h)
+      in
+        if p = null
+        then raise SDL "couldn't make screen"
+        else ref p
+      end
+  end
+
+  local 
+    val mkscreen = _import "ml_glmakescreen" : int * int -> ptr ;
+  in
+    fun makeglscreen (w, h) =
       let
         val p = mkscreen (w, h)
       in

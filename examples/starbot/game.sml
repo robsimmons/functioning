@@ -16,6 +16,7 @@ struct
   (* Constant parameters *)
   val width = 800
   val height = 600
+  val use_gl = false
   val dpos = 5
   val dpos_star = 1
   val star = Graphics.redstar

@@ -312,6 +312,7 @@ sig
 
   val makescreen : int * int -> surface
   val makefullscreen : int * int -> surface
+  val makeglscreen : int * int -> surface
 
   (* src: x, y, w, h   dst: x, y *)
   val blit : surface * int * int * int * int * surface * int * int -> unit
@@ -324,6 +325,7 @@ sig
   val sdlktos : sdlk -> string
 
   val flip : surface -> unit
+  val glflip : unit -> unit
 
   val getticks : unit -> Word32.word
   val delay : int -> unit

@@ -26,6 +26,8 @@ bin/sdlml.o: bin sdlml/sdlml.c
 bin/sdlmix.o: bin sdlml/sdlmix.c
 	gcc -O $(CPPFLAGS) -c sdlml/sdlmix.c -o bin/sdlmix.o
 
+
+
 .PHONY: game
 game: bin/sdlml.o bin/sdlmix.o bin/sdlmain.o
 	export MACOSX_DEPLOYMENT_TARGET=${VERSION_TARGET}

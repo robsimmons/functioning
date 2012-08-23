@@ -6,6 +6,7 @@ struct
 
   val width = 800
   val height = 600
+  val use_gl = false
 
   val initstate = {xpos = width div 2, ypos = height div 2}
   

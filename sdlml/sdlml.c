@@ -152,8 +152,6 @@ SDL_Surface * ml_makesurface(int w, int h, int alpha) {
 # endif
 }
 
-
-
 SDL_Surface * ml_makescreen(int w, int h) {
   /* Can't use HWSURFACE here, because not handling this SDL_BlitSurface
      case mentioned in the documentation:
@@ -214,6 +212,15 @@ SDL_Surface * ml_makefullscreen(int w, int h) {
 				       SDL_FULLSCREEN |
 				       SDL_DOUBLEBUF |
 				       SDL_HWSURFACE);
+  return ret;
+}
+
+SDL_Surface * ml_glmakescreen(int w, int h) {
+  SDL_Surface * ret = SDL_SetVideoMode(w, h, 32,
+				       SDL_SWSURFACE |
+                                       SDL_RESIZABLE | 
+                                       SDL_OPENGL |
+                                       SDL_GL_DOUBLEBUFFER);
   return ret;
 }
 
