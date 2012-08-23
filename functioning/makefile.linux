@@ -3,7 +3,7 @@ MAKE=make
 
 # You shouldn't have to edit anything below this line
 
-MLTON_FLAGS=-link-opt "-lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true'
+MLTON_FLAGS=-link-opt "-lGL -lGLU -lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true'
 
 # Static linking should look something like this.
 # ("sdl-config --static-libs" might help you.)
