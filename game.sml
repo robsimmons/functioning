@@ -7,6 +7,7 @@ struct
   (* Constants *)
   val width = 800
   val height = 600
+  val use_gl = false
   val star = Graphics.requireimage "media/graphics/redstar.png"
 
   (* Initialization *)
