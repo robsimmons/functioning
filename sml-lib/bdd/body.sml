@@ -302,7 +302,7 @@ struct
         (* Let the world know we have a new fixture. This will cause 
            new contacts to be created at the beginning of the next 
            time step. *)
-        D.W.set_flags (world, D.W.FLAG_NEW_FIXTURE);
+        D.W.set_flag (world, D.W.FLAG_NEW_FIXTURE);
 
         f
     end
