@@ -226,15 +226,9 @@ struct
 
   val ticks_per_second = 60.0
 
-  val lasttime = ref (Time.now ())
-
   fun dophysics () = 
-      let val now = Time.now ()
-          val diff = Time.-(now, !lasttime)
-          val () = lasttime := now
-          val millis = IntInf.toString (Time.toMilliseconds (diff))
-          val () = B.World.step (world, 1.0 / ticks_per_second,
-                                 10, 10)
+      let val timestep = 1.0 / ticks_per_second
+          val () = B.World.step (world, timestep, 10, 10)
       in () end
       
 
