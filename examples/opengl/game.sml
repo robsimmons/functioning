@@ -77,11 +77,17 @@ fun DrawPrim (_,[]) = glFlush ()
 (*          SDL.glflip(); *)
           let 
               val texture = glGenSingleTexture ()
+              val mode = case (SDL.get_bytes_per_pixel Graphics.robot,
+                               SDL.is_rgb Graphics.robot) of
+                             (4, true) => GL_RGBA
+                           | (4, false) => GL_BGRA
+                           | (_, true) => GL_RGB
+                           | (_, false) => GL_BGR
           in
               glBindTexture GL_TEXTURE_2D texture;
               glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_NEAREST;
               glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_NEAREST;
-              glTexImage2D GL_TEXTURE_2D 0 4 16 32 0 GL_BGRA GL_UNSIGNED_BYTE (SDL.getpixels Graphics.robot);
+              glTexImage2D GL_TEXTURE_2D 0 4 16 32 0 mode GL_UNSIGNED_BYTE (SDL.getpixels Graphics.robot);
               ()
           end
       )

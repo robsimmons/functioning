@@ -1288,6 +1288,14 @@ struct
  in fun getpixels s = gps (!!s)
  end
 
+ local val rgb = _import "ml_is_rgb" : ptr -> int;
+ in fun is_rgb s = if rgb (!!s) <> 0 then true else false
+ end
+
+ local val bytes = _import "ml_get_bytes_per_pixel" : ptr -> int;
+ in fun get_bytes_per_pixel s = bytes (!!s)
+ end
+
   (* for w in [0, 255] we get w/255 of c, (255 - w)/255 of cc *)
   fun colormixfrac8 (c : color, cc : color, w : Word8.word) =
       let

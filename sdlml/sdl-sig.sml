@@ -349,6 +349,8 @@ sig
   val getpixel  : surface * int * int -> color
 
   val getpixels : surface -> MLton.Pointer.t 
+  val is_rgb : surface -> bool
+  val get_bytes_per_pixel : surface -> int
 
   (* drawcircle (surf, x, y, radius, color)
      draws a circle (not filled)

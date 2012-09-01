@@ -397,6 +397,25 @@ void *ml_getpixels(SDL_Surface *surf) {
   return surf->pixels;
 }
 
+int ml_get_bytes_per_pixel(SDL_Surface *surf) {
+  return surf->format->BytesPerPixel;
+}
+
+int ml_is_rgb(SDL_Surface *surf) {
+  int i = 1;
+  char *p = (char *) &i;
+  if (p[0] == 1) {
+    //little endian
+    printf ("little endian\n");
+    return (surf->format->Rmask == 0xff);
+  } else {
+    //big endian
+    printf ("big endian\n");
+    return (surf->format->Rmask == 0xff0000);
+  }
+
+}
+
 void ml_fillrect(SDL_Surface *dst, int x, int y, int w, int h, int r, int g, int b) {
   Uint32 c = SDL_MapRGB(dst->format, r, g, b);
   SDL_Rect rect;
