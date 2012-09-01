@@ -58,7 +58,11 @@ fun DrawPrim (_,[]) = glFlush ()
 
   fun initscreen screen =
       (
-          glEnable(GL_TEXTURE_2D);
+
+       glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA;
+       glEnable GL_BLEND;
+
+       glEnable(GL_TEXTURE_2D);
 
           glClearColor 0.0 0.0 0.0 1.0;
           glClearDepth 1.0;
@@ -91,10 +95,18 @@ fun DrawPrim (_,[]) = glFlush ()
   fun render screen {starloc = L {xpos=sx, ypos=sy}, robotlocs = rs, key = key} =
   let in
    glClear(GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT);
-   glEnable GL_TEXTURE_2D;
    glLoadIdentity();
 
+      glDisable GL_TEXTURE_2D;
+   DrawPrim (GL_QUADS,
+             [
+              (RGB(0.9, 1.0, 0.0),
+               [(sx - 1.0, sy + 1.0, 1.0), (sx + 1.0, sy + 1.0,1.0)]),
+              (RGB(0.0,0.8,0.9),
+               [(sx + 1.0, sy - 1.0,1.0),( sx - 1.0, sy - 1.0,1.0)])
+              ]);
 
+   glEnable GL_TEXTURE_2D;
    glColor3f 1.0 1.0 1.0;
     glBegin(GL_QUADS);
         glTexCoord2i 0 1;
@@ -111,15 +123,6 @@ fun DrawPrim (_,[]) = glFlush ()
 
 
     glEnd();
-
-      glDisable GL_TEXTURE_2D;
-   DrawPrim (GL_QUADS,
-             [
-              (RGB(0.9, 1.0, 0.0),
-               [(sx - 1.0, sy + 1.0, 1.0), (sx + 1.0, sy + 1.0,1.0)]),
-              (RGB(0.0,0.8,0.9),
-               [(sx + 1.0, sy - 1.0,1.0),( sx - 1.0, sy - 1.0,1.0)])
-              ]);
    
 
 
