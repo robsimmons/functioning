@@ -59,6 +59,7 @@ fun DrawPrim (_,[]) = glFlush ()
   fun initscreen screen =
       (
           glEnable(GL_TEXTURE_2D);
+
           glClearColor 0.0 0.0 0.0 1.0;
           glClearDepth 1.0;
           glViewport 0 0 width height;
@@ -69,14 +70,14 @@ fun DrawPrim (_,[]) = glFlush ()
           glMatrixMode(GL_MODELVIEW);
 
           glLoadIdentity();
-          SDL.glflip();
+(*          SDL.glflip(); *)
           let 
               val texture = glGenSingleTexture ()
           in
               glBindTexture GL_TEXTURE_2D texture;
               glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR;
               glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR;
-              glTexImage2D GL_TEXTURE_2D 0 4 16 32 0 GL_RGBA GL_UNSIGNED_BYTE (SDL.getpixels Graphics.robot);
+              glTexImage2D GL_TEXTURE_2D 0 4 16 32 0 GL_BGRA GL_UNSIGNED_BYTE (SDL.getpixels Graphics.robot);
               ()
           end
       )
@@ -89,8 +90,12 @@ fun DrawPrim (_,[]) = glFlush ()
 
   fun render screen {starloc = L {xpos=sx, ypos=sy}, robotlocs = rs, key = key} =
   let in
-      glClear(GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT);
+   glClear(GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT);
+   glEnable GL_TEXTURE_2D;
    glLoadIdentity();
+
+
+   glColor3f 1.0 1.0 1.0;
     glBegin(GL_QUADS);
         glTexCoord2i 0 1;
         glVertex3f 0.0 0.0 0.0;
@@ -107,11 +112,12 @@ fun DrawPrim (_,[]) = glFlush ()
 
     glEnd();
 
+      glDisable GL_TEXTURE_2D;
    DrawPrim (GL_QUADS,
              [
               (RGB(0.9, 1.0, 0.0),
                [(sx - 1.0, sy + 1.0, 1.0), (sx + 1.0, sy + 1.0,1.0)]),
-              (RGB(0.0,0.7,0.7),
+              (RGB(0.0,0.8,0.9),
                [(sx + 1.0, sy - 1.0,1.0),( sx - 1.0, sy - 1.0,1.0)])
               ]);
    
