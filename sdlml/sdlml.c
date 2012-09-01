@@ -396,16 +396,7 @@ int ml_get_bytes_per_pixel(SDL_Surface *surf) {
 }
 
 int ml_is_rgb(SDL_Surface *surf) {
-  int i = 1;
-  char *p = (char *) &i;
-  if (p[0] == 1) {
-    //little endian
-    return (surf->format->Rmask == 0xff);
-  } else {
-    //big endian (is this necessary?)
-    return (surf->format->Rmask == 0xff0000);
-  }
-
+  return (surf->format->Rmask == rmask);
 }
 
 void ml_fillrect(SDL_Surface *dst, int x, int y, int w, int h, int r, int g, int b) {

@@ -1,4 +1,4 @@
-OUTPUT_EXE=game.exe
+OUTPUT_EXE=game
 MAKE=make
 
 # You shouldn't have to edit anything below this line
