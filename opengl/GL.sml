@@ -476,6 +476,9 @@ structure GL :> GL =
         val GL_LUMINANCE = 0wx1909
         val GL_LUMINANCE_ALPHA = 0wx190A
 
+        val GL_BGR = 0wx80E0
+        val GL_BGRA = 0wx80E1
+
         (* PixelType *)
         val GL_BITMAP = 0wx1A00
 

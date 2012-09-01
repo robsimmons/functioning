@@ -464,6 +464,9 @@ signature GL =
         val GL_LUMINANCE : GLenum
         val GL_LUMINANCE_ALPHA : GLenum
 
+        val GL_BGR : GLenum
+        val GL_BGRA : GLenum
+
         (* PixelType *)
         val GL_BITMAP : GLenum
 

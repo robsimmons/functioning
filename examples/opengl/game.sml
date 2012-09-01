@@ -57,25 +57,30 @@ fun DrawPrim (_,[]) = glFlush ()
       end
 
   fun initscreen screen =
-      let val texture = glGenSingleTexture ()
-      in
-          glBindTexture GL_TEXTURE_2D texture;
-          glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR;
-          glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR;
-          glTexImage2D GL_TEXTURE_2D 0 4 16 32 0 GL_RGBA GL_UNSIGNED_BYTE (SDL.getpixels Graphics.robot);
-
+      (
+          glEnable(GL_TEXTURE_2D);
           glClearColor 0.0 0.0 0.0 1.0;
           glClearDepth 1.0;
           glViewport 0 0 width height;
+          glClear GL_COLOR_BUFFER_BIT;
           glMatrixMode(GL_PROJECTION);
           glLoadIdentity();
           glOrtho ~5.0 5.0 ~5.0 5.0 5.0 ~5.0;
           glMatrixMode(GL_MODELVIEW);
-          glEnable(GL_TEXTURE_2D);
+
           glLoadIdentity();
           SDL.glflip();
-          ()
-      end
+          let 
+              val texture = glGenSingleTexture ()
+          in
+              glBindTexture GL_TEXTURE_2D texture;
+              glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR;
+              glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR;
+              glTexImage2D GL_TEXTURE_2D 0 4 16 32 0 GL_RGBA GL_UNSIGNED_BYTE (SDL.getpixels Graphics.robot);
+              ()
+          end
+      )
+
 
   fun move_right (L {xpos=x, ypos=y}) = L {xpos=x+dpos_star, ypos=y}
   fun move_left  (L {xpos=x, ypos=y}) = L {xpos=x-dpos_star, ypos=y}
@@ -91,13 +96,13 @@ fun DrawPrim (_,[]) = glFlush ()
         glVertex3f 0.0 0.0 0.0;
 
         glTexCoord2i 1 1;
-        glVertex3f 3.0 0.0 0.0;
+        glVertex3f 2.0 0.0 0.0;
 
         glTexCoord2i 1 0;
-         glVertex3f 3.0 3.0 0.0;
+         glVertex3f 2.0 4.0 0.0;
 
         glTexCoord2i 0 0;
-       glVertex3f 0.0 3.0 0.0;
+       glVertex3f 0.0 4.0 0.0;
 
 
     glEnd();

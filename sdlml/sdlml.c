@@ -4,6 +4,7 @@
     - Tom                   23 May 2010
 */
 #include <SDL.h>
+#include <stdio.h>
 
 #ifdef USE_DISPLAY_FORMAT
 # if USE_DISPLAY_FORMAT == 0
@@ -388,6 +389,11 @@ void ml_getpixela(SDL_Surface *surf, int x, int y,
 }
 
 void *ml_getpixels(SDL_Surface *surf) {
+  printf("nofcolors: %d\n", surf->format->BytesPerPixel);
+  printf("Rmask: %x\n", surf->format->Rmask);
+  printf("Gmask: %x\n", surf->format->Gmask);
+  printf("Bmask: %x\n", surf->format->Bmask);
+  printf("Amask: %x\n", surf->format->Amask);
   return surf->pixels;
 }
 
