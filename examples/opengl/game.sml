@@ -50,27 +50,32 @@ fun DrawPrim (_,[]) = glFlush ()
 
   val time = ref 0  (* Imperatively updated loop counter *)
 
+  fun glGenSingleTexture () = 
+      let val arr = Array.array (1, 0)
+          val () = glGenTextures 1 arr
+      in Array.sub (arr, 0)
+      end
+
   fun initscreen screen =
-  (
-   glClearColor 0.0 0.0 0.0 1.0;
-   glClearDepth 1.0;
- 
-   glViewport 0 0 width height;
- 
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
- 
-   glOrtho ~5.0 5.0 ~5.0 5.0 5.0 ~5.0;
- 
-   glMatrixMode(GL_MODELVIEW);
+      let val texture = glGenSingleTexture ()
+      in
+          glBindTexture GL_TEXTURE_2D texture;
+          glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_LINEAR;
+          glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_LINEAR;
+          glTexImage2D GL_TEXTURE_2D 0 4 16 32 0 GL_RGBA GL_UNSIGNED_BYTE (SDL.getpixels Graphics.robot);
 
-   glEnable(GL_TEXTURE_2D);
- 
-    glLoadIdentity();
-
-   SDL.glflip();
-   ()
-  )
+          glClearColor 0.0 0.0 0.0 1.0;
+          glClearDepth 1.0;
+          glViewport 0 0 width height;
+          glMatrixMode(GL_PROJECTION);
+          glLoadIdentity();
+          glOrtho ~5.0 5.0 ~5.0 5.0 5.0 ~5.0;
+          glMatrixMode(GL_MODELVIEW);
+          glEnable(GL_TEXTURE_2D);
+          glLoadIdentity();
+          SDL.glflip();
+          ()
+      end
 
   fun move_right (L {xpos=x, ypos=y}) = L {xpos=x+dpos_star, ypos=y}
   fun move_left  (L {xpos=x, ypos=y}) = L {xpos=x-dpos_star, ypos=y}
@@ -82,14 +87,19 @@ fun DrawPrim (_,[]) = glFlush ()
       glClear(GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT);
    glLoadIdentity();
     glBegin(GL_QUADS);
-        glColor3f 1.0 0.0 0.0;
+        glTexCoord2i 0 1;
         glVertex3f 0.0 0.0 0.0;
-        glColor3f 1.0 1.0 0.0; 
-        glVertex3f 10.0 0.0 0.0;
-        glColor3f 1.0 0.0 1.0;
-       glVertex3f 10.0 20.0 0.0;
-        glColor3f 1.0 1.0 1.0;
-      glVertex3f 0.0 10.0 0.0;
+
+        glTexCoord2i 1 1;
+        glVertex3f 3.0 0.0 0.0;
+
+        glTexCoord2i 1 0;
+         glVertex3f 3.0 3.0 0.0;
+
+        glTexCoord2i 0 0;
+       glVertex3f 0.0 3.0 0.0;
+
+
     glEnd();
 
    DrawPrim (GL_QUADS,

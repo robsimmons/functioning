@@ -726,17 +726,20 @@ structure GL :> GL =
         val c_glBegin = _import "glBegin" stdcall: GLenum -> unit;
         fun glBegin (a:GLenum)= c_glBegin (a): unit;
 
+        val c_glBindTexture = _import "glBindTexture" stdcall: GLenum * int -> unit;
+        fun glBindTexture target texture = c_glBindTexture (target, texture) : unit;
+
         val c_glBitmap = _import "glBitmap" stdcall: int * int * GLreal * GLreal * GLreal * GLreal * Word8Vector.vector -> unit;
         fun glBitmap (a:int) (b:int) (c:GLreal) (d:GLreal) (e:GLreal) (f:GLreal) (g:Word8Vector.vector) = c_glBitmap (a,b,c,d,e,f,g) :unit;
-
-        val c_glEnd = _import "glEnd" stdcall: unit -> unit;
-        fun glEnd ()= c_glEnd (): unit;
 
         val c_glBlendFunc = _import "glBlendFunc" stdcall: GLenum * GLenum -> unit;
         fun glBlendFunc (a:GLenum) (b:GLenum) = c_glBlendFunc (a,b) :unit
 
         val c_glCallList = _import "glCallList" stdcall: int -> unit;
         fun glCallList (a:int) = c_glCallList (a): unit;
+
+        val c_glClear = _import "glClear" stdcall: GLenum -> unit;
+        fun glClear (a:GLenum)= c_glClear (a): unit;
 
         val c_glClearColor = _import "glClearColor" stdcall:
                                GLreal * GLreal * GLreal * GLreal -> unit;
@@ -782,23 +785,8 @@ structure GL :> GL =
         val c_glEnable = _import "glEnable" stdcall: GLenum -> unit;
         fun glEnable (a:GLenum)= c_glEnable (a): unit;
 
-        val c_glRasterPos2i = _import "glRasterPos2i" stdcall: int * int -> unit;
-        fun glRasterPos2i (a:int) (b:int)
-          = c_glRasterPos2i (a,b) : unit
-
-        val c_glRasterPos2f = _import "glRasterPos2f" stdcall: GLreal * GLreal -> unit;
-        fun glRasterPos2f (a:GLreal) (b:GLreal)
-          = c_glRasterPos2f (a,b) : unit
-
-        val c_glRasterPos2d = _import "glRasterPos2d" stdcall: GLdouble * GLdouble -> unit;
-        fun glRasterPos2d (a:GLdouble) (b:GLdouble)
-          = c_glRasterPos2d (a,b) : unit
-
-        val c_glShadeModel = _import "glShadeModel" stdcall: GLenum -> unit;
-        fun glShadeModel (a:GLenum)= c_glShadeModel (a): unit;
-
-        val c_glClear = _import "glClear" stdcall: GLenum -> unit;
-        fun glClear (a:GLenum)= c_glClear (a): unit;
+        val c_glEnd = _import "glEnd" stdcall: unit -> unit;
+        fun glEnd ()= c_glEnd (): unit;
 
         val c_glEndList = _import "glEndList" stdcall: unit -> unit;
         fun glEndList () = c_glEndList (): unit;
@@ -811,6 +799,9 @@ structure GL :> GL =
 
         val c_glFrontFace = _import "glFrontFace" stdcall: GLenum -> unit;
         fun glFrontFace (a:GLenum)= c_glFrontFace (a): unit;
+
+        val c_glGenTextures = _import "glGenTextures" stdcall: int * (int Array.array) -> unit;
+        fun glGenTextures (n) (t) = c_glGenTextures (n, t): unit;
 
         val c_glLightfv = _import "glLightfv" stdcall: GLenum * GLenum * GLreal array -> unit;
         fun glLightfv (a:GLenum) (c:GLenum) (b:realrgbacolour) =
@@ -848,20 +839,53 @@ structure GL :> GL =
         val c_glPixelTransferi = _import "glPixelTransferi" stdcall: GLenum * int -> unit;
         fun glPixelTransferi (a:GLenum) (b:int) = c_glPixelTransferi (a,b):unit;
 
-        val c_glPushMatrix = _import "glPushMatrix" stdcall: unit -> unit;
-        fun glPushMatrix () = c_glPushMatrix (): unit;
-
         val c_glPopAttrib = _import "glPopAttrib" stdcall: unit -> unit;
         fun glPopAttrib () = c_glPopAttrib (): unit;
-
-        val c_glPushAttrib = _import "glPushAttrib" stdcall: GLenum -> unit;
-        fun glPushAttrib (a:GLenum)= c_glPushAttrib (a): unit;
 
         val c_glPolygonMode = _import "glPolygonMode" stdcall: GLenum * GLenum -> unit;
         fun glPolygonMode (a:GLenum) (b:GLenum) = c_glPolygonMode (a,b) :unit
 
         val c_glPopMatrix = _import "glPopMatrix" stdcall: unit -> unit;
         fun glPopMatrix () = c_glPopMatrix (): unit;
+
+        val c_glPushAttrib = _import "glPushAttrib" stdcall: GLenum -> unit;
+        fun glPushAttrib (a:GLenum)= c_glPushAttrib (a): unit;
+
+        val c_glPushMatrix = _import "glPushMatrix" stdcall: unit -> unit;
+        fun glPushMatrix () = c_glPushMatrix (): unit;
+
+        val c_glRasterPos2i = _import "glRasterPos2i" stdcall: int * int -> unit;
+        fun glRasterPos2i (a:int) (b:int)
+          = c_glRasterPos2i (a,b) : unit
+
+        val c_glRasterPos2f = _import "glRasterPos2f" stdcall: GLreal * GLreal -> unit;
+        fun glRasterPos2f (a:GLreal) (b:GLreal)
+          = c_glRasterPos2f (a,b) : unit
+
+        val c_glRasterPos2d = _import "glRasterPos2d" stdcall: GLdouble * GLdouble -> unit;
+        fun glRasterPos2d (a:GLdouble) (b:GLdouble)
+          = c_glRasterPos2d (a,b) : unit
+
+        val c_glRotated = _import "glRotated" stdcall: GLdouble * GLdouble * GLdouble * GLdouble -> unit;
+        fun glRotated (a:GLdouble) (b:GLdouble) (c:GLdouble) (d:GLdouble)
+          = c_glRotated (a,b,c,d) : unit
+
+        val c_glRotatef = _import "glRotatef" stdcall: GLreal * GLreal * GLreal * GLreal -> unit;
+        fun glRotatef (a:GLreal) (b:GLreal) (c:GLreal) (d:GLreal)
+          = c_glRotatef (a,b,c,d) : unit
+
+        val c_glShadeModel = _import "glShadeModel" stdcall: GLenum -> unit;
+        fun glShadeModel (a:GLenum)= c_glShadeModel (a): unit;
+
+        val c_glTexCoord2i = _import "glTexCoord2i" stdcall: int * int -> unit;
+        fun glTexCoord2i s t = c_glTexCoord2i (s, t) : unit;
+
+        val c_glTexImage2D = _import "glTexImage2D" stdcall: GLenum * int * int * int * int * int * GLenum * GLenum * MLton.Pointer.t -> unit;
+        fun glTexImage2D target level internalFormat width height border format typ data =
+            c_glTexImage2D (target, level, internalFormat, width, height, border, format, typ, data) : unit;
+
+        val c_glTexParameteri = _import "glTexParameteri" stdcall: GLenum * GLenum * GLenum -> unit;
+        fun glTexParameteri target pname param = c_glTexParameteri (target, pname, param) : unit;
 
         val c_glTranslated = _import "glTranslated" stdcall: GLdouble * GLdouble * GLdouble -> unit;
         fun glTranslated (a:GLdouble) (b:GLdouble) (c:GLdouble)
@@ -870,17 +894,6 @@ structure GL :> GL =
         val c_glTranslatef = _import "glTranslatef" stdcall: GLreal * GLreal * GLreal -> unit;
         fun glTranslatef (a:GLreal) (b:GLreal) (c:GLreal)
           = c_glTranslatef (a,b,c) : unit
-
-        val c_glViewport = _import "glViewport" stdcall: int * int * int * int -> unit;
-        fun glViewport (a:int) (b:int) (c:int) (d:int) = c_glViewport (a,b,c,d) : unit
-
-        val c_glRotatef = _import "glRotatef" stdcall: GLreal * GLreal * GLreal * GLreal -> unit;
-        fun glRotatef (a:GLreal) (b:GLreal) (c:GLreal) (d:GLreal)
-          = c_glRotatef (a,b,c,d) : unit
-
-        val c_glRotated = _import "glRotated" stdcall: GLdouble * GLdouble * GLdouble * GLdouble -> unit;
-        fun glRotated (a:GLdouble) (b:GLdouble) (c:GLdouble) (d:GLdouble)
-          = c_glRotated (a,b,c,d) : unit
 
         val c_glVertex2f = _import "glVertex2f" stdcall: GLreal * GLreal -> unit;
         fun glVertex2f (a:GLreal) (b:GLreal)
@@ -897,4 +910,8 @@ structure GL :> GL =
         val c_glVertex3f = _import "glVertex3f" stdcall: GLreal * GLreal * GLreal -> unit;
         fun glVertex3f (a:GLreal) (b:GLreal) (c:GLreal)
           = c_glVertex3f (a,b,c) : unit
+
+        val c_glViewport = _import "glViewport" stdcall: int * int * int * int -> unit;
+        fun glViewport (a:int) (b:int) (c:int) (d:int) = c_glViewport (a,b,c,d) : unit
+
     end

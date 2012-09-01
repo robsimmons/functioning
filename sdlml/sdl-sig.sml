@@ -348,6 +348,8 @@ sig
   val clippixel : surface * int * int * color -> unit
   val getpixel  : surface * int * int -> color
 
+  val getpixels : surface -> MLton.Pointer.t 
+
   (* drawcircle (surf, x, y, radius, color)
      draws a circle (not filled)
      *)

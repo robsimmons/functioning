@@ -1284,6 +1284,10 @@ struct
           end
   end
 
+ local val gps = _import "ml_getpixels" : ptr -> ptr;
+ in fun getpixels s = gps (!!s)
+ end
+
   (* for w in [0, 255] we get w/255 of c, (255 - w)/255 of cc *)
   fun colormixfrac8 (c : color, cc : color, w : Word8.word) =
       let

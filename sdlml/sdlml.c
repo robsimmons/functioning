@@ -387,6 +387,10 @@ void ml_getpixela(SDL_Surface *surf, int x, int y,
   }
 }
 
+void *ml_getpixels(SDL_Surface *surf) {
+  return surf->pixels;
+}
+
 void ml_fillrect(SDL_Surface *dst, int x, int y, int w, int h, int r, int g, int b) {
   Uint32 c = SDL_MapRGB(dst->format, r, g, b);
   SDL_Rect rect;

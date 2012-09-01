@@ -712,6 +712,9 @@ signature GL =
         val c_glBegin : GLenum -> unit
         val glBegin : GLenum -> unit
 
+        val c_glBindTexture : GLenum * int -> unit
+        val glBindTexture : GLenum -> int -> unit
+
         val c_glBitmap : int * int * GLreal * GLreal * GLreal * GLreal * Word8Vector.vector -> unit
         val glBitmap : int -> int -> GLreal -> GLreal -> GLreal -> GLreal -> Word8Vector.vector -> unit
 
@@ -720,6 +723,9 @@ signature GL =
 
         val c_glCallList : int -> unit
         val glCallList : int -> unit
+
+        val c_glClear: GLenum -> unit
+        val glClear: GLenum -> unit
 
         val c_glClearColor: GLreal * GLreal * GLreal * GLreal -> unit
         val glClearColor: GLreal -> GLreal -> GLreal -> GLreal -> unit
@@ -757,29 +763,20 @@ signature GL =
         val c_glEnd : unit -> unit
         val glEnd : unit -> unit
 
-        val c_glFinish : unit -> unit
-        val glFinish : unit -> unit
-
         val c_glEndList : unit -> unit
         val glEndList : unit -> unit
 
-        val c_glRasterPos2i : int * int -> unit
-        val glRasterPos2i : int -> int -> unit
-
-        val c_glRasterPos2f : GLreal * GLreal -> unit
-        val glRasterPos2f : GLreal -> GLreal -> unit
-
-        val c_glRasterPos2d : GLdouble * GLdouble -> unit
-        val glRasterPos2d : GLdouble -> GLdouble -> unit
-
-        val c_glClear: GLenum -> unit
-        val glClear: GLenum -> unit
+        val c_glFinish : unit -> unit
+        val glFinish : unit -> unit
 
         val c_glFlush: unit -> unit
         val glFlush: unit -> unit
 
         val c_glFrontFace : GLenum -> unit
         val glFrontFace : GLenum -> unit
+
+        val c_glGenTextures : int * (int Array.array) -> unit
+        val glGenTextures : int -> (int Array.array) -> unit
 
         val c_glLightfv : GLenum * GLenum * GLreal array -> unit
         val glLightfv : GLenum -> GLenum -> realrgbacolour -> unit
@@ -811,12 +808,6 @@ signature GL =
         val c_glPushMatrix : unit -> unit
         val glPushMatrix : unit -> unit
 
-        val c_glTranslated : GLdouble * GLdouble * GLdouble -> unit
-        val glTranslated : GLdouble -> GLdouble -> GLdouble -> unit
-
-        val c_glTranslatef : GLreal * GLreal * GLreal -> unit
-        val glTranslatef : GLreal -> GLreal -> GLreal -> unit
-
         val c_glPolygonMode : GLenum * GLenum -> unit
         val glPolygonMode : GLenum -> GLenum -> unit
 
@@ -829,6 +820,15 @@ signature GL =
         val c_glPushAttrib : GLenum -> unit
         val glPushAttrib : GLenum -> unit
 
+        val c_glRasterPos2i : int * int -> unit
+        val glRasterPos2i : int -> int -> unit
+
+        val c_glRasterPos2f : GLreal * GLreal -> unit
+        val glRasterPos2f : GLreal -> GLreal -> unit
+
+        val c_glRasterPos2d : GLdouble * GLdouble -> unit
+        val glRasterPos2d : GLdouble -> GLdouble -> unit
+
         val c_glRotatef: GLreal * GLreal * GLreal * GLreal -> unit
         val glRotatef: GLreal -> GLreal -> GLreal -> GLreal -> unit
 
@@ -837,6 +837,22 @@ signature GL =
 
         val c_glShadeModel : GLenum -> unit
         val glShadeModel : GLenum -> unit
+
+        val c_glTexCoord2i : int * int -> unit
+        val glTexCoord2i : int -> int -> unit
+
+        val c_glTexImage2D : GLenum * int * int * int * int * int * GLenum * GLenum * MLton.Pointer.t -> unit
+        val glTexImage2D : GLenum -> int -> int -> int -> int -> int -> GLenum -> GLenum -> MLton.Pointer.t -> unit
+
+        (* type of the third argument? *)
+        val c_glTexParameteri : GLenum * GLenum * GLenum -> unit
+        val glTexParameteri : GLenum -> GLenum -> GLenum -> unit
+
+        val c_glTranslated : GLdouble * GLdouble * GLdouble -> unit
+        val glTranslated : GLdouble -> GLdouble -> GLdouble -> unit
+
+        val c_glTranslatef : GLreal * GLreal * GLreal -> unit
+        val glTranslatef : GLreal -> GLreal -> GLreal -> unit
 
         val c_glVertex2d : GLdouble * GLdouble -> unit
         val glVertex2d : GLdouble -> GLdouble -> unit
