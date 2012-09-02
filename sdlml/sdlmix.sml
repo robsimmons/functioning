@@ -99,16 +99,14 @@ in
         val reserve_channels = _import "Mix_ReserveChannels" : int -> int ;
 
         val initial_channels = 16
+        val reserved_channels = 8
 
         val _ = allocate_channels initial_channels
-        val _ = reserve_channels initial_channels
+        val _ = reserve_channels reserved_channels
 
         val play_ = _import "Mix_PlayChannelTimed" : native_channel * clip * int * int -> native_channel ;
 
-        val play2 = _import "ml_play_sound" : clip -> int;
-
-        fun play clip = (play2 clip; ())
-	     (* play_ (any_channel, clip, 1, ~1); ()) *)
+        fun play clip = (play_ (any_channel, clip, 0, ~1); ())
 
         fun loop clip = (clip, play_ (any_channel, clip, ~1, ~1))
 
