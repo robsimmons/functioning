@@ -2,6 +2,5 @@ Group is
 
 ../../functioning/sources.cm
 
-graphics.sml
 game.sml
 main.sml

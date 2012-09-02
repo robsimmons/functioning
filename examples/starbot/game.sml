@@ -19,8 +19,8 @@ struct
   val use_gl = false
   val dpos = 5
   val dpos_star = 1
-  val star = Graphics.redstar
-  val robot = Graphics.robot
+  val star = Graphics.requireimage "media/graphics/redstar.png"
+  val robot = Graphics.requireimage "media/graphics/robot.png"
   
   (* Initialization *)
   val init_starloc = {xpos = width div 2, ypos = height div 2}

@@ -13,8 +13,9 @@ struct
   val width = 800
   val height = 600
   val use_gl = false
-  val star = Graphics.redstar
-  val robot = Graphics.robot
+  val star = Graphics.requireimage "media/graphics/redstar.png"
+  val robot = Graphics.requireimage "media/graphics/robot.png"
+
 (*  val SOME music = SDLMusic.load "media/audio/pf.mp3"
   val _ = SDLMusic.loop music *)
   
