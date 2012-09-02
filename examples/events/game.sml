@@ -16,8 +16,7 @@ struct
   val star = Graphics.requireimage "media/graphics/redstar.png"
   val robot = Graphics.requireimage "media/graphics/robot.png"
 
-(*  val SOME music = SDLMusic.load "media/audio/pf.mp3"
-  val _ = SDLMusic.loop music *)
+  val pew = SDLSound.load "media/audio/pew.wav"
   
   (* Initialization *)
   val initstate =
@@ -46,6 +45,7 @@ struct
         SOME 
         {things=({xpos = !time mod width, ypos = !time mod height})::locs,
          key=SOME SDL.SDLK_m}
+    | keyDown (SDL.SDLK_SPACE) s = (SDLSound.play pew; SOME s)
     | keyDown key s = SOME s
 
   fun keyUp upkey {things=locs, key=SOME downkey} =
