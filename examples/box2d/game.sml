@@ -21,15 +21,15 @@ struct
                     | VerticalLine of int
                     | HorizontalLine of int
 
-  structure B = BDDWorld( 
-                struct type fixture_data = unit
-                       type body_data = bodytype
-                       type joint_data = unit
-                end
-                )
+  structure BDD = BDDWorld( 
+                  struct type fixture_data = unit
+                         type body_data = bodytype
+                         type joint_data = unit
+                  end
+                  )
   
   val gravity = BDDMath.vec2 (0.0, 0.0) 
-  val world = B.World.world (gravity, true)
+  val world = BDD.World.world (gravity, true)
 
 
   fun create_text_body (text : string)
@@ -43,9 +43,9 @@ struct
                             (Real.fromInt pixelsPerMeter)
           val meter_height = (Real.fromInt pixel_height) /
                              (Real.fromInt pixelsPerMeter)
-          val body = B.World.create_body
+          val body = BDD.World.create_body
                          (world,
-                          {typ = B.Body.Dynamic,
+                          {typ = BDD.Body.Dynamic,
                            position = p,
                            angle = 0.0,
                            linear_velocity = v,
@@ -63,15 +63,15 @@ struct
                            inertia_scale = 1.0
                          })
           val density = mass / (meter_width * meter_height)
-          val fixture = B.Body.create_fixture_default
+          val fixture = BDD.Body.create_fixture_default
                             (body,
                              BDDShape.Polygon
                                  (BDDPolygon.box (meter_width / 2.0,
                                                   meter_height / 2.0)),
                              (),
                              density)
-          val () = B.Fixture.set_restitution (fixture, 1.0)
-          val () = B.Fixture.set_friction (fixture, 0.0)
+          val () = BDD.Fixture.set_restitution (fixture, 1.0)
+          val () = BDD.Fixture.set_friction (fixture, 0.0)
       in () end
 
   val zero = BDDMath.vec2 (0.0, 0.0) 
@@ -81,9 +81,9 @@ struct
       let 
           val pixel_height =
                  Real.round (meter_height * (Real.fromInt pixelsPerMeter))
-          val body = B.World.create_body
+          val body = BDD.World.create_body
                          (world,
-                          {typ = B.Body.Static,
+                          {typ = BDD.Body.Static,
                            position = p,
                            angle = 0.0,
                            linear_velocity = zero,
@@ -99,15 +99,15 @@ struct
                            inertia_scale = 1.0
                          })
 
-          val fixture = B.Body.create_fixture_default
+          val fixture = BDD.Body.create_fixture_default
                             (body,
                              BDDShape.Polygon
                                  (BDDPolygon.box (0.2,
                                                   meter_height / 2.0)),
                              (),
                              10000.0)
-          val () = B.Fixture.set_restitution (fixture, 1.0)
-          val () = B.Fixture.set_friction (fixture, 0.0)
+          val () = BDD.Fixture.set_restitution (fixture, 1.0)
+          val () = BDD.Fixture.set_friction (fixture, 0.0)
       in () end
 
 
@@ -116,9 +116,9 @@ struct
       let 
           val pixel_width =
                  Real.round (meter_width * (Real.fromInt pixelsPerMeter))
-          val body = B.World.create_body
+          val body = BDD.World.create_body
                          (world,
-                          {typ = B.Body.Static,
+                          {typ = BDD.Body.Static,
                            position = p,
                            angle = 0.0,
                            linear_velocity = zero,
@@ -134,15 +134,15 @@ struct
                            inertia_scale = 1.0
                          })
 
-          val fixture = B.Body.create_fixture_default
+          val fixture = BDD.Body.create_fixture_default
                             (body,
                              BDDShape.Polygon
                                  (BDDPolygon.box (meter_width / 2.0,
                                                   0.2)),
                              (),
                              10000.0)
-          val () = B.Fixture.set_restitution (fixture, 1.0)
-          val () = B.Fixture.set_friction (fixture, 0.0)
+          val () = BDD.Fixture.set_restitution (fixture, 1.0)
+          val () = BDD.Fixture.set_friction (fixture, 0.0)
       in () end
 
 
@@ -228,16 +228,16 @@ struct
 
   fun dophysics () = 
       let val timestep = 1.0 / ticks_per_second
-          val () = B.World.step (world, timestep, 10, 10)
+          val () = BDD.World.step (world, timestep, 10, 10)
       in () end
       
 
   val white = SDL.color (0w255,0w255,0w255,0w0);
 
   fun drawbody screen b = 
-      let val p = B.Body.get_position b
+      let val p = BDD.Body.get_position b
           val (x, y) = worldToScreen p
-      in case B.Body.get_data b of
+      in case BDD.Body.get_data b of
              Text {text, width, height} => 
              let val (x0, y0) = (x - (width div 2),
                                  y - (height div 2)) 
@@ -258,7 +258,7 @@ struct
   fun render screen () =
   (
     SDL.clearsurface (screen, SDL.color (0w0,0w0,0w0,0w0));
-    BDDOps.oapp B.Body.get_next (drawbody screen) (B.World.get_body_list world);
+    BDDOps.oapp BDD.Body.get_next (drawbody screen) (BDD.World.get_body_list world);
     SDL.flip screen
   )
 
