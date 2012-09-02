@@ -17,8 +17,11 @@ bin:
 bin/sdlml.o: bin sdlml/sdlml.c
 	gcc -DLINUX -O `sdl-config --cflags` -c sdlml/sdlml.c -o bin/sdlml.o
 
+bin/sdlmix.o: bin sdlml/sdlmix.c
+	gcc -DLINUX -O `sdl-config --cflags` -c sdlml/sdlmix.c -o bin/sdlmix.o
+
 .PHONY: game 
-game: bin/sdlml.o
+game: bin/sdlml.o bin/sdlmix.o
 	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) game.cm bin/sdlml.o
 
 .PHONY: examples/*/ examples/*
