@@ -58,7 +58,7 @@ int ml_init() {
 	       SDL_INIT_JOYSTICK |
 	       SDL_INIT_AUDIO |
 	       /* for debugging */
-	       SDL_INIT_NOPARACHUTE |
+               SDL_INIT_NOPARACHUTE |
 	       SDL_INIT_AUDIO) < 0) {
 
     printf("Unable to initialize SDL. (%s)\n", SDL_GetError());

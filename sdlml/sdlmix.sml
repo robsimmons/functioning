@@ -16,11 +16,14 @@ in
         (* Ugh; get rid of this bouncecrab travesty *)
         val empty = MLton.Pointer.null
 
-        val init_ = _import "Mix_OpenAudio" : Word32.word * Word16.word * Word32.word * Word32.word -> unit ;
+        val init_ = _import "Mix_OpenAudio" : Word32.word * Word16.word * Word32.word * Word32.word -> int ;
         val default_format_ = _import "ml_mix_default_format" : unit -> Word16.word ;
         val music_load_ = _import "ml_mix_loadmus" : string -> song ;
 
-        val () = init_ (0w44100, default_format_ (), 0w2, chunk_size)
+        val () =
+	   if init_ (0w44100, default_format_ (), 0w2, chunk_size) <> 0
+           then print "unable to open sdlmixer\n"
+           else ()
 
         fun load path = 
             let val song = (music_load_ o tocstr) path
@@ -102,7 +105,11 @@ in
 
         val play_ = _import "Mix_PlayChannelTimed" : native_channel * clip * int * int -> native_channel ;
 
-        fun play clip = (play_ (any_channel, clip, 1, ~1); ())
+        val play2 = _import "ml_play_sound" : clip -> int;
+
+        fun play clip = (play2 clip; ())
+	     (* play_ (any_channel, clip, 1, ~1); ()) *)
+
         fun loop clip = (clip, play_ (any_channel, clip, ~1, ~1))
 
         val halt_ = _import "Mix_HaltChannel" : native_channel -> unit ;

@@ -17,7 +17,7 @@ struct
   val robot = Graphics.requireimage "media/graphics/robot.png"
 
   val pew = SDLSound.load "media/audio/pew.wav"
-  
+
   (* Initialization *)
   val initstate =
       { 
