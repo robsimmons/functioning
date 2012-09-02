@@ -3,7 +3,7 @@ MAKE=make
 
 # You shouldn't have to edit anything below this line
 
-MLTON_FLAGS=-link-opt "-lGL -lGLU -lSDL_image -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true'
+MLTON_FLAGS=-link-opt "-lGL -lGLU -lSDL_image -lSDL_mixer -ltiff -lpng -ljpeg -lz `sdl-config --libs`" -default-ann 'allowFFI true'
 
 # Static linking should look something like this.
 # ("sdl-config --static-libs" might help you.)
@@ -22,11 +22,11 @@ bin/sdlmix.o: bin sdlml/sdlmix.c
 
 .PHONY: game 
 game: bin/sdlml.o bin/sdlmix.o
-	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) game.cm bin/sdlml.o
+	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) game.cm bin/sdlml.o bin/sdlmix.o
 
 .PHONY: examples/*/ examples/*
-examples/*/: bin/sdlml.o
-	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) $@sources.cm bin/sdlml.o
+examples/*/: bin/sdlml.o bin/sdlmix.o
+	mlton $(MLTON_FLAGS) -output $(OUTPUT_EXE) $@sources.cm bin/sdlml.o bin/sdlmix.o
 examples/*:
 	$(MAKE) $@/
 
