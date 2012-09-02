@@ -27,8 +27,6 @@ struct
         key = NONE
       }
 
-  val time = ref 0  (* Imperatively updated loop counter *)
-
   fun glGenSingleTexture () = 
       let val arr = Array.array (1, 0)
           val () = glGenTextures 1 arr
@@ -136,8 +134,6 @@ struct
 
   fun tick {robotloc = r, key = k} =
     let
-      val () = time := !time + 1
-      val step = 100
       val r = case k of
                   SOME SDL.SDLK_RIGHT => move_right r
                 | SOME SDL.SDLK_LEFT  => move_left r
