@@ -14,6 +14,22 @@ struct
   val height = 480
   val use_gl = true
 
+  fun draw_solid_polygon vertexList (RGB (r, g, b)) =
+      (
+       glEnable GL_BLEND;
+       glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA;
+       glColor4d (0.5 * r) (0.5 * g) (0.5 * b) 0.5;
+       glBegin GL_TRIANGLE_FAN;
+       List.map (fn v => glVertex2d (BDDMath.vec2x v) (BDDMath.vec2y v)) vertexList;
+       glEnd ();
+       glDisable GL_BLEND;
+       
+       glColor4d r g b 1.0;
+       glBegin GL_LINE_LOOP;
+       List.map (fn v => glVertex2d (BDDMath.vec2x v) (BDDMath.vec2y v)) vertexList;
+       glEnd()
+      )
+
   fun body_color b =
       if not (BDD.Body.get_active b)
       then RGB (0.5, 0.5, 0.3)
@@ -26,8 +42,12 @@ struct
                else RGB (0.9, 0.7, 0.7)
 
 
-  val initstate = 
-      GS {world = BDD.World.world (BDDMath.vec2 (0.0, ~10.0), true)}
+  val initstate =
+      let val world = BDD.World.world (BDDMath.vec2 (0.0, ~10.0), true)
+          val () = VerticalStack.init world
+      in
+          GS {world = world}
+      end
 
   fun initscreen screen =
       (
@@ -43,22 +63,30 @@ struct
        glClear GL_COLOR_BUFFER_BIT;
        glMatrixMode(GL_PROJECTION);
        glLoadIdentity();
-       glOrtho ~10.0 10.0 ~10.0 10.0 5.0 ~5.0;
+       glOrtho ~20.0 20.0 ~10.0 25.0 5.0 ~5.0;
        glMatrixMode(GL_MODELVIEW);
 
        glLoadIdentity();
        ()
       )
 
-  fun drawfixture color pos theta fix = ()
+  fun drawfixture color tf fix =
+      case BDD.Fixture.shape fix of
+          BDDShape.Polygon p =>
+          let val n = BDDPolygon.get_vertex_count p
+              val vl = List.tabulate (n, fn ii => tf @*: (BDDPolygon.get_vertex(p, ii)))
+          in draw_solid_polygon vl color
+          end 
+        | BDDShape.Circle c => ()
 
   fun drawbody b =
       let val pos = BDD.Body.get_position b
           val theta = BDD.Body.get_angle b
           val fl = BDD.Body.get_fixtures b
           val color = body_color b
+          val tf = BDD.Body.get_transform b
       in
-          oapp BDD.Fixture.get_next (drawfixture color pos theta) fl
+          oapp BDD.Fixture.get_next (drawfixture color tf) fl
       end
 
 
@@ -66,16 +94,6 @@ struct
   let in
    glClear(GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT);
    glLoadIdentity();
-
-   (* draw a square *)
-   glBegin(GL_QUADS);
-   glColor3f 0.9 1.0 0.0;
-   glVertex3f (~ 4.0) 4.0 0.0;
-   glVertex3f 4.0 4.0 0.0;
-   glColor3f 0.0 0.8 0.9;
-   glVertex3f 4.0 (~ 4.0) 0.0;
-   glVertex3f (~4.0) (~ 4.0) 0.0;
-   glEnd();
 
    oapp BDD.Body.get_next drawbody (BDD.World.get_body_list world);
 
@@ -96,8 +114,13 @@ struct
 
   val ticks_per_second = 60.0
 
-  fun tick (s as GS {...}) =
-    let
+  fun dophysics world = 
+      let val timestep = 1.0 / ticks_per_second
+          val () = BDD.World.step (world, timestep, 10, 10)
+      in () end
+
+  fun tick (s as GS {world, ...}) =
+    let val () = dophysics world
     in
         SOME s
     end
