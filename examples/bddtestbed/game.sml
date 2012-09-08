@@ -167,7 +167,7 @@ struct
 
   fun dophysics world = 
       let val timestep = 1.0 / ticks_per_second
-          val () = BDD.World.step (world, timestep, 10, 10)
+          val () = BDD.World.step (world, timestep, 8, 3)
       in () end
 
   fun tick (s as GS {world, ...}) =
