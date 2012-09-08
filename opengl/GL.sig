@@ -823,14 +823,14 @@ signature GL =
         val c_glPushAttrib : GLenum -> unit
         val glPushAttrib : GLenum -> unit
 
-        val c_glRasterPos2i : int * int -> unit
-        val glRasterPos2i : int -> int -> unit
+        val c_glRasterPos2d : GLdouble * GLdouble -> unit
+        val glRasterPos2d : GLdouble -> GLdouble -> unit
 
         val c_glRasterPos2f : GLreal * GLreal -> unit
         val glRasterPos2f : GLreal -> GLreal -> unit
 
-        val c_glRasterPos2d : GLdouble * GLdouble -> unit
-        val glRasterPos2d : GLdouble -> GLdouble -> unit
+        val c_glRasterPos2i : int * int -> unit
+        val glRasterPos2i : int -> int -> unit
 
         val c_glRotatef: GLreal * GLreal * GLreal * GLreal -> unit
         val glRotatef: GLreal -> GLreal -> GLreal -> GLreal -> unit
@@ -840,6 +840,9 @@ signature GL =
 
         val c_glShadeModel : GLenum -> unit
         val glShadeModel : GLenum -> unit
+
+        val c_glTexCoord2f : GLreal * GLreal -> unit
+        val glTexCoord2f : GLreal -> GLreal -> unit
 
         val c_glTexCoord2i : int * int -> unit
         val glTexCoord2i : int -> int -> unit

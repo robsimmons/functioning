@@ -34,6 +34,28 @@ struct
       end
 
   val robot = Graphics.requireimage "media/graphics/robot.png"
+  val noise = Graphics.requireimage "media/graphics/noise.png"
+
+  fun load_texture surface w h =
+      let 
+          val texture = glGenSingleTexture ()
+          val mode = case (SDL.get_bytes_per_pixel surface,
+                           SDL.is_rgb surface) of
+                         (4, true) => GL_RGBA
+                       | (4, false) => GL_BGRA
+                       | (_, true) => GL_RGB
+                       | (_, false) => GL_BGR
+      in
+          glBindTexture GL_TEXTURE_2D texture;
+          glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_NEAREST;
+          glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_NEAREST;
+          glTexImage2D GL_TEXTURE_2D 0 4 w h 0 mode GL_UNSIGNED_BYTE (SDL.getpixels surface);
+          texture
+      end
+
+
+  val noise_texture = ref 0;
+  val robot_texture = ref 0;
 
   fun initscreen screen =
       (
@@ -43,32 +65,23 @@ struct
 
        glEnable(GL_TEXTURE_2D);
 
-          glClearColor 0.0 0.0 0.0 1.0;
-          glClearDepth 1.0;
-          glViewport 0 0 width height;
-          glClear GL_COLOR_BUFFER_BIT;
-          glMatrixMode(GL_PROJECTION);
-          glLoadIdentity();
-          glOrtho ~5.0 5.0 ~5.0 5.0 5.0 ~5.0;
-          glMatrixMode(GL_MODELVIEW);
+       glClearColor 0.0 0.0 0.0 1.0;
+       glClearDepth 1.0;
+       glViewport 0 0 width height;
+       glClear GL_COLOR_BUFFER_BIT;
+       glMatrixMode(GL_PROJECTION);
+       glLoadIdentity();
+       glOrtho ~5.0 5.0 ~5.0 5.0 5.0 ~5.0;
+       glMatrixMode(GL_MODELVIEW);
 
-          glLoadIdentity();
-          let 
-              val texture = glGenSingleTexture ()
-              val mode = case (SDL.get_bytes_per_pixel robot,
-                               SDL.is_rgb robot) of
-                             (4, true) => GL_RGBA
-                           | (4, false) => GL_BGRA
-                           | (_, true) => GL_RGB
-                           | (_, false) => GL_BGR
-          in
-              glBindTexture GL_TEXTURE_2D texture;
-              glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_NEAREST;
-              glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_NEAREST;
-              glTexImage2D GL_TEXTURE_2D 0 4 16 32 0 mode GL_UNSIGNED_BYTE (SDL.getpixels robot);
-              ()
-          end
+       glLoadIdentity();
+       noise_texture := load_texture noise 8 8;
+       robot_texture := load_texture robot 16 32;
+       ()
       )
+
+
+
 
 
   fun move_right (L {xpos=x, ypos=y}) = L {xpos=x+dpos_robot, ypos=y}
@@ -86,17 +99,18 @@ struct
    (* draw a square *)
    glBegin(GL_QUADS);
    glColor3f 0.9 1.0 0.0;
-   glVertex3f (~ 2.0) 2.0 0.0;
-   glVertex3f 2.0 2.0 0.0;
+   glVertex3f (~ 4.0) 4.0 0.0;
+   glVertex3f 4.0 4.0 0.0;
    glColor3f 0.0 0.8 0.9;
-   glVertex3f 2.0 (~ 2.0) 0.0;
-   glVertex3f (~ 2.0) (~ 2.0) 0.0;
+   glVertex3f 4.0 (~ 4.0) 0.0;
+   glVertex3f (~4.0) (~ 4.0) 0.0;
    glEnd();
 
    glEnable GL_TEXTURE_2D;
    glColor3f 1.0 1.0 1.0;
 
    (* draw the robot *)
+   glBindTexture GL_TEXTURE_2D (!robot_texture);
    glBegin(GL_QUADS);
    glTexCoord2i 0 1;
    glVertex3f sx sy 0.0;
@@ -108,6 +122,20 @@ struct
    glVertex3f sx (sy + 4.0) 0.0;
    glEnd();
    
+   (* draw a noisy rectangle *)
+   glBindTexture GL_TEXTURE_2D (!noise_texture);
+   glBegin(GL_QUADS);
+   glTexCoord2i 0 0;
+   glVertex3f (~2.0) 0.0 0.0;
+   glTexCoord2i 0 2;
+   glVertex3f (~4.0) (~2.0) 0.0;
+   glTexCoord2i 4 2;
+   glVertex3f 0.0 (~5.0) 0.0;
+   glTexCoord2i 4 0;
+   glVertex3f (2.0) (~3.0) 0.0;
+   glEnd();
+
+
    glFlush();
    SDL.glflip();
    ()

@@ -857,17 +857,17 @@ structure GL :> GL =
         val c_glPushMatrix = _import "glPushMatrix" stdcall: unit -> unit;
         fun glPushMatrix () = c_glPushMatrix (): unit;
 
-        val c_glRasterPos2i = _import "glRasterPos2i" stdcall: int * int -> unit;
-        fun glRasterPos2i (a:int) (b:int)
-          = c_glRasterPos2i (a,b) : unit
+        val c_glRasterPos2d = _import "glRasterPos2d" stdcall: GLdouble * GLdouble -> unit;
+        fun glRasterPos2d (a:GLdouble) (b:GLdouble)
+          = c_glRasterPos2d (a,b) : unit
 
         val c_glRasterPos2f = _import "glRasterPos2f" stdcall: GLreal * GLreal -> unit;
         fun glRasterPos2f (a:GLreal) (b:GLreal)
           = c_glRasterPos2f (a,b) : unit
 
-        val c_glRasterPos2d = _import "glRasterPos2d" stdcall: GLdouble * GLdouble -> unit;
-        fun glRasterPos2d (a:GLdouble) (b:GLdouble)
-          = c_glRasterPos2d (a,b) : unit
+        val c_glRasterPos2i = _import "glRasterPos2i" stdcall: int * int -> unit;
+        fun glRasterPos2i (a:int) (b:int)
+          = c_glRasterPos2i (a,b) : unit
 
         val c_glRotated = _import "glRotated" stdcall: GLdouble * GLdouble * GLdouble * GLdouble -> unit;
         fun glRotated (a:GLdouble) (b:GLdouble) (c:GLdouble) (d:GLdouble)
@@ -879,6 +879,9 @@ structure GL :> GL =
 
         val c_glShadeModel = _import "glShadeModel" stdcall: GLenum -> unit;
         fun glShadeModel (a:GLenum)= c_glShadeModel (a): unit;
+
+        val c_glTexCoord2f = _import "glTexCoord2f" stdcall: GLreal * GLreal -> unit;
+        fun glTexCoord2f s t = c_glTexCoord2f (s, t) : unit;
 
         val c_glTexCoord2i = _import "glTexCoord2i" stdcall: int * int -> unit;
         fun glTexCoord2i s t = c_glTexCoord2i (s, t) : unit;
