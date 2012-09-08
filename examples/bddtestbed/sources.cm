@@ -6,5 +6,6 @@ Group is
 
 ../../sml-lib/bdd/bdd.cm
 
+types.sml
 game.sml
 
