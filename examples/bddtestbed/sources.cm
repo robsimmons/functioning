@@ -12,5 +12,6 @@ Group is
 types.sml
 varying-restitution.sml
 vertical-stack.sml
+render.sml
 game.sml
 

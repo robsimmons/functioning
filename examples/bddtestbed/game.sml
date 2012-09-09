@@ -14,56 +14,6 @@ struct
   val height = 480
   val use_gl = true
 
-  fun draw_solid_polygon vertexList (RGB (r, g, b)) =
-      (
-       glEnable GL_BLEND;
-       glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA;
-       glColor4d (0.5 * r) (0.5 * g) (0.5 * b) 0.5;
-       glBegin GL_TRIANGLE_FAN;
-       List.map (fn v => glVertex2d (BDDMath.vec2x v) (BDDMath.vec2y v)) vertexList;
-       glEnd ();
-       glDisable GL_BLEND;
-       
-       glColor4d r g b 1.0;
-       glBegin GL_LINE_LOOP;
-       List.map (fn v => glVertex2d (BDDMath.vec2x v) (BDDMath.vec2y v)) vertexList;
-       glEnd()
-      )
-
-  fun draw_solid_circle center radius axis (RGB (r, g, b)) = 
-      let val (centerx, centery) = BDDMath.vec2xy center
-          val k_segments = 16
-          val k_increment = 2.0 * Math.pi / (Real.fromInt k_segments)
-          val (px, py) = BDDMath.vec2xy (center :+: (radius *: axis))
-          fun draw_vertex ii =
-              let val theta = k_increment * (Real.fromInt ii)
-                  val v = center :+: (radius *: (BDDMath.vec2 (Math.cos theta,
-                                                               Math.sin theta)))
-                  val (x, y) = BDDMath.vec2xy v
-              in glVertex2d x y
-              end
-      in
-       glEnable GL_BLEND;
-       glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA;
-       glColor4d (0.5 * r) (0.5 * g) (0.5 * b) 0.5;
-       glBegin GL_TRIANGLE_FAN;
-       List.tabulate (k_segments, draw_vertex);
-       glEnd ();
-       glDisable GL_BLEND;
-       
-       glColor4d r g b 1.0;
-       glBegin GL_LINE_LOOP;
-       List.tabulate (k_segments, draw_vertex);
-       glEnd();
-
-       (* draw radius *)
-       glBegin GL_LINES;
-       glVertex2d centerx centery;
-       glVertex2d px py;
-       glEnd ()
-      end
-
-
   fun body_color b =
       if not (BDD.Body.get_active b)
       then RGB (0.5, 0.5, 0.3)
@@ -122,12 +72,12 @@ struct
           BDDShape.Polygon p =>
           let val n = BDDPolygon.get_vertex_count p
               val vl = List.tabulate (n, fn ii => tf @*: (BDDPolygon.get_vertex(p, ii)))
-          in draw_solid_polygon vl color
+          in Render.draw_solid_polygon vl color
           end 
         | BDDShape.Circle {radius, p} =>
           let val center = tf @*: p
               val axis = (BDDMath.transformr tf) +*: (BDDMath.vec2 (1.0, 0.0))
-          in draw_solid_circle center radius axis color
+          in Render.draw_solid_circle center radius axis color
           end
 
   fun drawbody b =
