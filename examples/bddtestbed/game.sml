@@ -25,10 +25,40 @@ struct
                then RGB (0.6, 0.6, 0.6)
                else RGB (0.9, 0.7, 0.7)
 
+  datatype contact_point = CP of {position : BDDMath.vec2,
+                                  state : BDDTypes.point_state}
+
+  (* Track the contact points with a presolve callback in order to
+  catch any whose life is shorter than a step. *)
+
+  val contact_points = (ref []) : contact_point list ref
+
+  fun pre_solve (contact, old_manifold) =
+      let val manifold = BDD.Contact.get_manifold contact
+          val (state1, state2) = BDDCollision.get_point_states (old_manifold, manifold)
+
+          (* ??? *)
+          val world_manifold = {normal = BDDMath.vec2 (~999.0, ~999.0),
+                                points = Array.fromList
+                                [ BDDMath.vec2 (~111.0, ~111.0),
+                                  BDDMath.vec2 (~222.0, ~222.0)]}
+          val () = BDD.Contact.get_world_manifold (world_manifold, contact)
+
+          val points = #points world_manifold
+          fun addpoint (i, p) = 
+              let val cp = CP {position = p, state = Array.sub (state2, i)}
+              in contact_points := (cp :: (!contact_points))
+              end
+          val () = Array.appi addpoint points
+      in 
+          ()
+      end
+
 
   fun init_test (test as Test {init, ...}) =
       let val gravity = BDDMath.vec2 (0.0, ~10.0)
           val world = BDD.World.world (gravity, true)
+          val () = BDD.World.set_pre_solve (world, pre_solve)
           val () = init world
       in GS { test = test, world = world}
       end
@@ -67,6 +97,14 @@ struct
        ()
       )
 
+  fun drawcontactpoint (CP {position, state, ...}) =
+      case state of
+          BDDTypes.AddState =>
+          Render.draw_point position 10.0 (RGB (0.3, 0.95, 0.3))
+        | BDDTypes.PersistState =>
+          Render.draw_point position 5.0 (RGB (0.3, 0.3, 0.95))
+        | _ => ()
+
   fun drawfixture color tf fix =
       case BDD.Fixture.shape fix of
           BDDShape.Polygon p =>
@@ -97,6 +135,9 @@ struct
    glLoadIdentity();
 
    oapp BDD.Body.get_next drawbody (BDD.World.get_body_list world);
+   
+   List.map drawcontactpoint (!contact_points);
+   contact_points := [];
 
    glFlush();
    SDL.glflip();
