@@ -151,17 +151,10 @@ struct
    ()
   end
 
-  fun keyDown (SDL.SDLK_ESCAPE) _ = NONE (* quit the game *)
-    | keyDown (SDL.SDLK_COMMA) (s as GS {world, ...}) =
-      (VerticalStack.bullet world; SOME s)
-    | keyDown key s = SOME s
-
-  fun keyUp upkey s = SOME s
-
-  fun handle_event (SDL.E_KeyDown {sym = k}) s = keyDown k s
-    | handle_event (SDL.E_KeyUp {sym = k}) s = keyUp k s
+  fun handle_event (SDL.E_KeyDown {sym = SDL.SDLK_ESCAPE}) s = NONE
     | handle_event SDL.E_Quit s = NONE
-    | handle_event _ s = SOME s
+    | handle_event e (s as GS {world, ...})  =
+      (VerticalStack.handle_event world e; SOME s)
 
   val ticks_per_second = 60.0
 

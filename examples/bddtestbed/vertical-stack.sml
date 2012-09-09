@@ -12,7 +12,7 @@ fun init world =
     let
         val ground_body = BDD.World.create_body (world,
                                                  {typ = BDD.Body.Static,
-                                                  position = BDDMath.vec2_zero,
+                                                  position = BDDMath.vec2 (0.0, ~0.01),
                                                   angle = 0.0,
                                                   linear_velocity = BDDMath.vec2_zero,
                                                   angular_velocity = 0.0,
@@ -110,5 +110,11 @@ fun bullet world =
                                          
   in ()
   end    
+
+fun handle_event world (SDL.E_KeyDown {sym = SDL.SDLK_COMMA}) = bullet world
+  | handle_event world _ = ()
+
+val test = Test {init = init,
+                 handle_event = handle_event}
 
 end
