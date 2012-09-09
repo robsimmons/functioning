@@ -76,12 +76,14 @@ struct
                else RGB (0.9, 0.7, 0.7)
 
 
-  val initstate =
-      let val world = BDD.World.world (BDDMath.vec2 (0.0, ~10.0), true)
-          val () = VerticalStack.init world
-      in
-          GS {world = world}
+  fun init_test (test as Test {init, ...}) =
+      let val gravity = BDDMath.vec2 (0.0, ~10.0)
+          val world = BDD.World.world (gravity, true)
+          val () = init world
+      in GS { test = test, world = world}
       end
+
+  val initstate = init_test VerticalStack.test
 
   fun initscreen screen =
       (
@@ -153,8 +155,12 @@ struct
 
   fun handle_event (SDL.E_KeyDown {sym = SDL.SDLK_ESCAPE}) s = NONE
     | handle_event SDL.E_Quit s = NONE
-    | handle_event e (s as GS {world, ...})  =
-      (VerticalStack.handle_event world e; SOME s)
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_0}) s =
+      SOME (init_test VerticalStack.test)
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_1}) s =
+      SOME (init_test VaryingRestitution.test)
+    | handle_event e (s as GS {world, test = Test {handle_event = he, ... }})  =
+      (he world e; SOME s)
 
   val ticks_per_second = 60.0
 

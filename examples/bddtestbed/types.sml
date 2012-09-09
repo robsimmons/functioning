@@ -19,13 +19,15 @@ datatype constants = CONST of {width : int,
                                top : real,
                                gravity : BDDMath.vec2}
 
-datatype game_state = GS of {world : BDD.world
-                            }
-
 datatype test = Test of
          {init : BDD.world -> unit,
           handle_event :  BDD.world -> SDL.event -> unit
          }
+
+datatype game_state = GS of {world : BDD.world,
+                             test : test
+                            }
+
 
 
 end
