@@ -65,5 +65,14 @@ fun draw_solid_circle center radius axis (RGB (r, g, b)) =
         glEnd ()
     end
 
+fun draw_point p size (RGB (r, g, b)) =
+    (
+     glPointSize size;
+     glBegin GL_POINTS;
+     glColor3d r g b;
+     glVertex2d (BDDMath.vec2x p) (BDDMath.vec2y p);
+     glEnd();
+     glPointSize 1.0
+    )
 
 end

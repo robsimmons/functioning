@@ -808,6 +808,9 @@ signature GL =
         val c_glPixelTransferi : GLenum * int -> unit
         val glPixelTransferi : GLenum -> int -> unit
 
+        val c_glPointSize : GLreal -> unit
+        val glPointSize : GLreal -> unit
+
         val c_glPushMatrix : unit -> unit
         val glPushMatrix : unit -> unit
 
