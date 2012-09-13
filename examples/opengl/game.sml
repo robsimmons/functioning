@@ -8,7 +8,7 @@ struct
   (* Types *)
   datatype loc = L of {xpos : GLreal, ypos : GLreal}
   type state =
-    { robotloc : loc,        (* Location of player character *) 
+    { robotloc : loc,        (* Location of player character *)
       key : SDL.sdlk option (* Last key depressed *)
     }
   type screen = SDL.surface
@@ -18,16 +18,16 @@ struct
   val height = 500
   val use_gl = true
   val dpos_robot = 0.02
-  
+
   (* Initialization *)
   val init_robotloc = L {xpos = 0.0, ypos = 0.0}
   val initstate =
-      { 
+      {
         robotloc = init_robotloc,
         key = NONE
       }
 
-  fun glGenSingleTexture () = 
+  fun glGenSingleTexture () =
       let val arr = Array.array (1, 0)
           val () = glGenTextures 1 arr
       in Array.sub (arr, 0)
@@ -36,8 +36,14 @@ struct
   val robot = Graphics.requireimage "media/graphics/robot.png"
   val noise = Graphics.requireimage "media/graphics/noise.png"
 
+  val message =
+      let val surf = Graphics.requireimage "media/graphics/tiles.png"
+          val () = Font.Normal.draw (surf, 0, 16, "Hello")
+      in surf
+      end
+
   fun load_texture surface w h =
-      let 
+      let
           val texture = glGenSingleTexture ()
           val mode = case (SDL.get_bytes_per_pixel surface,
                            SDL.is_rgb surface) of
@@ -56,6 +62,7 @@ struct
 
   val noise_texture = ref 0;
   val robot_texture = ref 0;
+  val message_texture = ref 0;
 
   fun initscreen screen =
       (
@@ -77,6 +84,7 @@ struct
        glLoadIdentity();
        noise_texture := load_texture noise 8 8;
        robot_texture := load_texture robot 16 32;
+       message_texture := load_texture message 256 128;
        ()
       )
 
@@ -109,6 +117,21 @@ struct
    glEnable GL_TEXTURE_2D;
    glColor3f 1.0 1.0 1.0;
 
+   (* draw message *)
+   glBindTexture GL_TEXTURE_2D (!message_texture);
+   glBegin(GL_QUADS);
+   glTexCoord2i 0 1;
+   glVertex3f (~ 4.0) 2.0 0.0;
+   glTexCoord2i 1 1;
+   glVertex3f (0.0) 2.0 0.0;
+   glTexCoord2i 1 0;
+   glVertex3f 0.0 (4.0) 0.0;
+   glTexCoord2i 0 0;
+   glVertex3f (~4.0) (4.0) 0.0;
+   glEnd();
+
+
+
    (* draw the robot *)
    glBindTexture GL_TEXTURE_2D (!robot_texture);
    glBegin(GL_QUADS);
@@ -121,7 +144,7 @@ struct
    glTexCoord2i 0 0;
    glVertex3f sx (sy + 4.0) 0.0;
    glEnd();
-   
+
    (* draw a noisy rectangle *)
    glBindTexture GL_TEXTURE_2D (!noise_texture);
    glBegin(GL_QUADS);

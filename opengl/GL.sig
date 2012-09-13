@@ -760,6 +760,9 @@ signature GL =
         val c_glDisable : GLenum -> unit
         val glDisable : GLenum -> unit
 
+        val c_glDrawPixels : int * int * GLenum * GLenum * MLton.Pointer.t -> unit
+        val glDrawPixels : int -> int -> GLenum -> GLenum -> MLton.Pointer.t -> unit
+
         val c_glEnable : GLenum -> unit
         val glEnable : GLenum -> unit
 

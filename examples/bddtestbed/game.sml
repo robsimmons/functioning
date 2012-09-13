@@ -45,12 +45,12 @@ struct
           val () = BDD.Contact.get_world_manifold (world_manifold, contact)
 
           val points = #points world_manifold
-          fun addpoint (i, p) = 
+          fun addpoint (i, p) =
               let val cp = CP {position = p, state = Array.sub (state2, i)}
               in contact_points := (cp :: (!contact_points))
               end
           val () = Array.appi addpoint points
-      in 
+      in
           ()
       end
 
@@ -111,7 +111,7 @@ struct
           let val n = BDDPolygon.get_vertex_count p
               val vl = List.tabulate (n, fn ii => tf @*: (BDDPolygon.get_vertex(p, ii)))
           in Render.draw_solid_polygon vl color
-          end 
+          end
         | BDDShape.Circle {radius, p} =>
           let val center = tf @*: p
               val axis = (BDDMath.transformr tf) +*: (BDDMath.vec2 (1.0, 0.0))
@@ -129,13 +129,13 @@ struct
       end
 
 
-  fun render screen (GS {world, ...}) = 
+  fun render screen (GS {world, ...}) =
   let in
    glClear(GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT);
    glLoadIdentity();
 
    oapp BDD.Body.get_next drawbody (BDD.World.get_body_list world);
-   
+
    List.map drawcontactpoint (!contact_points);
    contact_points := [];
 
@@ -155,7 +155,7 @@ struct
 
   val ticks_per_second = 60.0
 
-  fun dophysics world = 
+  fun dophysics world =
       let val timestep = 1.0 / ticks_per_second
           val () = BDD.World.step (world, timestep, 8, 3)
       in () end

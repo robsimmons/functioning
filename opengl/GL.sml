@@ -785,6 +785,9 @@ structure GL :> GL =
         val c_glDisable = _import "glDisable" stdcall: GLenum -> unit;
         fun glDisable (a:GLenum)= c_glDisable (a): unit;
 
+        val c_glDrawPixels = _import "glDrawPixels" stdcall: int * int * GLenum * GLenum * MLton.Pointer.t -> unit;
+        fun glDrawPixels w h fmt typ data = c_glDrawPixels (w, h, fmt, typ, data) : unit;
+
         val c_glEnable = _import "glEnable" stdcall: GLenum -> unit;
         fun glEnable (a:GLenum)= c_glEnable (a): unit;
 
