@@ -36,14 +36,22 @@ struct
   val robot = Graphics.requireimage "media/graphics/robot.png"
   val noise = Graphics.requireimage "media/graphics/noise.png"
 
-  val message =
-      let val surf = Graphics.requireimage "media/graphics/tiles.png"
-          val () = Font.Normal.draw (surf, 0, 16, "Hello")
+  fun make_message text =
+      let val pixel_width = (Font.Normal.width - Font.Normal.overlap)
+                            * String.size text
+          val pixel_height = Font.Normal.height
+          val surf = SDL.makesurface (pixel_width, pixel_height)
+          val () = SDL.clearsurface (surf, SDL.color(0w255, 0w255, 0w255, 0w255))
+          val () = Font.Normal.draw (surf, 0, 0, text)
       in surf
       end
 
-  fun load_texture surface w h =
+  val message = make_message "font uses glDrawPixels; robot uses texture mapping"
+
+  fun load_texture surface =
       let
+          val w = SDL.surface_width surface
+          val h = SDL.surface_height surface
           val texture = glGenSingleTexture ()
           val mode = case (SDL.get_bytes_per_pixel surface,
                            SDL.is_rgb surface) of
@@ -59,10 +67,23 @@ struct
           texture
       end
 
+  fun blit surface =
+      let
+          val w = SDL.surface_width surface
+          val h = SDL.surface_height surface
+          val mode = case (SDL.get_bytes_per_pixel surface,
+                           SDL.is_rgb surface) of
+                         (4, true) => GL_RGBA
+                       | (4, false) => GL_BGRA
+                       | (_, true) => GL_RGB
+                       | (_, false) => GL_BGR
+      in
+          glDrawPixels w h mode GL_UNSIGNED_BYTE (SDL.getpixels surface)
+      end
+
 
   val noise_texture = ref 0;
   val robot_texture = ref 0;
-  val message_texture = ref 0;
 
   fun initscreen screen =
       (
@@ -82,14 +103,10 @@ struct
        glMatrixMode(GL_MODELVIEW);
 
        glLoadIdentity();
-       noise_texture := load_texture noise 8 8;
-       robot_texture := load_texture robot 16 32;
-       message_texture := load_texture message 256 128;
+       noise_texture := load_texture noise;
+       robot_texture := load_texture robot;
        ()
       )
-
-
-
 
 
   fun move_right (L {xpos=x, ypos=y}) = L {xpos=x+dpos_robot, ypos=y}
@@ -114,22 +131,14 @@ struct
    glVertex3f (~4.0) (~ 4.0) 0.0;
    glEnd();
 
+   (* draw message *)
+   glColor3f 1.0 1.0 1.0;
+   glRasterPos2d ~4.5 4.5;
+   glPixelZoom 1.0 ~1.0;
+   blit message;
+
    glEnable GL_TEXTURE_2D;
    glColor3f 1.0 1.0 1.0;
-
-   (* draw message *)
-   glBindTexture GL_TEXTURE_2D (!message_texture);
-   glBegin(GL_QUADS);
-   glTexCoord2i 0 1;
-   glVertex3f (~ 4.0) 2.0 0.0;
-   glTexCoord2i 1 1;
-   glVertex3f (0.0) 2.0 0.0;
-   glTexCoord2i 1 0;
-   glVertex3f 0.0 (4.0) 0.0;
-   glTexCoord2i 0 0;
-   glVertex3f (~4.0) (4.0) 0.0;
-   glEnd();
-
 
 
    (* draw the robot *)
@@ -160,6 +169,7 @@ struct
 
 
    glFlush();
+
    SDL.glflip();
    ()
   end

@@ -53,8 +53,8 @@ int ml_init() {
 
 #else
 
-  if (SDL_Init(SDL_INIT_VIDEO | 
-	       SDL_INIT_TIMER | 
+  if (SDL_Init(SDL_INIT_VIDEO |
+	       SDL_INIT_TIMER |
 	       SDL_INIT_JOYSTICK |
 	       SDL_INIT_AUDIO |
 	       /* for debugging */
@@ -62,9 +62,9 @@ int ml_init() {
 	       SDL_INIT_AUDIO) < 0) {
 
     printf("Unable to initialize SDL. (%s)\n", SDL_GetError());
-    
+
     return 0;
-  } else { 
+  } else {
     SDL_EnableUNICODE(1);
     return 1;
   }
@@ -119,13 +119,13 @@ void ml_setjoystate(int i) {
    make a software surface */
 SDL_Surface * ml_makesurface(int w, int h, int alpha) {
 
-  /* PERF need to investigate relative performance 
+  /* PERF need to investigate relative performance
      of sw/hw surfaces */
   SDL_Surface * ss = 0;
 #if 0
   SDL_CreateRGBSurface(SDL_HWSURFACE |
 		       (alpha?SDL_SRCALPHA:0),
-		       w, h, 32, 
+		       w, h, 32,
 		       rmask, gmask, bmask,
 		       amask);
 #endif
@@ -138,14 +138,16 @@ SDL_Surface * ml_makesurface(int w, int h, int alpha) {
 
   if (ss && !alpha) SDL_SetAlpha(ss, 0, 255);
 
-  /* then convert to the display format. */
+  // XXX we probably don't want this is we are using GL.
 # if USE_DISPLAY_FORMAT
   if (ss) {
     SDL_Surface * rr;
     if (alpha) rr = SDL_DisplayFormatAlpha(ss);
     else rr = SDL_DisplayFormat(ss);
-    SDL_FreeSurface(ss);
-    return rr;
+    if (rr) {
+      SDL_FreeSurface(ss);
+      return rr;
+    } else return ss;
   } else return 0;
 # else
   return ss;
@@ -156,19 +158,19 @@ SDL_Surface * ml_makescreen(int w, int h) {
   /* Can't use HWSURFACE here, because not handling this SDL_BlitSurface
      case mentioned in the documentation:
 
-     "If either of the surfaces were in video memory, and the blit returns -2, 
-     the video memory was lost, so it should be reloaded with artwork 
-     and re-blitted." 
+     "If either of the surfaces were in video memory, and the blit returns -2,
+     the video memory was lost, so it should be reloaded with artwork
+     and re-blitted."
 
      Plus, on Windows, the only time you get HWSURFACE is with FULLSCREEN.
 
      -- Adam
   */
 
-  /* SDL_ANYFORMAT	
-     "Normally, if a video surface of the requested bits-per-pixel (bpp) 
-     is not available, SDL will emulate one with a shadow surface. 
-     Passing SDL_ANYFORMAT prevents this and causes SDL to use the 
+  /* SDL_ANYFORMAT
+     "Normally, if a video surface of the requested bits-per-pixel (bpp)
+     is not available, SDL will emulate one with a shadow surface.
+     Passing SDL_ANYFORMAT prevents this and causes SDL to use the
      video surface, regardless of its pixel depth."
 
      Probably should not pass this.
@@ -187,19 +189,19 @@ SDL_Surface * ml_makefullscreen(int w, int h) {
   /* Can't use HWSURFACE here, because not handling this SDL_BlitSurface
      case mentioned in the documentation:
 
-     "If either of the surfaces were in video memory, and the blit returns -2, 
-     the video memory was lost, so it should be reloaded with artwork 
-     and re-blitted." 
+     "If either of the surfaces were in video memory, and the blit returns -2,
+     the video memory was lost, so it should be reloaded with artwork
+     and re-blitted."
 
      Plus, on Windows, the only time you get HWSURFACE is with FULLSCREEN.
 
      -- Adam
   */
 
-  /* SDL_ANYFORMAT	
-     "Normally, if a video surface of the requested bits-per-pixel (bpp) 
-     is not available, SDL will emulate one with a shadow surface. 
-     Passing SDL_ANYFORMAT prevents this and causes SDL to use the 
+  /* SDL_ANYFORMAT
+     "Normally, if a video surface of the requested bits-per-pixel (bpp)
+     is not available, SDL will emulate one with a shadow surface.
+     Passing SDL_ANYFORMAT prevents this and causes SDL to use the
      video surface, regardless of its pixel depth."
 
      Probably should not pass this.
@@ -218,7 +220,7 @@ SDL_Surface * ml_makefullscreen(int w, int h) {
 SDL_Surface * ml_glmakescreen(int w, int h) {
   SDL_Surface * ret = SDL_SetVideoMode(w, h, 32,
 				       SDL_SWSURFACE |
-                                       SDL_RESIZABLE | 
+                                       SDL_RESIZABLE |
                                        SDL_OPENGL |
                                        SDL_GL_DOUBLEBUFFER);
   return ret;
@@ -231,7 +233,7 @@ void ml_blitall(SDL_Surface * src, SDL_Surface * dst, int x, int y) {
   SDL_BlitSurface(src, 0, dst, &r);
 }
 
-void ml_blit(SDL_Surface * src, int srcx, int srcy, int srcw, int srch, 
+void ml_blit(SDL_Surface * src, int srcx, int srcy, int srcw, int srch,
 	     SDL_Surface * dst, int dstx, int dsty) {
   SDL_Rect sr;
   SDL_Rect dr;
@@ -424,7 +426,7 @@ SDL_Surface * ml_alphadim(SDL_Surface * src) {
   if (src->format->BytesPerPixel != 4) return 0;
 
   int ww = src->w, hh = src->h;
-  
+
   SDL_Surface * ret = ml_makesurface(ww, hh, 1);
 
   if (!ret) return 0;
@@ -437,14 +439,14 @@ SDL_Surface * ml_alphadim(SDL_Surface * src) {
   for(y = 0; y < hh; y ++) {
     for(x = 0; x < ww; x ++) {
       Uint32 color = *((Uint32 *)src->pixels + y*src->pitch/4 + x);
-      
+
       /* divide alpha channel by 2 */
       /* XXX this seems to be wrong on powerpc (dims some other channel
 	 instead). but if the masks are right, how could this go wrong? */
       color =
 	(color & (rmask | gmask | bmask)) |
 	(((color & amask) >> 1) & amask);
-  
+
       *((Uint32 *)ret->pixels + y*ret->pitch/4 + x) = color;
 
     }

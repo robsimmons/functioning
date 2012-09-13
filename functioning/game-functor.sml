@@ -24,7 +24,7 @@ struct
             val num_ticks = Int.max(0,
                                     Real.round(sim_seconds * Game.ticks_per_second))
             val () = last_simulated_time :=
-                     (!last_simulated_time) + 
+                     (!last_simulated_time) +
                       fromReal(Real.fromInt(num_ticks) / Game.ticks_per_second)
           end
       in
@@ -40,7 +40,7 @@ struct
   val () = Game.initscreen screen
 
   val () = last_simulated_time := (Time.now())
-     
+
   val () = loop Game.initstate
 end
 

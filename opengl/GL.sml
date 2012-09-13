@@ -845,6 +845,9 @@ structure GL :> GL =
         val c_glPixelTransferi = _import "glPixelTransferi" stdcall: GLenum * int -> unit;
         fun glPixelTransferi (a:GLenum) (b:int) = c_glPixelTransferi (a,b):unit;
 
+        val c_glPixelZoom = _import "glPixelZoom" stdcall: GLreal * GLreal -> unit;
+        fun glPixelZoom xfactor yfactor = c_glPixelZoom (xfactor, yfactor): unit;
+
         val c_glPointSize = _import "glPointSize" stdcall: GLreal -> unit;
         fun glPointSize size = c_glPointSize size: unit;
 
