@@ -150,6 +150,8 @@ struct
       SOME (init_test VerticalStack.test)
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_1}) s =
       SOME (init_test VaryingRestitution.test)
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_2}) s =
+      SOME (init_test BulletTest.test)
     | handle_event e (s as GS {world, test = Test {handle_event = he, ... }})  =
       (he world e; SOME s)
 

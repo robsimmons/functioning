@@ -10,6 +10,7 @@ Group is
 ../../sml-lib/util/util.sml
 
 types.sml
+bullet-test.sml
 varying-restitution.sml
 vertical-stack.sml
 render.sml
