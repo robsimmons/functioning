@@ -32,13 +32,19 @@ fun init world =
 
         val vert_shape = BDDShape.Polygon
                              (BDDPolygon.rotated_box
-                                  (0.2, 1.0, BDDMath.vec2(0.5, 1.0), 0.0))
+                                  (0.2, 1.0, BDDMath.vec2(1.0, 1.0), 0.0))
         val vert_fixture = BDD.Body.create_fixture_default
                              (ground_body, vert_shape, (), 1.0)
 
+        val vert_shape1 = BDDShape.Polygon
+                             (BDDPolygon.rotated_box
+                                  (0.2, 1.0, BDDMath.vec2(~1.0, 1.0), 0.0))
+        val vert_fixture1 = BDD.Body.create_fixture_default
+                             (ground_body, vert_shape1, (), 1.0)
+
         val bar = BDD.World.create_body (world,
                                           {typ = BDD.Body.Dynamic,
-                                           position = BDDMath.vec2 (0.0, 4.0),
+                                           position = BDDMath.vec2 (0.0, 2.2),
                                            angle = 0.0,
                                            linear_velocity = BDDMath.vec2_zero,
                                            angular_velocity = 0.0,
