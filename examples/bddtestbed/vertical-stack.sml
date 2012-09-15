@@ -106,10 +106,8 @@ fun bullet world =
       val fixture = BDD.Body.create_fixture_default
                         (body, shape, (), 20.0)
       val () = BDD.Fixture.set_restitution (fixture, 0.05)
-                                         
-                                         
   in ()
-  end    
+  end
 
 fun handle_event world (SDL.E_KeyDown {sym = SDL.SDLK_COMMA}) = bullet world
   | handle_event world _ = ()
