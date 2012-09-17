@@ -56,6 +56,9 @@ group is
   body-sig.sml
   body.sml
 
+  joint-sig.sml
+  joint.sml
+
   toi-solver-sig.sml
   toi-solver.sml
 

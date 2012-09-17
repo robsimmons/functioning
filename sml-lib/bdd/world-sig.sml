@@ -84,10 +84,16 @@ sig
       and type body_data = body_data
       and type joint_data = joint_data
 
-  (* XXX *)
-  structure Joint : sig
-    type joint_type
-  end
+  structure Joint : BDDJOINT
+    where type body = body
+      and type fixture = fixture
+      and type joint = joint
+      and type world = world
+      and type contact = contact
+      and type filter = filter
+      and type fixture_data = fixture_data
+      and type body_data = body_data
+      and type joint_data = joint_data
 
   structure World :
   sig

@@ -23,17 +23,18 @@ struct
   structure D = BDDDynamics
   structure Body = BDDBody(Arg)
   structure Fixture = BDDFixture(Arg)
+  structure Joint = BDDJoint(Arg)
   structure Contact = BDDContact(Arg)
   structure DT = BDDDynamicsTypes(Arg)
   type filter = D.filter
   open DT
 
-  (* XXX implement! *)
+(*  (* XXX implement! *)
   structure Joint = struct
     datatype joint_type = JointsUnimplemented
     fun get_next _ = raise BDDWorld "joints are unimplemented"
   end
-
+*)
   fun !! (SOME x) = x
     | !! NONE = raise BDDWorld "Expected non-NONE value, like Box2D does"
 
