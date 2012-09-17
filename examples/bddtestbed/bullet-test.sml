@@ -12,7 +12,7 @@ fun init world =
     let
         val ground_body = BDD.World.create_body (world,
                                                  {typ = BDD.Body.Static,
-                                                  position = BDDMath.vec2 (0.0, ~0.01),
+                                                  position = BDDMath.vec2 (0.0, 0.0),
                                                   angle = 0.0,
                                                   linear_velocity = BDDMath.vec2_zero,
                                                   angular_velocity = 0.0,
@@ -26,7 +26,9 @@ fun init world =
                                                   data = (),
                                                   inertia_scale = 1.0
                                                 })
-        val ground_shape = BDDShape.Polygon (BDDPolygon.box (10.0, 0.01))
+        val ground_shape = BDDShape.Polygon
+                               (BDDPolygon.edge (BDDMath.vec2(~10.0, 0.0),
+                                                 BDDMath.vec2(10.0, 0.0)))
         val ground_fixture = BDD.Body.create_fixture_default
                              (ground_body, ground_shape, (), 1.0)
 
