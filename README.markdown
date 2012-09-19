@@ -16,7 +16,7 @@ Functioning requires the MLton Standard ML compiler.
 
 ### Windows
 
-???
+??? (Should be possible with a bit of work)
 
 ### Setup
 
