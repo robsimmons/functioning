@@ -4,17 +4,17 @@
 
 Functioning requires the MLton Standard ML compiler.
 
-### Dependencies in OSX
+### OSX
 
 * Get GMP with MacPorts or Homebrew.
 * Install MLton.
 
-### Dependencies in Linux
+### Linux
 
 * Get SDL, SDL Image, SDL Net, SDL Mixer
 * Install MLton
 
-### Windows:
+### Windows
 
 ???
 
