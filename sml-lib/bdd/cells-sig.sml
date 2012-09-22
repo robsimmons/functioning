@@ -241,19 +241,19 @@ sig
 
   structure G :
   sig
-    val get_other : ('b, 'f, 'j) jointedge -> (('b, 'f, 'j) body)
-    val get_joint : ('b, 'f, 'j) jointedge -> (('b, 'f, 'j) joint)
+    val get_other : ('b, 'f, 'j) jointedge -> (('b, 'f, 'j) body option)
+    val get_joint : ('b, 'f, 'j) jointedge -> (('b, 'f, 'j) joint option)
     val get_prev : ('b, 'f, 'j) jointedge -> (('b, 'f, 'j) jointedge option)
     val get_next : ('b, 'f, 'j) jointedge -> (('b, 'f, 'j) jointedge option)
 
-    val set_other : ('b, 'f, 'j) jointedge * (('b, 'f, 'j) body) -> unit
-    val set_joint : ('b, 'f, 'j) jointedge * (('b, 'f, 'j) joint) -> unit
+    val set_other : ('b, 'f, 'j) jointedge * (('b, 'f, 'j) body option) -> unit
+    val set_joint : ('b, 'f, 'j) jointedge * (('b, 'f, 'j) joint option) -> unit
     val set_prev : ('b, 'f, 'j) jointedge * (('b, 'f, 'j) jointedge option) -> unit
     val set_next : ('b, 'f, 'j) jointedge * (('b, 'f, 'j) jointedge option) -> unit
 
     val new : {
-      other : ('b, 'f, 'j) body,
-      joint : ('b, 'f, 'j) joint,
+      other : ('b, 'f, 'j) body option,
+      joint : ('b, 'f, 'j) joint option,
       prev : ('b, 'f, 'j) jointedge option,
       next : ('b, 'f, 'j) jointedge option } -> ('b, 'f, 'j) jointedge
     val eq : ('b, 'f, 'j) jointedge * ('b, 'f, 'j) jointedge -> bool

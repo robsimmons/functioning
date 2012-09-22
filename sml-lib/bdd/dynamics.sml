@@ -142,9 +142,8 @@ struct
   struct
     open BDDCells.G
 
-(*    fun new () = BDDCells.G.new { joint = NONE, other = NONE,
+    fun new () = BDDCells.G.new { joint = NONE, other = NONE,
                                   prev = NONE, next = NONE }
-*)
   end
 
   (* Internal, joints *)
@@ -168,10 +167,10 @@ struct
                          typ = typ,
                          prev = NONE,
                          next = NONE,
-                         edge_a = raise BDDDynamics "unimplemented",
-                         edge_b = raise BDDDynamics "unimplemented",
-                         body_a = raise BDDDynamics "unimplemented",
-                         body_b = raise BDDDynamics "unimplemented",
+                         edge_a = G.new (),
+                         edge_b = G.new (),
+                         body_a = body_a,
+                         body_b = body_b,
                          data = user_data,
                          local_center_a = vec2 (0.0, 0.0),
                          local_center_b = vec2 (0.0, 0.0),

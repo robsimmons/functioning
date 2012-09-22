@@ -129,9 +129,10 @@ fun joint cc = ("J", "Joint", "joint", "JOINT",
    nodes, one for each attached body. *)
 fun jointedge cc = ("G", "JointEdge", "jointedge", "JOINTEDGE",
                  [(* The other body of the joint. *)
-                  ("other", cc "body" ^ ""),
+                  (* do these really need to be optional? *)
+                  ("other", cc "body" ^ " option"),
                   (* The joint. *)
-                  ("joint", cc "joint" ^ ""),
+                  ("joint", cc "joint" ^ " option"),
                   (* The previous and next joint edges in the body's
                      joint list. *)
                   ("prev", cc "jointedge" ^ " option"),
