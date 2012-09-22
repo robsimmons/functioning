@@ -372,7 +372,7 @@ void b2World::DestroyJoint(b2Joint* j)
          let
              (* Delete the attached joints. *)
              fun one_jointedge je =
-                 let val j = D.G.get_joint je
+                 let val j = !! (D.G.get_joint je)
                  in get_goodbye_joint_hook world j;
                     destroy_joint j
                  end
@@ -602,7 +602,7 @@ void b2World::DestroyJoint(b2Joint* j)
 
                      fun one_jedge (je : jointedge) =
                        let val other = D.G.get_other je
-                           val joint = D.G.get_joint je
+                           val joint = !! (D.G.get_joint je)
                        in
                            (* If we've already visited this joint, or the
                               attached body is inactive, then skip *)

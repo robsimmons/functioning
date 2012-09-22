@@ -75,7 +75,7 @@ struct
     inv_i_b : (real) ref }
 
   and ('b, 'f, 'j) jointedgecell = G of {
-    other : (('b, 'f, 'j) bodycell option) ref,
+    other : (('b, 'f, 'j) bodycell) ref,
     joint : (('b, 'f, 'j) jointcell option) ref,
     prev : (('b, 'f, 'j) jointedgecell option) ref,
     next : (('b, 'f, 'j) jointedgecell option) ref }

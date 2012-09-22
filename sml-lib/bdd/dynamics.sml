@@ -142,8 +142,8 @@ struct
   struct
     open BDDCells.G
 
-    fun new () = BDDCells.G.new { joint = NONE, other = NONE,
-                                  prev = NONE, next = NONE }
+    fun new (other_body) = BDDCells.G.new { joint = NONE, other = other_body,
+                                            prev = NONE, next = NONE }
   end
 
   (* Internal, joints *)
@@ -167,8 +167,8 @@ struct
                          typ = typ,
                          prev = NONE,
                          next = NONE,
-                         edge_a = G.new (),
-                         edge_b = G.new (),
+                         edge_a = G.new (body_b),
+                         edge_b = G.new (body_a),
                          body_a = body_a,
                          body_b = body_b,
                          data = user_data,
@@ -308,7 +308,7 @@ struct
             in (oapp G.get_next
                   (fn jn =>
                    if eq(G.get_other jn, other)
-                   then if J.get_collide_connected (G.get_joint jn) = false
+                   then if J.get_collide_connected (!! "should_collide" (G.get_joint jn)) = false
                         then raise ReturnFalse
                         else ()
                    else ())
