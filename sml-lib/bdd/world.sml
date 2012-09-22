@@ -222,9 +222,12 @@ struct
                 (D.G.set_prev (j, SOME edge_b);
                  D.G.set_next (edge_b, SOME j))
             val () = D.B.set_joint_list (body_b, SOME edge_b)
+            fun one_edge ce = if D.B.eq (!!(D.E.get_other ce), body_a)
+                              then D.C.flag_for_filtering (!! (D.E.get_contact ce))
+                              else ()
             val () =
                 if collide_connected then ()
-                else () (* ... *)
+                else oapp D.E.get_next one_edge (D.B.get_contact_list body_b)
 
         in joint
         end
