@@ -183,7 +183,7 @@ struct
       in
           body
       end
-            
+
     (* Joints are unimplemented for now. *)
     fun create_joint (world : world,
                       def as { typ : Joint.joint_type,
@@ -196,44 +196,41 @@ struct
         else
         let
             val joint = D.J.new (world, def)
+            (* Connect to the world list. *)
+            val () = case get_joint_list world of
+                NONE => ()
+              | SOME j =>
+                (D.J.set_prev (j, SOME joint);
+                 D.J.set_next (joint, SOME j))
+            val () = set_joint_list (world, SOME joint)
+            val () = set_joint_count (world, get_joint_count world + 1)
+            (* Connect to the bodies' doubly linked lists. *)
+            val edge_a = D.J.get_edge_a joint
+            (* edge_a.other got set in the call to D.J.new *)
+            val () = case D.B.get_joint_list body_a of
+                NONE => ()
+              | SOME j =>
+                (D.G.set_prev (j, SOME edge_a);
+                 D.G.set_next (edge_a, SOME j))
+            val () = D.B.set_joint_list (body_a, SOME edge_a)
+
+            val edge_b = D.J.get_edge_b joint
+            (* edge_b.other got set in the call to D.J.new *)
+            val () = case D.B.get_joint_list body_b of
+                NONE => ()
+              | SOME j =>
+                (D.G.set_prev (j, SOME edge_b);
+                 D.G.set_next (edge_b, SOME j))
+            val () = D.B.set_joint_list (body_b, SOME edge_b)
+            val () =
+                if collide_connected then ()
+                else () (* ... *)
+
         in joint
         end
 
 (*
 b2Joint* b2World::CreateJoint(const b2JointDef* def)
-{
-        b2Assert(IsLocked() == false);
-        if (IsLocked())
-        {
-                return NULL;
-        }
-
-        b2Joint* j = b2Joint::Create(def, &m_blockAllocator);
-
-        // Connect to the world list.
-        j->m_prev = NULL;
-        j->m_next = m_jointList;
-        if (m_jointList)
-        {
-                m_jointList->m_prev = j;
-        }
-        m_jointList = j;
-        ++m_jointCount;
-
-        // Connect to the bodies' doubly linked lists.
-        j->m_edgeA.joint = j;
-        j->m_edgeA.other = j->m_bodyB;
-        j->m_edgeA.prev = NULL;
-        j->m_edgeA.next = j->m_bodyA->m_jointList;
-        if (j->m_bodyA->m_jointList) j->m_bodyA->m_jointList->prev = &j->m_edgeA;
-        j->m_bodyA->m_jointList = &j->m_edgeA;
-
-        j->m_edgeB.joint = j;
-        j->m_edgeB.other = j->m_bodyA;
-        j->m_edgeB.prev = NULL;
-        j->m_edgeB.next = j->m_bodyB->m_jointList;
-        if (j->m_bodyB->m_jointList) j->m_bodyB->m_jointList->prev = &j->m_edgeB;
-        j->m_bodyB->m_jointList = &j->m_edgeB;
 
         b2Body* bodyA = def->bodyA;
         b2Body* bodyB = def->bodyB;
