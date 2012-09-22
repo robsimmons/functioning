@@ -184,7 +184,6 @@ struct
           body
       end
 
-    (* Joints are unimplemented for now. *)
     fun create_joint (world : world,
                       def as { typ : Joint.joint_type,
                                user_data : joint_data,
@@ -232,133 +231,88 @@ struct
         in joint
         end
 
-(*
-b2Joint* b2World::CreateJoint(const b2JointDef* def)
+    fun destroy_joint (world : world, joint : joint) : unit =
+        if is_locked world
+        then raise BDDWorld "Can't call destroy_joint from callbacks."
+        else
+        let
+            (* Remove from the doubly linked list. *)
+            val () = case D.J.get_prev joint of
+                NONE => ()
+              | SOME j => D.J.set_next (j, (D.J.get_next joint))
 
-        b2Body* bodyA = def->bodyA;
-        b2Body* bodyB = def->bodyB;
+            val () = case D.J.get_next joint of
+                NONE => ()
+              | SOME j => D.J.set_prev (j, (D.J.get_prev joint))
 
-        // If the joint prevents collisions, then flag any contacts for filtering.
-        if (def->collideConnected == false)
-        {
-                b2ContactEdge* edge = bodyB->GetContactList();
-                while (edge)
-                {
-                        if (edge->other == bodyA)
-                        {
-                                // Flag the contact for filtering at the next time step (where either
-                                // body is awake).
-                                edge->contact->FlagForFiltering();
-                        }
+            val () = case get_joint_list world of
+                NONE => ()
+              | SOME j => if D.J.eq (j, joint)
+                          then set_joint_list (world, D.J.get_next joint)
+                          else ()
 
-                        edge = edge->next;
-                }
-        }
+            (* Disconnect from island graph. *)
+            val body_a = D.J.get_body_a joint
+            val body_b = D.J.get_body_b joint
+            val edge_a = D.J.get_edge_a joint
+            val edge_b = D.J.get_edge_b joint
+            (* Wake up connected bodies. *)
+            val () = D.B.set_awake (body_a, true)
+            val () = D.B.set_awake (body_b, true)
 
-        // Note: creating a joint doesn't wake the bodies.
+            (* Remove from body a. *)
+            val () = case D.G.get_prev edge_a of
+                NONE => ()
+              | SOME je => D.G.set_next (je, D.G.get_next edge_a)
 
-        return j;
-}
-*)
+            val () = case D.G.get_next edge_a of
+                NONE => ()
+              | SOME je => D.G.set_prev (je, D.G.get_prev edge_a)
 
-    fun destroy_joint (joint : joint) : unit =
-        raise BDDWorld "unimplemented"
-(*
-void b2World::DestroyJoint(b2Joint* j)
-{
-        b2Assert(IsLocked() == false);
-        if (IsLocked())
-        {
-                return;
-        }
+            val () = case D.B.get_joint_list body_a of
+                NONE => ()
+              | SOME je => if D.G.eq (je, edge_a)
+                           then D.B.set_joint_list (body_a,
+                                                    D.G.get_next edge_a)
+                           else ()
 
-        bool collideConnected = j->m_collideConnected;
+            val () = D.G.set_prev (edge_a, NONE)
+            val () = D.G.set_next (edge_a, NONE)
 
-        // Remove from the doubly linked list.
-        if (j->m_prev)
-        {
-                j->m_prev->m_next = j->m_next;
-        }
+            (* Remove from body b. *)
+            val () = case D.G.get_prev edge_b of
+                NONE => ()
+              | SOME je => D.G.set_next (je, D.G.get_next edge_b)
 
-        if (j->m_next)
-        {
-                j->m_next->m_prev = j->m_prev;
-        }
+            val () = case D.G.get_next edge_b of
+                NONE => ()
+              | SOME je => D.G.set_prev (je, D.G.get_prev edge_b)
 
-        if (j == m_jointList)
-        {
-                m_jointList = j->m_next;
-        }
+            val () = case D.B.get_joint_list body_b of
+                NONE => ()
+              | SOME je => if D.G.eq (je, edge_b)
+                           then D.B.set_joint_list (body_b,
+                                                    D.G.get_next edge_b)
+                           else ()
 
-        // Disconnect from island graph.
-        b2Body* bodyA = j->m_bodyA;
-        b2Body* bodyB = j->m_bodyB;
+            val () = D.G.set_prev (edge_b, NONE)
+            val () = D.G.set_next (edge_b, NONE)
+            (* b2Joint::Destroy(j, &m_blockAllocator); *)
+            val () = set_joint_count (world, get_joint_count world - 1)
+            val () = if get_joint_count world < 0
+                     then raise BDDWorld "negative joint count"
+                     else ()
 
-        // Wake up connected bodies.
-        bodyA->SetAwake(true);
-        bodyB->SetAwake(true);
-
-        // Remove from body 1.
-        if (j->m_edgeA.prev)
-        {
-                j->m_edgeA.prev->next = j->m_edgeA.next;
-        }
-
-        if (j->m_edgeA.next)
-        {
-                j->m_edgeA.next->prev = j->m_edgeA.prev;
-        }
-
-        if (&j->m_edgeA == bodyA->m_jointList)
-        {
-                bodyA->m_jointList = j->m_edgeA.next;
-        }
-
-        j->m_edgeA.prev = NULL;
-        j->m_edgeA.next = NULL;
-
-        // Remove from body 2
-        if (j->m_edgeB.prev)
-        {
-                j->m_edgeB.prev->next = j->m_edgeB.next;
-        }
-
-        if (j->m_edgeB.next)
-        {
-                j->m_edgeB.next->prev = j->m_edgeB.prev;
-        }
-
-        if (&j->m_edgeB == bodyB->m_jointList)
-        {
-                bodyB->m_jointList = j->m_edgeB.next;
-        }
-
-        j->m_edgeB.prev = NULL;
-        j->m_edgeB.next = NULL;
-
-        b2Joint::Destroy(j, &m_blockAllocator);
-
-        b2Assert(m_jointCount > 0);
-        --m_jointCount;
-
-        // If the joint prevents collisions, then flag any contacts for filtering.
-        if (collideConnected == false)
-        {
-                b2ContactEdge* edge = bodyB->GetContactList();
-                while (edge)
-                {
-                        if (edge->other == bodyA)
-                        {
-                                // Flag the contact for filtering at the next time step (where either
-                                // body is awake).
-                                edge->contact->FlagForFiltering();
-                        }
-
-                        edge = edge->next;
-                }
-        }
-}
-*)
+            (* If the joint prevents collisions, then flag any contacts for filtering. *)
+            (* Port note: this is exactly the same code as in create_joint. *)
+            fun one_edge ce = if D.B.eq (!!(D.E.get_other ce), body_a)
+                              then D.C.flag_for_filtering (!! (D.E.get_contact ce))
+                              else ()
+        in
+            if D.J.get_collide_connected joint
+            then ()
+            else oapp D.E.get_next one_edge (D.B.get_contact_list body_b)
+        end
 
     fun oeq e (NONE, NONE) = true
       | oeq e (SOME a, SOME b) = e (a, b)
@@ -374,7 +328,7 @@ void b2World::DestroyJoint(b2Joint* j)
              fun one_jointedge je =
                  let val j = !! (D.G.get_joint je)
                  in get_goodbye_joint_hook world j;
-                    destroy_joint j
+                    destroy_joint (world, j)
                  end
              val () = oapp D.G.get_next one_jointedge (D.B.get_joint_list body)
              val () = D.B.set_joint_list (body, NONE)

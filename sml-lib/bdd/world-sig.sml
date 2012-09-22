@@ -191,7 +191,7 @@ sig
 
     (* Destroy a joint. This may cause the connected bodies to begin colliding.
        This function may not be used during callbacks. *)
-    val destroy_joint : joint -> unit
+    val destroy_joint : world * joint -> unit
 
     (* step world time_step velocity_iterations position_iterations
        Take a time step. This performs collision detection, integration,
