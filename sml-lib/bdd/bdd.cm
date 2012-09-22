@@ -59,6 +59,8 @@ group is
   joint-sig.sml
   joint.sml
 
+  mouse-joint.sml
+
   toi-solver-sig.sml
   toi-solver.sml
 

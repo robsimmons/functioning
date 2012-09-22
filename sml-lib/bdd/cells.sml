@@ -60,6 +60,7 @@ struct
   and ('b, 'f, 'j) jointcell = J of {
     flags : (Word8.word) ref,
     typ : (BDDDynamicsTypes.joint_type) ref,
+    dispatch : (BDDDynamicsTypes.joint_dispatch option) ref,
     prev : (('b, 'f, 'j) jointcell option) ref,
     next : (('b, 'f, 'j) jointcell option) ref,
     edge_a : (('b, 'f, 'j) jointedgecell) ref,
@@ -251,6 +252,7 @@ struct
   struct
     fun get_flags (J { flags, ... }) = !flags
     fun get_typ (J { typ, ... }) = !typ
+    fun get_dispatch (J { dispatch, ... }) = !dispatch
     fun get_prev (J { prev, ... }) = !prev
     fun get_next (J { next, ... }) = !next
     fun get_edge_a (J { edge_a, ... }) = !edge_a
@@ -266,6 +268,7 @@ struct
     fun get_inv_i_b (J { inv_i_b, ... }) = !inv_i_b
     fun set_flags (J { flags, ... }, v) = flags := v
     fun set_typ (J { typ, ... }, v) = typ := v
+    fun set_dispatch (J { dispatch, ... }, v) = dispatch := v
     fun set_prev (J { prev, ... }, v) = prev := v
     fun set_next (J { next, ... }, v) = next := v
     fun set_edge_a (J { edge_a, ... }, v) = edge_a := v
@@ -279,14 +282,15 @@ struct
     fun set_inv_i_a (J { inv_i_a, ... }, v) = inv_i_a := v
     fun set_inv_mass_b (J { inv_mass_b, ... }, v) = inv_mass_b := v
     fun set_inv_i_b (J { inv_i_b, ... }, v) = inv_i_b := v
-    fun new ({ flags, typ, prev, next, edge_a, edge_b, body_a, body_b, data,
-    local_center_a, local_center_b, inv_mass_a, inv_i_a, inv_mass_b, inv_i_b })
-    = 
-      J { flags = ref flags, typ = ref typ, prev = ref prev, next = ref next,
-      edge_a = ref edge_a, edge_b = ref edge_b, body_a = ref body_a, body_b =
-      ref body_b, data = ref data, local_center_a = ref local_center_a,
-      local_center_b = ref local_center_b, inv_mass_a = ref inv_mass_a, inv_i_a
-      = ref inv_i_a, inv_mass_b = ref inv_mass_b, inv_i_b = ref inv_i_b }
+    fun new ({ flags, typ, dispatch, prev, next, edge_a, edge_b, body_a,
+    body_b, data, local_center_a, local_center_b, inv_mass_a, inv_i_a,
+    inv_mass_b, inv_i_b }) = 
+      J { flags = ref flags, typ = ref typ, dispatch = ref dispatch, prev = ref
+      prev, next = ref next, edge_a = ref edge_a, edge_b = ref edge_b, body_a =
+      ref body_a, body_b = ref body_b, data = ref data, local_center_a = ref
+      local_center_a, local_center_b = ref local_center_b, inv_mass_a = ref
+      inv_mass_a, inv_i_a = ref inv_i_a, inv_mass_b = ref inv_mass_b, inv_i_b =
+      ref inv_i_b }
     fun eq (J { flags, ... }, J { flags = r___, ... }) =
         flags = r___
   end

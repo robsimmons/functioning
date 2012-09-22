@@ -64,4 +64,9 @@ struct
                      position_iterations : int,
                      warm_starting : bool }
 
+  type joint_dispatch = { init_velocity_constraints : time_step -> unit,
+                          solve_velocity_constraints : time_step -> unit,
+                          solve_position_constraints : real -> bool
+                        }
+
 end

@@ -165,6 +165,7 @@ struct
     fun new (world, {typ, user_data, body_a, body_b, collide_connected}) =
         BDDCells.J.new { flags = 0w0,
                          typ = typ,
+                         dispatch = NONE,
                          prev = NONE,
                          next = NONE,
                          edge_a = G.new (body_b),
