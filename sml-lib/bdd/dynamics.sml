@@ -141,6 +141,10 @@ struct
   structure G =
   struct
     open BDDCells.G
+
+(*    fun new () = BDDCells.G.new { joint = NONE, other = NONE,
+                                  prev = NONE, next = NONE }
+*)
   end
 
   (* Internal, joints *)
@@ -149,6 +153,7 @@ struct
     val FLAG_ISLAND = 0wx1 : Word8.word
     val FLAG_COLLIDE_CONNECTED = 0wx2 : Word8.word
 
+    datatype joint_type = datatype BDDDynamicsTypes.joint_type
     open BDDCells.J
 
     fun get_flag (j, f) = Word8.andb (f, get_flags j) <> 0w0
@@ -156,6 +161,25 @@ struct
     fun clear_flag (j, f) = set_flags (j, Word8.andb(get_flags j, Word8.notb f))
 
     fun get_collide_connected j = get_flag(j, FLAG_COLLIDE_CONNECTED)
+
+    (* Port note: Corresponding to b2Joint::Create and new *)
+    fun new (world, {typ, user_data, body_a, body_b, collide_connected}) =
+        BDDCells.J.new { flags = 0w0,
+                         typ = typ,
+                         prev = NONE,
+                         next = NONE,
+                         edge_a = raise BDDDynamics "unimplemented",
+                         edge_b = raise BDDDynamics "unimplemented",
+                         body_a = raise BDDDynamics "unimplemented",
+                         body_b = raise BDDDynamics "unimplemented",
+                         data = user_data,
+                         local_center_a = vec2 (0.0, 0.0),
+                         local_center_b = vec2 (0.0, 0.0),
+                         inv_mass_a = 0.0,
+                         inv_i_a = 0.0,
+                         inv_mass_b = 0.0,
+                         inv_i_b = 0.0
+                       }
 
     (* Used in island solver *)
     fun init_velocity_constraints (j : ('b, 'f, 'j) joint,

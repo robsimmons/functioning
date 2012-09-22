@@ -15,7 +15,17 @@ sig
   type contactedge
   type jointedge
 
-  type joint_type
+  datatype joint_type =
+      Revolute
+    | Prismatic
+    | Distance
+    | Pulley
+    | Mouse
+    | Gear
+    | Line
+    | Weld
+    | Friction
+
 
   val get_next : joint -> joint option
 

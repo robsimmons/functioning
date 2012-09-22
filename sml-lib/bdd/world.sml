@@ -29,12 +29,6 @@ struct
   type filter = D.filter
   open DT
 
-(*  (* XXX implement! *)
-  structure Joint = struct
-    datatype joint_type = JointsUnimplemented
-    fun get_next _ = raise BDDWorld "joints are unimplemented"
-  end
-*)
   fun !! (SOME x) = x
     | !! NONE = raise BDDWorld "Expected non-NONE value, like Box2D does"
 
@@ -192,12 +186,19 @@ struct
             
     (* Joints are unimplemented for now. *)
     fun create_joint (world : world,
-                      { typ : Joint.joint_type,
-                        user_data : joint_data,
-                        body_a : body,
-                        body_b : body,
-                        collide_connected : bool }) : joint =
-        raise BDDWorld "unimplemented"
+                      def as { typ : Joint.joint_type,
+                               user_data : joint_data,
+                               body_a : body,
+                               body_b : body,
+                               collide_connected : bool }) : joint =
+        if is_locked world
+        then raise BDDWorld "Can't call create_joint from callbacks."
+        else
+        let
+            val joint = D.J.new (world, def)
+        in joint
+        end
+
 (*
 b2Joint* b2World::CreateJoint(const b2JointDef* def)
 {

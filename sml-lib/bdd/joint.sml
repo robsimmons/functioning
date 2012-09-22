@@ -22,7 +22,5 @@ struct
 
   open D.J
 
-  datatype joint_type = MouseJoint
-                      | RevoluteJoint
 
 end
