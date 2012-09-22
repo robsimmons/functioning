@@ -162,39 +162,44 @@ struct
     fun get_collide_connected j = get_flag(j, FLAG_COLLIDE_CONNECTED)
 
     (* Port note: Corresponding to b2Joint::Create and new *)
-    fun new (world, {typ, user_data, body_a, body_b, collide_connected}) =
-        BDDCells.J.new { flags = 0w0,
-                         typ = typ,
-                         dispatch = NONE,
-                         prev = NONE,
-                         next = NONE,
-                         edge_a = G.new (body_b),
-                         edge_b = G.new (body_a),
-                         body_a = body_a,
-                         body_b = body_b,
-                         data = user_data,
-                         local_center_a = vec2 (0.0, 0.0),
-                         local_center_b = vec2 (0.0, 0.0),
-                         inv_mass_a = 0.0,
-                         inv_i_a = 0.0,
-                         inv_mass_b = 0.0,
-                         inv_i_b = 0.0
-                       }
+    fun new (world, {dispatch, typ, user_data, body_a, body_b, collide_connected}) =
+        let val joint = BDDCells.J.new { flags = 0w0,
+                                         typ = typ,
+                                         dispatch = NONE,
+                                         prev = NONE,
+                                         next = NONE,
+                                         edge_a = G.new (body_b),
+                                         edge_b = G.new (body_a),
+                                         body_a = body_a,
+                                         body_b = body_b,
+                                         data = user_data,
+                                         local_center_a = vec2 (0.0, 0.0),
+                                         local_center_b = vec2 (0.0, 0.0),
+                                         inv_mass_a = 0.0,
+                                         inv_i_a = 0.0,
+                                         inv_mass_b = 0.0,
+                                         inv_i_b = 0.0
+                                       }
+            val () = set_dispatch (joint, SOME (dispatch joint))
+        in
+            joint
+        end
 
     (* Used in island solver *)
     fun init_velocity_constraints (j : ('b, 'f, 'j) joint,
                                    step : BDDDynamicsTypes.time_step) : unit =
-        raise BDDDynamics "unimplemented"
+        (#init_velocity_constraints (!! "init vel constraints" (get_dispatch j))) step
 
     (* Used in island solver *)
     fun solve_velocity_constraints (j : ('b, 'f, 'j) joint,
                                     step : BDDDynamicsTypes.time_step) : unit =
-        raise BDDDynamics "unimplemented"
+        (#solve_velocity_constraints (!! "solve vel constraints" (get_dispatch j))) step
 
     (* Used in island solver *)
     fun solve_position_constraints (j : ('b, 'f, 'j) joint,
                                     baumgarte : real) : bool =
-        raise BDDDynamics "unimplemented"
+        (#solve_position_constraints (!! "solve pos constraints" (get_dispatch j))) baumgarte
+
   end
 
   (* Internal, bodies *)

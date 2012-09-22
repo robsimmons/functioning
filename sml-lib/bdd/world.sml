@@ -185,7 +185,8 @@ struct
       end
 
     fun create_joint (world : world,
-                      def as { typ : Joint.joint_type,
+                      def as { dispatch : joint -> BDDDynamicsTypes.joint_dispatch,
+                               typ : Joint.joint_type,
                                user_data : joint_data,
                                body_a : body,
                                body_b : body,
