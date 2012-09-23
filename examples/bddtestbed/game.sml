@@ -159,8 +159,14 @@ struct
   end
 
   fun mouse_motion (s as GS {world, mouse_joint = NONE, test}) p = SOME s
-    | mouse_motion (s as GS {world, mouse_joint = SOME j, test}) p = SOME s
-(* ??? *)
+    | mouse_motion (s as GS {world, mouse_joint = SOME j, test}) p =
+      let val set_target = case BDD.Joint.get_specialized_methods j
+                            of BDDDynamicsTypes.MouseMethods st => st
+                             | _ => raise Fail "What"
+          val () = set_target p
+      in
+          SOME s
+      end
 
   fun mouse_down (s as GS {world, mouse_joint, test}) p =
       let val d = BDDMath.vec2 (0.001, 0.001)

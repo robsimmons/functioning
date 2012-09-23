@@ -29,4 +29,6 @@ sig
 
   val get_next : joint -> joint option
 
+  val get_specialized_methods : joint -> BDDDynamicsTypes.joint_methods
+
 end

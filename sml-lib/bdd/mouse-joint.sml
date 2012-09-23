@@ -142,11 +142,21 @@ fun new { target : vec2,
 
         fun solve_position_constraints ts = true
 
-    in
-        { init_velocity_constraints = init_velocity_constraints,
+        fun set_target new_target =
+            let val () = D.B.set_awake (body_b, true)
+            in
+                m_target := new_target
+            end
+
+        val dispatch =
+        { specialized_methods = BDDDynamicsTypes.MouseMethods set_target,
+          init_velocity_constraints = init_velocity_constraints,
           solve_velocity_constraints = solve_velocity_constraints,
           solve_position_constraints = solve_position_constraints
         }
+
+    in
+        dispatch
     end
 
 end

@@ -73,7 +73,12 @@ struct
                      position_iterations : int,
                      warm_starting : bool }
 
-  type joint_dispatch = { init_velocity_constraints : time_step -> unit,
+  datatype joint_methods =
+           MouseMethods of BDDMath.vec2 -> unit
+         | NoMethods of unit
+
+  type joint_dispatch = { specialized_methods : joint_methods,
+                          init_velocity_constraints : time_step -> unit,
                           solve_velocity_constraints : time_step -> unit,
                           solve_position_constraints : real -> bool
                         }
