@@ -6,8 +6,9 @@
    Corresponding to dynamics/b2world.cpp and 
    dynamics/contacts/b2contactmanager.cpp. *)
 functor BDDWorld(Arg : BDDWORLD_ARG) :>
-  BDDWORLD where type fixture_data = Arg.fixture_data 
-             and type body_data = Arg.body_data =
+  BDDWORLD where type fixture_data = Arg.fixture_data
+             and type body_data = Arg.body_data
+             and type joint_data = Arg.joint_data =
 struct
   open Arg
   open BDDSettings
@@ -185,8 +186,7 @@ struct
       end
 
     fun create_joint (world : world,
-                      def as { dispatch : joint -> BDDDynamicsTypes.joint_dispatch,
-                               typ : Joint.joint_type,
+                      def as { typ : Joint.joint_type,
                                user_data : joint_data,
                                body_a : body,
                                body_b : body,
@@ -195,7 +195,10 @@ struct
         then raise BDDWorld "Can't call create_joint from callbacks."
         else
         let
-            val joint = D.J.new (world, def)
+            val dispatch = case typ of
+                        T.Mouse mj => BDDMouseJoint.new mj
+                      | _ => raise BDDWorld "Unimplemented"
+            val joint = D.J.new (world, dispatch, def)
             (* Connect to the world list. *)
             val () = case get_joint_list world of
                 NONE => ()
@@ -826,7 +829,7 @@ struct
                (case D.B.get_typ b of
                     T.Kinematic => true
                   | T.Static => true
-                  | T.Dynamic => false) 
+                  | T.Dynamic => false)
             then D.B.set_flag (b, D.B.FLAG_TOI)
             else D.B.clear_flag (b, D.B.FLAG_TOI)
           val () = oapp D.B.get_next onebody_toi (get_body_list world)

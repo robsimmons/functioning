@@ -162,7 +162,7 @@ struct
     fun get_collide_connected j = get_flag(j, FLAG_COLLIDE_CONNECTED)
 
     (* Port note: Corresponding to b2Joint::Create and new *)
-    fun new (world, {dispatch, typ, user_data, body_a, body_b, collide_connected}) =
+    fun new (world, dispatch, {typ, user_data, body_a, body_b, collide_connected}) =
         let val joint = BDDCells.J.new { flags = 0w0,
                                          typ = typ,
                                          dispatch = NONE,

@@ -176,19 +176,19 @@ struct
               NONE => ()
             | SOME f => let val body = BDD.Fixture.get_body f
                             val mass = BDD.Body.get_mass body
-                            val mj = BDDMouseJoint.new {target = p,
+                             val j = BDD.World.create_joint
+                                    (world, {
+                                             typ = BDD.Joint.Mouse
+                                                       {target = p,
                                                         max_force = 1000.0 * mass,
                                                         frequency_hz = 5.0,
                                                         damping_ratio = 0.7
-                                                       }
-(*                            val j = BDD.World.create_joint
-                                    (world, {dispatch = mj,
-                                             typ = BDD.Joint.Mouse,
+                                                       },
                                              user_data = (),
                                              body_a = body,
                                              body_b = body,
                                              collide_connected = false
-                                            }) *)
+                                            })
                             val () = BDD.Body.set_awake (body, true)
                         in ()
                         end

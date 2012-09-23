@@ -20,7 +20,7 @@ sig
     | Prismatic
     | Distance
     | Pulley
-    | Mouse
+    | Mouse of BDDDynamicsTypes.mouse_joint
     | Gear
     | Line
     | Weld

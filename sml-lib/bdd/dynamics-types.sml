@@ -24,12 +24,21 @@ struct
     | Kinematic
     | Dynamic
 
+  type mouse_joint =
+       {
+        target : BDDMath.vec2,
+        max_force : real,
+        frequency_hz : real,
+        damping_ratio : real
+       }
+
+
   datatype joint_type =
       Revolute
     | Prismatic
     | Distance
     | Pulley
-    | Mouse
+    | Mouse of mouse_joint
     | Gear
     | Line
     | Weld
