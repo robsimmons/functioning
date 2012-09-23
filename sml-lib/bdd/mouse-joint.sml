@@ -142,6 +142,10 @@ fun new { target : vec2,
 
         fun solve_position_constraints ts = true
 
+        fun get_anchor_a () = !m_target
+
+        fun get_anchor_b () = D.B.get_world_point (body_b, m_local_anchor)
+
         fun set_target new_target =
             let val () = D.B.set_awake (body_b, true)
             in
@@ -152,7 +156,9 @@ fun new { target : vec2,
         { specialized_methods = BDDDynamicsTypes.MouseMethods set_target,
           init_velocity_constraints = init_velocity_constraints,
           solve_velocity_constraints = solve_velocity_constraints,
-          solve_position_constraints = solve_position_constraints
+          solve_position_constraints = solve_position_constraints,
+          get_anchor_a = get_anchor_a,
+          get_anchor_b = get_anchor_b
         }
 
     in

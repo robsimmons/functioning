@@ -28,6 +28,11 @@ sig
 
 
   val get_next : joint -> joint option
+  val get_body_a : joint -> body
+  val get_body_b : joint -> body
+
+  val get_anchor_a : joint -> BDDMath.vec2
+  val get_anchor_b : joint -> BDDMath.vec2
 
   val get_specialized_methods : joint -> BDDDynamicsTypes.joint_methods
 

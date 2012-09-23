@@ -28,5 +28,9 @@ struct
   fun get_specialized_methods joint =
       #specialized_methods (!!(get_dispatch joint))
 
+  fun get_anchor_a joint =
+      (#get_anchor_a (!!(get_dispatch joint))) ()
 
+  fun get_anchor_b joint =
+      (#get_anchor_b (!!(get_dispatch joint))) ()
 end

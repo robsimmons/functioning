@@ -80,7 +80,9 @@ struct
   type joint_dispatch = { specialized_methods : joint_methods,
                           init_velocity_constraints : time_step -> unit,
                           solve_velocity_constraints : time_step -> unit,
-                          solve_position_constraints : real -> bool
+                          solve_position_constraints : real -> bool,
+                          get_anchor_a : unit -> BDDMath.vec2,
+                          get_anchor_b : unit -> BDDMath.vec2
                         }
 
 end

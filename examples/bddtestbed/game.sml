@@ -143,17 +143,36 @@ struct
       end
 
   fun drawjoint j =
-      let val color = RGB (0.3, 0.9, 0.9)
+      let
+          val body_a = BDD.Joint.get_body_a j
+          val body_b = BDD.Joint.get_body_b j
+          val xf1 = BDD.Body.get_transform body_a
+          val xf2 = BDD.Body.get_transform body_b
+          val x1 = BDDMath.transformposition xf1
+          val x2 = BDDMath.transformposition xf2
+          val p1 = BDD.Joint.get_anchor_a j
+          val p2 = BDD.Joint.get_anchor_b j
+          val color = RGB (0.5, 0.8, 0.8)
+      in
+          Render.draw_segment x1 p1 color;
+          Render.draw_segment p1 p2 color;
+          Render.draw_segment x2 p2 color
+      end
+
+  fun drawmousejoint NONE = ()
+    | drawmousejoint (SOME j) =
+      let val p1 = ()
       in ()
       end
 
-  fun render screen (GS {world, ...}) =
+  fun render screen (GS {world, mouse_joint, ...}) =
   let in
    glClear(GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT);
    glLoadIdentity();
 
    oapp BDD.Body.get_next drawbody (BDD.World.get_body_list world);
    oapp BDD.Joint.get_next drawjoint (BDD.World.get_joint_list world);
+   drawmousejoint mouse_joint;
 
    List.map drawcontactpoint (!contact_points);
    contact_points := [];
@@ -199,7 +218,7 @@ struct
                             val mass = BDD.Body.get_mass body
                             val gb = BDD.World.create_body
                                      (world,
-                                      {typ = BDD.Body.Dynamic,
+                                      {typ = BDD.Body.Static,
                                        position = BDDMath.vec2 (0.0, 0.0),
                                        angle = 0.0,
                                        linear_velocity = BDDMath.vec2_zero,
