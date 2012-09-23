@@ -168,6 +168,12 @@ struct
           SOME s
       end
 
+  fun mouse_up (s as GS {world, mouse_joint = NONE, test}) p = SOME s
+    | mouse_up (s as GS {world, mouse_joint = SOME j, test}) p =
+      let val () = BDD.World.destroy_joint (world, j)
+      in SOME (GS {world = world, mouse_joint = NONE, test = test})
+      end
+
   fun mouse_down (s as GS {world, mouse_joint, test}) p =
       let val d = BDDMath.vec2 (0.001, 0.001)
           val aabb = { lowerbound = p :-: d,
@@ -215,6 +221,8 @@ struct
       SOME (init_test BulletTest.test)
     | handle_event (SDL.E_MouseDown {button, x, y}) s =
       mouse_down s (screen_to_world (x, y))
+    | handle_event (SDL.E_MouseUp {button, x, y}) s =
+      mouse_up s (screen_to_world (x, y))
     | handle_event (SDL.E_MouseMotion {which, state, x, y, xrel, yrel}) s =
       mouse_motion s (screen_to_world (x, y))
     | handle_event e (s as GS {world, test = Test {handle_event = he, ... }, ...})  =
