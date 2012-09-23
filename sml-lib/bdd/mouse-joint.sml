@@ -39,7 +39,8 @@ fun new { target : vec2,
                                         warm_starting
                                       } =
             let
-                val mass = D.B.get_mass body_b
+                val b = body_b
+                val mass = D.B.get_mass b
                 (* Frequency *)
                 val omega = 2.0 * Math.pi * !m_frequency_hz
                 (* Damping coefficient *)
@@ -50,22 +51,26 @@ fun new { target : vec2,
 	        (* magic formulas
                    gamma has units of inverse mass.
                    beta has units of inverse time. *)
-                (* b2Assert(d + step.dt * k > b2_epsilon); *)
-                val () = m_gamma := dt * k * !m_gamma
+                val () = if d + dt * k > BDDSettings.epsilon
+                         then ()
+                         else raise Fail ""
+
+                val () = m_gamma := dt * (d + dt * k)
+
                 (* Port note: original test is gamma != 0.0 *)
                 val () = if (!m_gamma > 0.0)
                          then m_gamma := 1.0 / !m_gamma
                          else ()
                 val () = m_beta := dt * k * !m_gamma
 
-                val r = (transformr (D.B.get_xf body_b))
+                val r = (transformr (D.B.get_xf b))
                             +*:
-                            (m_local_anchor :-: sweeplocalcenter (D.B.get_sweep body_b))
+                            (m_local_anchor :-: sweeplocalcenter (D.B.get_sweep b))
 (* K = [(1/m1 + 1/m2) * eye(2) - skew(r1) * invI1 * skew(r1) - skew(r2) * invI2 * skew(r2)]
  = [1/m1+1/m2     0    ] + invI1 * [r1.y*r1.y -r1.x*r1.y] + invI2 * [r1.y*r1.y -r1.x*r1.y]
 [    0     1/m1+1/m2]           [-r1.x*r1.y r1.x*r1.x]           [-r1.x*r1.y r1.x*r1.x] *)
-                val inv_mass = D.B.get_inv_mass body_b
-                val inv_i = D.B.get_inv_i body_b
+                val inv_mass = D.B.get_inv_mass b
+                val inv_i = D.B.get_inv_i b
 
                 val K1 = mat22cols
                          (vec2 (inv_mass, 0.0),
@@ -84,20 +89,20 @@ fun new { target : vec2,
 
                 val () = m_mass := mat22inverse K
 
-                val () = m_C := (sweepc (D.B.get_sweep body_b)) :+: r :-: !m_target
+                val () = m_C := (sweepc (D.B.get_sweep b)) :+: r :-: !m_target
 
                 (* Cheat with some damping *)
-                val () = D.B.set_angular_velocity (body_b,
-                                                   0.98 * D.B.get_angular_velocity body_b)
+                val () = D.B.set_angular_velocity (b,
+                                                   0.98 * D.B.get_angular_velocity b)
 
                 (* Warm starting. *)
                 val () = m_impulse := dt_ratio *: !m_impulse
                 val () = D.B.set_linear_velocity
-                             (body_b,
-                              D.B.get_linear_velocity body_b :+: inv_mass *: !m_impulse)
+                             (b,
+                              D.B.get_linear_velocity b :+: inv_mass *: !m_impulse)
                 val () = D.B.set_angular_velocity
-                             (body_b,
-                              D.B.get_angular_velocity body_b +
+                             (b,
+                              D.B.get_angular_velocity b +
                               inv_i * (cross2vv (r, !m_impulse)))
             in ()
             end
@@ -136,7 +141,7 @@ fun new { target : vec2,
                          (b, D.B.get_linear_velocity b :+: (D.B.get_inv_mass b) *: impulse)
                 val () = D.B.set_angular_velocity
                          (b, D.B.get_angular_velocity b + (D.B.get_inv_i b) *
-                                                          (cross2vv (r, !m_impulse)))
+                                                          (cross2vv (r, impulse)))
             in ()
             end
 
