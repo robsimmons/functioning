@@ -142,6 +142,10 @@ struct
           oapp BDD.Fixture.get_next (drawfixture color tf) fl
       end
 
+  fun drawjoint j =
+      let val color = RGB (0.3, 0.9, 0.9)
+      in ()
+      end
 
   fun render screen (GS {world, ...}) =
   let in
@@ -149,6 +153,7 @@ struct
    glLoadIdentity();
 
    oapp BDD.Body.get_next drawbody (BDD.World.get_body_list world);
+   oapp BDD.Joint.get_next drawjoint (BDD.World.get_joint_list world);
 
    List.map drawcontactpoint (!contact_points);
    contact_points := [];
@@ -192,6 +197,24 @@ struct
               NONE => NONE
             | SOME f => let val body = BDD.Fixture.get_body f
                             val mass = BDD.Body.get_mass body
+                            val gb = BDD.World.create_body
+                                     (world,
+                                      {typ = BDD.Body.Dynamic,
+                                       position = BDDMath.vec2 (0.0, 0.0),
+                                       angle = 0.0,
+                                       linear_velocity = BDDMath.vec2_zero,
+                                       angular_velocity = 0.0,
+                                       linear_damping = 0.0,
+                                       angular_damping = 0.0,
+                                       allow_sleep = true,
+                                       awake = true,
+                                       fixed_rotation = false,
+                                       bullet = false,
+                                       active = true,
+                                       data = (),
+                                       inertia_scale = 1.0
+                                     })
+
                              val j = BDD.World.create_joint
                                     (world, {
                                              typ = BDD.Joint.Mouse
@@ -201,7 +224,7 @@ struct
                                                         damping_ratio = 0.7
                                                        },
                                              user_data = (),
-                                             body_a = body,
+                                             body_a = gb,
                                              body_b = body,
                                              collide_connected = false
                                             })
