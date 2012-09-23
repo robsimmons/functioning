@@ -3,7 +3,7 @@ struct
 
 datatype spec = RGB of real * real * real;
 
-structure BDD = BDDWorld( 
+structure BDD = BDDWorld(
                 struct type fixture_data = unit
                        type body_data = unit
                        type joint_data = unit
@@ -25,6 +25,7 @@ datatype test = Test of
          }
 
 datatype game_state = GS of {world : BDD.world,
+                             mouse_joint : BDD.joint option,
                              test : test
                             }
 

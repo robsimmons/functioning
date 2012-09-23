@@ -72,7 +72,7 @@ struct
           val world = BDD.World.world (gravity, true)
           val () = BDD.World.set_pre_solve (world, pre_solve)
           val () = init world
-      in GS { test = test, world = world}
+      in GS { test = test, mouse_joint = NONE, world = world }
       end
 
   val initstate = init_test VerticalStack.test
@@ -158,7 +158,11 @@ struct
    ()
   end
 
-  fun mouse_down (s as GS {world, ...}) p =
+  fun mouse_motion (s as GS {world, mouse_joint = NONE, test}) p = SOME s
+    | mouse_motion (s as GS {world, mouse_joint = SOME j, test}) p = SOME s
+(* ??? *)
+
+  fun mouse_down (s as GS {world, mouse_joint, test}) p =
       let val d = BDDMath.vec2 (0.001, 0.001)
           val aabb = { lowerbound = p :-: d,
                        upperbound = p :+: d
@@ -172,8 +176,8 @@ struct
                   else true
                 | _ => true
           val () = BDD.World.query_aabb (world, one_fixture, aabb)
-          val () = case !result_fixture of
-              NONE => ()
+          val new_joint = case !result_fixture of
+              NONE => NONE
             | SOME f => let val body = BDD.Fixture.get_body f
                             val mass = BDD.Body.get_mass body
                              val j = BDD.World.create_joint
@@ -190,9 +194,9 @@ struct
                                              collide_connected = false
                                             })
                             val () = BDD.Body.set_awake (body, true)
-                        in ()
+                        in SOME j
                         end
-      in SOME s
+      in SOME (GS {world = world, mouse_joint = new_joint, test = test})
       end
 
   fun handle_event (SDL.E_KeyDown {sym = SDL.SDLK_ESCAPE}) s = NONE
@@ -205,7 +209,9 @@ struct
       SOME (init_test BulletTest.test)
     | handle_event (SDL.E_MouseDown {button, x, y}) s =
       mouse_down s (screen_to_world (x, y))
-    | handle_event e (s as GS {world, test = Test {handle_event = he, ... }})  =
+    | handle_event (SDL.E_MouseMotion {which, state, x, y, xrel, yrel}) s =
+      mouse_motion s (screen_to_world (x, y))
+    | handle_event e (s as GS {world, test = Test {handle_event = he, ... }, ...})  =
       (he world e; SOME s)
 
   val ticks_per_second = 60.0
