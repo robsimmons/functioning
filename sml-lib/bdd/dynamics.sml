@@ -181,6 +181,8 @@ struct
                                          inv_i_b = 0.0
                                        }
             val () = set_dispatch (joint, SOME (dispatch joint))
+            val () = G.set_joint ((get_edge_a joint), SOME joint)
+            val () = G.set_joint ((get_edge_b joint), SOME joint)
         in
             joint
         end
