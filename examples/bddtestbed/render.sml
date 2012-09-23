@@ -25,14 +25,14 @@ fun draw_solid_polygon vertexList (RGB (r, g, b)) =
      List.map (fn v => glVertex2d (BDDMath.vec2x v) (BDDMath.vec2y v)) vertexList;
      glEnd ();
      glDisable GL_BLEND;
-     
+
      glColor4d r g b 1.0;
      glBegin GL_LINE_LOOP;
      List.map (fn v => glVertex2d (BDDMath.vec2x v) (BDDMath.vec2y v)) vertexList;
      glEnd()
     )
 
-fun draw_solid_circle center radius axis (RGB (r, g, b)) = 
+fun draw_solid_circle center radius axis (RGB (r, g, b)) =
     let val (centerx, centery) = BDDMath.vec2xy center
         val k_segments = 16
         val k_increment = 2.0 * Math.pi / (Real.fromInt k_segments)
@@ -52,7 +52,7 @@ fun draw_solid_circle center radius axis (RGB (r, g, b)) =
         List.tabulate (k_segments, draw_vertex);
         glEnd ();
         glDisable GL_BLEND;
-       
+
         glColor4d r g b 1.0;
         glBegin GL_LINE_LOOP;
         List.tabulate (k_segments, draw_vertex);
@@ -73,6 +73,15 @@ fun draw_point p size (RGB (r, g, b)) =
      glVertex2d (BDDMath.vec2x p) (BDDMath.vec2y p);
      glEnd();
      glPointSize 1.0
+    )
+
+fun draw_segment p1 p2 (RGB (r, g, b)) =
+    (
+     glColor3d r g b;
+     glBegin GL_LINES;
+     glVertex2d (BDDMath.vec2x p1) (BDDMath.vec2y p1);
+     glVertex2d (BDDMath.vec2x p2) (BDDMath.vec2y p2);
+     glEnd()
     )
 
 end
