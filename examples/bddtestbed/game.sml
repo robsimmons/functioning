@@ -14,6 +14,18 @@ struct
   val height = 480
   val use_gl = true
 
+  (* These will be mutated to the corners of the screen *)
+  val lower_left = BDDMath.vec2 (0.0, 0.0)
+  val upper_right = BDDMath.vec2 (0.0, 0.0)
+
+  fun screen_to_world (x, y) =
+      let val (left, bottom) = BDDMath.vec2xy lower_left
+          val (right, top) = BDDMath.vec2xy upper_right
+      in BDDMath.vec2
+          ((Real.fromInt x  / Real.fromInt width) * (right - left) + left,
+           (Real.fromInt (height - y)  / Real.fromInt height) * (top - bottom) + bottom)
+      end
+
   fun body_color b =
       if not (BDD.Body.get_active b)
       then RGB (0.5, 0.5, 0.3)
@@ -87,6 +99,8 @@ struct
            val upper = viewCenter :+: extents
            val (lx, ly) = BDDMath.vec2xy lower
            val (ux, uy) = BDDMath.vec2xy upper
+           val () = BDDMath.vec2set (lower_left, lx, ly)
+           val () = BDDMath.vec2set (upper_right, ux, uy)
        in
            glOrtho lx ux ly uy 5.0 ~5.0
        end;
@@ -144,6 +158,43 @@ struct
    ()
   end
 
+  fun mouse_down (s as GS {world, ...}) p =
+      let val d = BDDMath.vec2 (0.001, 0.001)
+          val aabb = { lowerbound = p :-: d,
+                       upperbound = p :+: d
+                     }
+          val result_fixture = (ref NONE) : BDD.fixture option ref
+          fun one_fixture f =
+              case BDD.Body.get_type (BDD.Fixture.get_body f) of
+                  BDD.Body.Dynamic =>
+                  if BDD.Fixture.test_point (f, p)
+                  then (result_fixture := SOME f; false)
+                  else true
+                | _ => true
+          val () = BDD.World.query_aabb (world, one_fixture, aabb)
+          val () = case !result_fixture of
+              NONE => ()
+            | SOME f => let val body = BDD.Fixture.get_body f
+                            val mass = BDD.Body.get_mass body
+                            val mj = BDDMouseJoint.new {target = p,
+                                                        max_force = 1000.0 * mass,
+                                                        frequency_hz = 5.0,
+                                                        damping_ratio = 0.7
+                                                       }
+(*                            val j = BDD.World.create_joint
+                                    (world, {dispatch = mj,
+                                             typ = BDD.Joint.Mouse,
+                                             user_data = (),
+                                             body_a = body,
+                                             body_b = body,
+                                             collide_connected = false
+                                            }) *)
+                            val () = BDD.Body.set_awake (body, true)
+                        in ()
+                        end
+      in SOME s
+      end
+
   fun handle_event (SDL.E_KeyDown {sym = SDL.SDLK_ESCAPE}) s = NONE
     | handle_event SDL.E_Quit s = NONE
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_0}) s =
@@ -152,8 +203,8 @@ struct
       SOME (init_test VaryingRestitution.test)
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_2}) s =
       SOME (init_test BulletTest.test)
-    | handle_event (SDL.E_MouseDown {button, x, y}) s = 
-      NONE
+    | handle_event (SDL.E_MouseDown {button, x, y}) s =
+      mouse_down s (screen_to_world (x, y))
     | handle_event e (s as GS {world, test = Test {handle_event = he, ... }})  =
       (he world e; SOME s)
 
