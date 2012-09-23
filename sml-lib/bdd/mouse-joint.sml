@@ -22,7 +22,7 @@ fun new { target : vec2,
         val m_max_force = ref max_force
         val m_frequency_hz = ref frequency_hz
         val m_damping_ratio = ref damping_ratio
-        val m_local_anchor = (D.B.get_xf body_b) @*: (target)
+        val m_local_anchor = mul_ttransformv (D.B.get_xf body_b, target)
         val m_impulse = ref (vec2 (0.0, 0.0))
 
         val m_beta = ref 0.0
