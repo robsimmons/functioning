@@ -183,17 +183,15 @@ struct
   end
 
   fun mouse_motion (s as GS {world, mouse_joint = NONE, test}) p = SOME s
-    | mouse_motion (s as GS {world, mouse_joint = SOME j, test}) p =
-      let val set_target = case BDD.Joint.get_specialized_methods j
-                            of BDDDynamicsTypes.MouseMethods {set_target, ...} => set_target
-                             | _ => raise Fail "What"
+    | mouse_motion (s as GS {world, mouse_joint = SOME ({set_target, ...}, _), test}) p =
+      let
           val () = set_target p
       in
           SOME s
       end
 
   fun mouse_up (s as GS {world, mouse_joint = NONE, test}) p = SOME s
-    | mouse_up (s as GS {world, mouse_joint = SOME j, test}) p =
+    | mouse_up (s as GS {world, mouse_joint = SOME (mj, j), test}) p =
       let val () = BDD.World.destroy_joint (world, j)
       in SOME (GS {world = world, mouse_joint = NONE, test = test})
       end
@@ -212,7 +210,7 @@ struct
                   else true
                 | _ => true
           val () = BDD.World.query_aabb (world, one_fixture, aabb)
-          val new_joint = case !result_fixture of
+          val mbe_new_joint = case !result_fixture of
               NONE => NONE
             | SOME f => let val body = BDD.Fixture.get_body f
                             val mass = BDD.Body.get_mass body
@@ -236,7 +234,7 @@ struct
 
                              val j = BDD.World.create_joint
                                     (world, {
-                                             typ = BDD.Joint.Mouse
+                                             typ = BDD.Joint.MouseDef
                                                        {target = p,
                                                         max_force = 1000.0 * mass,
                                                         frequency_hz = 5.0,
@@ -248,9 +246,11 @@ struct
                                              collide_connected = false
                                             })
                             val () = BDD.Body.set_awake (body, true)
-                        in SOME j
+                        in case BDD.Joint.get_typ j of
+                               SOME (BDD.Joint.Mouse mj) => SOME (mj, j)
+                             | _ => raise Fail "expected a mouse joint"
                         end
-      in SOME (GS {world = world, mouse_joint = new_joint, test = test})
+      in SOME (GS {world = world, mouse_joint = mbe_new_joint, test = test})
       end
 
   fun handle_event (SDL.E_KeyDown {sym = SDL.SDLK_ESCAPE}) s = NONE

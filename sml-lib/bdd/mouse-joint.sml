@@ -161,11 +161,9 @@ fun new { target : vec2,
 
         fun get_target () = !m_target
 
-        val methods = BDDDynamicsTypes.MouseMethods {set_target = set_target,
-                                                     get_target = get_target}
 
         val dispatch =
-        { specialized_methods = methods,
+        {
           init_velocity_constraints = init_velocity_constraints,
           solve_velocity_constraints = solve_velocity_constraints,
           solve_position_constraints = solve_position_constraints,
@@ -173,8 +171,12 @@ fun new { target : vec2,
           get_anchor_b = get_anchor_b
         }
 
+        val methods = BDDDynamicsTypes.Mouse {set_target = set_target,
+                                              get_target = get_target,
+                                              base = dispatch}
+
     in
-        dispatch
+        (dispatch, methods)
     end
 
 end

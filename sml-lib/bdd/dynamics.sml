@@ -153,6 +153,7 @@ struct
     val FLAG_COLLIDE_CONNECTED = 0wx2 : Word8.word
 
     datatype joint_type = datatype BDDDynamicsTypes.joint_type
+    datatype joint_def = datatype BDDDynamicsTypes.joint_def
     open BDDCells.J
 
     fun get_flag (j, f) = Word8.andb (f, get_flags j) <> 0w0
@@ -162,9 +163,9 @@ struct
     fun get_collide_connected j = get_flag(j, FLAG_COLLIDE_CONNECTED)
 
     (* Port note: Corresponding to b2Joint::Create and new *)
-    fun new (world, dispatch, {typ, user_data, body_a, body_b, collide_connected}) =
+    fun new (world, constructor, {typ, user_data, body_a, body_b, collide_connected}) =
         let val joint = BDDCells.J.new { flags = 0w0,
-                                         typ = typ,
+                                         typ = NONE,
                                          dispatch = NONE,
                                          prev = NONE,
                                          next = NONE,
@@ -180,7 +181,9 @@ struct
                                          inv_mass_b = 0.0,
                                          inv_i_b = 0.0
                                        }
-            val () = set_dispatch (joint, SOME (dispatch joint))
+            val (dispatch, methods) = constructor joint
+            val () = set_dispatch (joint, SOME dispatch)
+            val () = set_typ (joint, SOME methods)
             val () = G.set_joint ((get_edge_a joint), SOME joint)
             val () = G.set_joint ((get_edge_b joint), SOME joint)
         in

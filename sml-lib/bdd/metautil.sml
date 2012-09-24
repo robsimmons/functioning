@@ -103,7 +103,7 @@ fun joint cc = ("J", "Joint", "joint", "JOINT",
               (* Port note: These were individual boolean fields
                  in Box2D. *)
               ("flags", "Word8.word"),
-              ("typ", "BDDDynamicsTypes.joint_type"),
+              ("typ", "BDDDynamicsTypes.joint_type option"),
               ("dispatch", "BDDDynamicsTypes.joint_dispatch option"),
               (* the previous and next joints in the world joint list. 
                  the body joint lists are stored in joint edges. *)

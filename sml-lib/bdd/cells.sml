@@ -59,7 +59,7 @@ struct
 
   and ('b, 'f, 'j) jointcell = J of {
     flags : (Word8.word) ref,
-    typ : (BDDDynamicsTypes.joint_type) ref,
+    typ : (BDDDynamicsTypes.joint_type option) ref,
     dispatch : (BDDDynamicsTypes.joint_dispatch option) ref,
     prev : (('b, 'f, 'j) jointcell option) ref,
     next : (('b, 'f, 'j) jointcell option) ref,

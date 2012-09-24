@@ -24,7 +24,8 @@ struct
     | Kinematic
     | Dynamic
 
-  type mouse_joint =
+  (* TODO don't need this here. This represents jointdefs. *)
+  type mouse_joint_def =
        {
         target : BDDMath.vec2,
         max_force : real,
@@ -32,17 +33,16 @@ struct
         damping_ratio : real
        }
 
-  (* TODO don't need this here. This represents jointdefs. *)
-  datatype joint_type =
-      Revolute
-    | Prismatic
-    | Distance
-    | Pulley
-    | Mouse of mouse_joint
-    | Gear
-    | Line
-    | Weld
-    | Friction
+  datatype joint_def =
+      RevoluteDef
+    | PrismaticDef
+    | DistanceDef
+    | PulleyDef
+    | MouseDef of mouse_joint_def
+    | GearDef
+    | LineDef
+    | WeldDef
+    | FrictionDef
 
   datatype limit_state =
       Inactive
@@ -73,19 +73,21 @@ struct
                      position_iterations : int,
                      warm_starting : bool }
 
-  (* TODO reverse this dependency. a joint_methods has a joint_dispatch *)
 
-  datatype joint_methods =
-           MouseMethods of {get_target : unit -> BDDMath.vec2,
-                            set_target : BDDMath.vec2 -> unit}
-         | NoMethods of unit
-
-  type joint_dispatch = { specialized_methods : joint_methods,
-                          init_velocity_constraints : time_step -> unit,
+  type joint_dispatch = { init_velocity_constraints : time_step -> unit,
                           solve_velocity_constraints : time_step -> unit,
                           solve_position_constraints : real -> bool,
                           get_anchor_a : unit -> BDDMath.vec2,
                           get_anchor_b : unit -> BDDMath.vec2
                         }
+
+  type mouse_joint = {get_target : unit -> BDDMath.vec2,
+                      set_target : BDDMath.vec2 -> unit,
+                      base : joint_dispatch}
+
+  datatype joint_type =
+           Mouse of mouse_joint
+         | Unknown of unit
+
 
 end

@@ -189,7 +189,7 @@ sig
   structure J :
   sig
     val get_flags : ('b, 'f, 'j) joint -> (Word8.word)
-    val get_typ : ('b, 'f, 'j) joint -> (BDDDynamicsTypes.joint_type)
+    val get_typ : ('b, 'f, 'j) joint -> (BDDDynamicsTypes.joint_type option)
     val get_dispatch : ('b, 'f, 'j) joint -> (BDDDynamicsTypes.joint_dispatch option)
     val get_prev : ('b, 'f, 'j) joint -> (('b, 'f, 'j) joint option)
     val get_next : ('b, 'f, 'j) joint -> (('b, 'f, 'j) joint option)
@@ -206,7 +206,7 @@ sig
     val get_inv_i_b : ('b, 'f, 'j) joint -> (real)
 
     val set_flags : ('b, 'f, 'j) joint * (Word8.word) -> unit
-    val set_typ : ('b, 'f, 'j) joint * (BDDDynamicsTypes.joint_type) -> unit
+    val set_typ : ('b, 'f, 'j) joint * (BDDDynamicsTypes.joint_type option) -> unit
     val set_dispatch : ('b, 'f, 'j) joint * (BDDDynamicsTypes.joint_dispatch option) -> unit
     val set_prev : ('b, 'f, 'j) joint * (('b, 'f, 'j) joint option) -> unit
     val set_next : ('b, 'f, 'j) joint * (('b, 'f, 'j) joint option) -> unit
@@ -224,7 +224,7 @@ sig
 
     val new : {
       flags : Word8.word,
-      typ : BDDDynamicsTypes.joint_type,
+      typ : BDDDynamicsTypes.joint_type option,
       dispatch : BDDDynamicsTypes.joint_dispatch option,
       prev : ('b, 'f, 'j) joint option,
       next : ('b, 'f, 'j) joint option,

@@ -186,7 +186,7 @@ struct
       end
 
     fun create_joint (world : world,
-                      def as { typ : Joint.joint_type,
+                      def as { typ : Joint.joint_def,
                                user_data : joint_data,
                                body_a : body,
                                body_b : body,
@@ -195,10 +195,10 @@ struct
         then raise BDDWorld "Can't call create_joint from callbacks."
         else
         let
-            val dispatch = case typ of
-                        T.Mouse mj => BDDMouseJoint.new mj
+            val constructor = case typ of
+                        T.MouseDef md => BDDMouseJoint.new md
                       | _ => raise BDDWorld "Unimplemented"
-            val joint = D.J.new (world, dispatch, def)
+            val joint = D.J.new (world, constructor, def)
             (* Connect to the world list. *)
             val () = case get_joint_list world of
                 NONE => ()

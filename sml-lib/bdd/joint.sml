@@ -25,9 +25,6 @@ struct
   fun !! (SOME x) = x
     | !! NONE = raise BDDJoint "Expected non-NONE value, like Box2D does"
 
-  fun get_specialized_methods joint =
-      #specialized_methods (!!(get_dispatch joint))
-
   fun get_anchor_a joint =
       (#get_anchor_a (!!(get_dispatch joint))) ()
 

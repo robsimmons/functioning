@@ -25,7 +25,7 @@ datatype test = Test of
          }
 
 datatype game_state = GS of {world : BDD.world,
-                             mouse_joint : BDD.joint option,
+                             mouse_joint : (BDDDynamicsTypes.mouse_joint * BDD.joint) option,
                              test : test
                             }
 

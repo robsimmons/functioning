@@ -178,7 +178,7 @@ sig
        Port note: This argument was the structure b2JointDef, but this
        is the only place it's used.
        *)
-    val create_joint : world * { typ : Joint.joint_type,
+    val create_joint : world * { typ : Joint.joint_def,
                                  (* Use this to attach application-specific data to
                                     your joints. *)
                                  user_data : joint_data,
