@@ -9,6 +9,8 @@ infix 7 *: *% +*: +*+ #*% @*:
 
 structure D = BDDDynamics
 
+exception MouseJoint of string
+
 fun new { target : vec2,
           max_force : real,
           frequency_hz : real,
@@ -53,7 +55,7 @@ fun new { target : vec2,
                    beta has units of inverse time. *)
                 val () = if d + dt * k > BDDSettings.epsilon
                          then ()
-                         else raise Fail ""
+                         else raise MouseJoint "Assert Failure"
 
                 val () = m_gamma := dt * (d + dt * k)
 
@@ -157,8 +159,13 @@ fun new { target : vec2,
                 m_target := new_target
             end
 
+        fun get_target () = !m_target
+
+        val methods = BDDDynamicsTypes.MouseMethods {set_target = set_target,
+                                                     get_target = get_target}
+
         val dispatch =
-        { specialized_methods = BDDDynamicsTypes.MouseMethods set_target,
+        { specialized_methods = methods,
           init_velocity_constraints = init_velocity_constraints,
           solve_velocity_constraints = solve_velocity_constraints,
           solve_position_constraints = solve_position_constraints,

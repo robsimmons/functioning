@@ -185,7 +185,7 @@ struct
   fun mouse_motion (s as GS {world, mouse_joint = NONE, test}) p = SOME s
     | mouse_motion (s as GS {world, mouse_joint = SOME j, test}) p =
       let val set_target = case BDD.Joint.get_specialized_methods j
-                            of BDDDynamicsTypes.MouseMethods st => st
+                            of BDDDynamicsTypes.MouseMethods {set_target, ...} => set_target
                              | _ => raise Fail "What"
           val () = set_target p
       in

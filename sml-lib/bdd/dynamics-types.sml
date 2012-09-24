@@ -32,7 +32,7 @@ struct
         damping_ratio : real
        }
 
-
+  (* TODO don't need this here. This represents jointdefs. *)
   datatype joint_type =
       Revolute
     | Prismatic
@@ -73,8 +73,11 @@ struct
                      position_iterations : int,
                      warm_starting : bool }
 
+  (* TODO reverse this dependency. a joint_methods has a joint_dispatch *)
+
   datatype joint_methods =
-           MouseMethods of BDDMath.vec2 -> unit
+           MouseMethods of {get_target : unit -> BDDMath.vec2,
+                            set_target : BDDMath.vec2 -> unit}
          | NoMethods of unit
 
   type joint_dispatch = { specialized_methods : joint_methods,
