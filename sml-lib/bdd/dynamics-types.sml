@@ -24,26 +24,6 @@ struct
     | Kinematic
     | Dynamic
 
-  (* TODO don't need this here. This represents jointdefs. *)
-  type mouse_joint_def =
-       {
-        target : BDDMath.vec2,
-        max_force : real,
-        frequency_hz : real,
-        damping_ratio : real
-       }
-
-  datatype joint_def =
-      RevoluteDef
-    | PrismaticDef
-    | DistanceDef
-    | PulleyDef
-    | MouseDef of mouse_joint_def
-    | GearDef
-    | LineDef
-    | WeldDef
-    | FrictionDef
-
   datatype limit_state =
       Inactive
     | AtLower
@@ -73,6 +53,25 @@ struct
                      position_iterations : int,
                      warm_starting : bool }
 
+
+  type mouse_joint_def =
+       {
+        target : BDDMath.vec2,
+        max_force : real,
+        frequency_hz : real,
+        damping_ratio : real
+       }
+
+  datatype joint_def =
+      RevoluteDef
+    | PrismaticDef
+    | DistanceDef
+    | PulleyDef
+    | MouseDef of mouse_joint_def
+    | GearDef
+    | LineDef
+    | WeldDef
+    | FrictionDef
 
   type joint_dispatch = { init_velocity_constraints : time_step -> unit,
                           solve_velocity_constraints : time_step -> unit,
