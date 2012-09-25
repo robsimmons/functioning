@@ -154,15 +154,35 @@ struct
           val p2 = BDD.Joint.get_anchor_b j
           val color = RGB (0.5, 0.8, 0.8)
       in
-          Render.draw_segment x1 p1 color;
-          Render.draw_segment p1 p2 color;
-          Render.draw_segment x2 p2 color
+          case BDD.Joint.get_typ j of
+              (SOME (BDD.Joint.Mouse _)) => ()
+            | _ =>
+              ( Render.draw_segment x1 p1 color;
+                Render.draw_segment p1 p2 color;
+                Render.draw_segment x2 p2 color
+              )
       end
 
   fun drawmousejoint NONE = ()
-    | drawmousejoint (SOME j) =
-      let val p1 = ()
-      in ()
+    | drawmousejoint (SOME ({get_target, ...}, j)) =
+      let val p1 = BDD.Joint.get_anchor_b j
+          val p2 = get_target ()
+          val (p1x, p1y) = BDDMath.vec2xy p1
+          val (p2x, p2y) = BDDMath.vec2xy p2
+      in
+          glPointSize 4.0;
+          glColor3d 0.0 1.0 0.0;
+          glBegin GL_POINTS;
+          glVertex2d p1x p1y;
+          glVertex2d p2x p2y;
+          glEnd();
+          glPointSize 1.0;
+
+          glColor3d 0.8 0.8 0.8;
+          glBegin GL_LINES;
+          glVertex2d p1x p1y;
+          glVertex2d p2x p2y;
+          glEnd()
       end
 
   fun render screen (GS {world, mouse_joint, ...}) =
