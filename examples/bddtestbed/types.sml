@@ -21,11 +21,11 @@ datatype constants = CONST of {width : int,
 
 datatype test = Test of
          {init : BDD.world -> unit,
-          handle_event :  BDD.world -> SDL.event -> unit
+          handle_event : BDD.world -> SDL.event -> unit
          }
 
 datatype game_state = GS of {world : BDD.world,
-                             mouse_joint : (BDDDynamicsTypes.mouse_joint * BDD.joint) option,
+                             mouse_joint : (BDD.Joint.mouse_joint * BDD.joint) option,
                              test : test
                             }
 

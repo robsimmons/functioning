@@ -15,12 +15,15 @@ sig
   type contactedge
   type jointedge
 
+  type mouse_joint_def = BDDDynamicsTypes.mouse_joint_def
+  type mouse_joint = BDDDynamicsTypes.mouse_joint
+
   datatype joint_def =
       RevoluteDef
     | PrismaticDef
     | DistanceDef
     | PulleyDef
-    | MouseDef of BDDDynamicsTypes.mouse_joint_def
+    | MouseDef of mouse_joint_def
     | GearDef
     | LineDef
     | WeldDef
@@ -28,7 +31,7 @@ sig
 
 
   datatype joint_type =
-           Mouse of BDDDynamicsTypes.mouse_joint
+           Mouse of mouse_joint
          | Unknown of unit
 
   val get_next : joint -> joint option
