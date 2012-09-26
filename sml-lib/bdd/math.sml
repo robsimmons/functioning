@@ -234,7 +234,24 @@ struct
 
   type mat33 = { col1 : vec3, col2 : vec3, col3 : vec3 }
 
-  fun mat33 (col1, col2, col3) = { col1 = col1, col2 = col2, col3 = col3 }
+  fun mat33cols (col1, col2, col3) = { col1 = col1, col2 = col2, col3 = col3 }
+
+  fun mat33with  (a11, a12, a13,
+                  a21, a22, a23,
+                  a31, a32, a33) =
+      { col1 = vec3(a11,
+                    a21,
+                    a31),
+                            col2 = vec3(a12,
+                                        a22,
+                                        a32),
+                                              col3 = vec3(a13,
+                                                          a23,
+                                                          a33)}
+
+  fun mat33col1 { col1, col2 = _, col3 = _ } = col1
+  fun mat33col2 { col1 = _, col2, col3 = _ } = col2
+  fun mat33col3 { col1 = _, col2 = _, col3 } = col3
 
   fun mat33setzero { col1, col2, col3 } =
       (vec3zero col1; vec3zero col2; vec3zero col3)

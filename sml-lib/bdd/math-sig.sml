@@ -84,7 +84,14 @@ sig
 
   (* 3x3 matrix; column-major order. Mutable. *)
   type mat33
-  val mat33 : vec3 * vec3 * vec3 -> mat33
+  val mat33cols : vec3 * vec3 * vec3 -> mat33
+  val mat33with : real * real * real *
+                  real * real * real *
+                  real * real * real -> mat33
+  val mat33col1 : mat33 -> vec3
+  val mat33col2 : mat33 -> vec3
+  val mat33col3 : mat33 -> vec3
+
   val mat33setzero : mat33 -> unit
   (* Solve A * x = b, where b is a column vector. This is more efficient
      than computing the inverse in one-shot cases. *)
