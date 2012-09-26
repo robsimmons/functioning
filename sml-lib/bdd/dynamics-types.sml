@@ -63,7 +63,15 @@ struct
        }
 
   datatype joint_def =
-      RevoluteDef
+      RevoluteDef of {local_anchor_a : BDDMath.vec2,
+                      local_anchor_b : BDDMath.vec2,
+                      reference_angle : real,
+                      lower_angle : real,
+                      upper_angle : real,
+                      max_motor_torque : real,
+                      motor_speed : real,
+                      enable_limit : bool,
+                      enable_motor : bool}
     | PrismaticDef
     | DistanceDef
     | PulleyDef
@@ -83,9 +91,11 @@ struct
   type mouse_joint = {get_target : unit -> BDDMath.vec2,
                       set_target : BDDMath.vec2 -> unit,
                       base : joint_dispatch}
+(* should this have a "this" pointing back to the joint? *)
 
   datatype joint_type =
            Mouse of mouse_joint
+         | Revolute of unit
          | Unknown of unit
 
 

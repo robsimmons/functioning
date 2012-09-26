@@ -60,6 +60,7 @@ group is
   joint.sml
 
   mouse-joint.sml
+  revolute-joint.sml
 
   toi-solver-sig.sml
   toi-solver.sml
