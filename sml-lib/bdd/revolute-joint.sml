@@ -222,7 +222,15 @@ fun new {local_anchor_a : vec2,
             in ()
             end
 
-        fun solve_position_constraints ts = true
+        fun solve_position_constraints baumgarte =
+            let
+                val b_a = m_body_a
+                val b_b = m_body_b
+
+                val angular_error = ref 0.0
+                val position_error = ref 0.0
+            in true
+            end
 
         fun get_anchor_a () = D.B.get_world_point (m_body_a, m_local_anchor_a)
 
