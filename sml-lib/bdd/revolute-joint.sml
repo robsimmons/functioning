@@ -40,7 +40,7 @@ fun new {local_anchor_a : vec2,
         val m_local_anchor_a = local_anchor_a
         val m_local_anchor_b = local_anchor_b
         val m_reference_angle = reference_angle
-        val m_impulse = vec3 (0.0, 0.0, 0.0)
+        val m_impulse = ref (vec3 (0.0, 0.0, 0.0))
         val m_motor_impulse = ref 0.0
         val m_lower_angle = ref lower_angle
         val m_upper_angle = ref upper_angle
@@ -72,6 +72,9 @@ fun new {local_anchor_a : vec2,
                          else ()
                 val local_center_a = sweeplocalcenter (D.B.get_sweep b_a)
                 val local_center_b = sweeplocalcenter (D.B.get_sweep b_b)
+                val a_a = sweepa (D.B.get_sweep b_a)
+                val a_b = sweepa (D.B.get_sweep b_b)
+
                 val q_a = transformr (D.B.get_xf b_a)
                 val q_b = transformr (D.B.get_xf b_b)
                 val r_a = q_a +*: m_local_anchor_a :-: local_center_a
@@ -114,9 +117,55 @@ fun new {local_anchor_a : vec2,
                          then m_motor_impulse := 0.0
                          else ()
 
-                val () = if !m_enable_limit (* or fixed_rotation = false? *)
-                         then ()
-                         else ()
+                val () = if !m_enable_limit (* and fixed_rotation = false? *)
+                         then let val joint_angle = a_b - a_a - m_reference_angle
+                                  val (ix, iy) = (vec3x (!m_impulse), vec3y (!m_impulse))
+                                  val () = if Real.abs (!m_upper_angle - !m_lower_angle)
+                                              < 2.0 * BDDSettings.angular_slop
+                                           then m_limit_state := EqualLimits
+                                           else if joint_angle <= !m_lower_angle
+                                           then (if !m_limit_state <> AtLowerLimit
+                                                 then m_impulse := vec3 (ix, iy, 0.0)
+                                                 else ();
+                                                 m_limit_state := AtLowerLimit
+                                               )
+                                           else if joint_angle >= !m_upper_angle
+                                           then (if !m_limit_state <> AtUpperLimit
+                                                 then m_impulse := vec3 (ix, iy, 0.0)
+                                                 else ();
+                                                 m_limit_state := AtUpperLimit
+                                                )
+                                           else (m_limit_state := InactiveLimit;
+                                                 m_impulse := vec3 (ix, iy, 0.0))
+
+                              in () end
+                         else m_limit_state := InactiveLimit
+
+                val () = if warm_starting
+                         then let
+                                 (* Scale impulses to support a variable time step. *)
+                                  val () = vec3timeseq (!m_impulse, dt_ratio);
+                                  val () = m_motor_impulse := !m_motor_impulse * dt_ratio;
+                                  val p = vec2 (vec3x (!m_impulse), vec3y (!m_impulse))
+                                  val () = D.B.set_linear_velocity
+                                           (b_a,
+                                            D.B.get_linear_velocity b_a :-: m_a *: p)
+                                  val () = D.B.set_angular_velocity
+                                           (b_a,
+                                            D.B.get_angular_velocity b_a -
+                                            i_a * (cross2vv (r_a, p) + !m_motor_impulse
+                                                   + (vec3z (!m_impulse))))
+                                  val () = D.B.set_linear_velocity
+                                           (b_b,
+                                            D.B.get_linear_velocity b_b :-: m_b *: p)
+                                  val () = D.B.set_angular_velocity
+                                           (b_b,
+                                            D.B.get_angular_velocity b_b -
+                                            i_b * (cross2vv (r_b, p) + !m_motor_impulse
+                                                   + (vec3z (!m_impulse))))
+                              in () end
+                         else (m_impulse := vec3 (0.0, 0.0, 0.0);
+                               m_motor_impulse := 0.0)
 
             in ()
             end
