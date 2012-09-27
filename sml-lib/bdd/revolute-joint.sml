@@ -93,6 +93,7 @@ fun new {local_anchor_a : vec2,
                 val i_a = D.B.get_inv_i b_a
                 val i_b = D.B.get_inv_i b_b
 
+                (* XXX these should be fields *)
                 val (rax, ray) = vec2xy r_a
                 val (rbx, rby) = vec2xy r_b
 
@@ -179,6 +180,45 @@ fun new {local_anchor_a : vec2,
                                          warm_starting
                                        } =
             let
+                val b_a = m_body_a
+                val b_b = m_body_b
+
+                val v_a = D.B.get_linear_velocity b_a
+                val w_a = ref (D.B.get_angular_velocity b_a)
+                val v_b = D.B.get_linear_velocity b_b
+                val w_b = ref (D.B.get_angular_velocity b_b)
+
+                val m_a = D.B.get_inv_mass b_a
+                val m_b = D.B.get_inv_mass b_b
+                val i_a = D.B.get_inv_i b_a
+                val i_b = D.B.get_inv_i b_b
+
+                (*bool fixedRotation = (iA + iB == 0.0f); *)
+
+                (* Solve motor constraint *)
+                val () = if (!m_enable_motor andalso !m_limit_state <> EqualLimits)
+                         then
+                             let val Cdot = !w_b - !w_a - !m_motor_speed
+                                 val impulse = ~(!m_motor_mass) * Cdot
+                                 val old_impulse = !m_motor_impulse
+                                 val max_impulse = dt * m_max_motor_torque
+                                 val () = m_motor_impulse :=
+                                          clampr (!m_motor_impulse + impulse,
+                                                  ~max_impulse,
+                                                  max_impulse)
+                                 val impulse = !m_motor_impulse - old_impulse
+                                 val () = w_a := !w_a - i_a * impulse
+                                 val () = w_b := !w_b - i_b * impulse
+                             in () end
+                         else ()
+
+                (* Solve limit constraint. *)
+                val () = if !m_enable_limit andalso !m_limit_state <> InactiveLimit
+                         then
+                             let (* val Cdot1 = v_b :+: cross2sv (w-b ) *)
+                             in () end
+                         else ()
+
             in ()
             end
 
