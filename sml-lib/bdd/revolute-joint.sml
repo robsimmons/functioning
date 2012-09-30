@@ -223,34 +223,43 @@ fun new {local_anchor_a : vec2,
                                  val Cdot2 = !wB - !wA
                                  val Cdot = vec3 (vec2x Cdot1, vec2y Cdot1, Cdot2)
                                  val impulse = ref (~1.0 *% mat33solve33 (!m_mass, Cdot))
+                                 fun update_impulses cond =
+                                     if cond
+                                     then let
+                                             (* 2010 Box2D only has -Cdot1 here *)
+                                             val rhs =
+                                                 (~1.0) *: Cdot1 :+:
+                                                        vec3z (!m_impulse) *:
+                                                        vec2(vec3x (mat33col3 (!m_mass)),
+                                                             vec3y (mat33col3 (!m_mass))
+                                                            )
+                                             (* is this the right thing to solve? *)
+                                             val reduced = mat33solve22 (!m_mass, rhs)
+                                             val () = impulse :=
+                                                      vec3 (vec2x reduced,
+                                                            vec2y reduced,
+                                                            ~ (vec3z (!m_impulse)))
+                                             val () = m_impulse :=
+                                                      vec3 (vec3x (!m_impulse) +
+                                                            vec2x reduced,
+                                                            vec3y (!m_impulse) +
+                                                            vec2y reduced,
+                                                            0.0)
+                                         in () end
+                                     else m_impulse := !m_impulse %+% !impulse
                                  val () =
-                                     if !m_limit_state = EqualLimits
-                                     then m_impulse := !m_impulse %+% !impulse
-                                     else if !m_limit_state = AtLowerLimit
-                                     then if vec3z (!m_impulse) + vec3z (!impulse) < 0.0
-                                          then let
-                                                  (* 2010 Box2D only has -Cdot1 here *)
-                                                  val rhs =
-                                                       (~1.0) *: Cdot1 :+:
-                                                       vec3z (!m_impulse) *:
-                                                       vec2(vec3x (mat33col3 (!m_mass)),
-                                                            vec3y (mat33col3 (!m_mass))
-                                                           )
-                                                  (* is this the right thing to solve? *)
-                                                  val reduced = mat33solve22 (!m_mass, rhs)
-                                                  val () = impulse :=
-                                                           vec3 (vec2x reduced,
-                                                                 vec2y reduced,
-                                                                 ~ (vec3z (!m_impulse)))
-                                                  val () = m_impulse :=
-                                                           vec3 (vec3x (!m_impulse) +
-                                                                 vec2x reduced,
-                                                                 vec3y (!m_impulse) +
-                                                                 vec2y reduced,
-                                                                 0.0)
-                                              in () end
-                                          else m_impulse := !m_impulse %+% !impulse
-                                     else ()
+                                     case !m_limit_state of
+                                         EqualLimits =>
+                                           m_impulse := !m_impulse %+% !impulse
+                                       | AtLowerLimit =>
+                                           update_impulses
+                                               (vec3z (!m_impulse) + vec3z (!impulse) < 0.0)
+                                       | AtUpperLimit =>
+                                           update_impulses
+                                               (vec3z (!m_impulse) + vec3z (!impulse) > 0.0)
+                                       | _ => ()
+                                 val P = vec2 (vec3x (!impulse), vec3y (!impulse))
+
                              in () end
                          else ()
 
