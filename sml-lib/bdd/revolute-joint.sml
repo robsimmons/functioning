@@ -39,6 +39,8 @@ fun new {local_anchor_a : vec2,
         val m_body_b = D.J.get_body_b joint
         val m_local_anchor_a = local_anchor_a
         val m_local_anchor_b = local_anchor_b
+        val m_local_center_a = ref (vec2 (0.0, 0.0))
+        val m_local_center_b = ref (vec2 (0.0, 0.0))
         val m_reference_angle = reference_angle
         val m_impulse = ref (vec3 (0.0, 0.0, 0.0))
         val m_motor_impulse = ref 0.0
@@ -73,15 +75,16 @@ fun new {local_anchor_a : vec2,
                          then assert (D.B.get_inv_i b_a > 0.0 orelse
                                       D.B.get_inv_i b_b > 0.0)
                          else ()
-                val local_center_a = sweeplocalcenter (D.B.get_sweep b_a)
-                val local_center_b = sweeplocalcenter (D.B.get_sweep b_b)
+                val () = m_local_center_a := sweeplocalcenter (D.B.get_sweep b_a)
+                val () = m_local_center_b := sweeplocalcenter (D.B.get_sweep b_b)
                 val a_a = sweepa (D.B.get_sweep b_a)
                 val a_b = sweepa (D.B.get_sweep b_b)
 
+                (* XXX should these be initialized with the sweep values? *)
                 val q_a = transformr (D.B.get_xf b_a)
                 val q_b = transformr (D.B.get_xf b_b)
-                val () = m_rA := q_a +*: m_local_anchor_a :-: local_center_a
-                val () = m_rB := q_b +*: m_local_anchor_b :-: local_center_b
+                val () = m_rA := q_a +*: m_local_anchor_a :-: !m_local_center_a
+                val () = m_rB := q_b +*: m_local_anchor_b :-: !m_local_center_b
 
 	(* J = [-I -r1_skew I r2_skew]
 	       [ 0       -1 0       1]
@@ -124,7 +127,7 @@ fun new {local_anchor_a : vec2,
                 val () = if !m_enable_limit (* and fixed_rotation = false? *)
                          then let val joint_angle = a_b - a_a - m_reference_angle
                                   val (ix, iy) = (vec3x (!m_impulse), vec3y (!m_impulse))
-                                  val () = if Real.abs (!m_upper_angle - !m_lower_angle)
+                                  val () = if abs (!m_upper_angle - !m_lower_angle)
                                               < 2.0 * BDDSettings.angular_slop
                                            then m_limit_state := EqualLimits
                                            else if joint_angle <= !m_lower_angle
@@ -290,12 +293,95 @@ fun new {local_anchor_a : vec2,
 
         fun solve_position_constraints baumgarte =
             let
-                val b_a = m_body_a
-                val b_b = m_body_b
+                val bA = m_body_a
+                val bB = m_body_b
 
-                val angular_error = ref 0.0
-                val position_error = ref 0.0
-            in true
+                val aA = ref (sweepa (D.B.get_sweep bA))
+                val cA = ref (sweepc (D.B.get_sweep bA))
+                val aB = ref (sweepa (D.B.get_sweep bB))
+                val cB = ref (sweepc (D.B.get_sweep bB))
+
+                val iA = D.B.get_inv_i bA
+                val iB = D.B.get_inv_i bB
+
+                val angularError = ref 0.0
+
+                (* Solve angular limit constraint. *)
+                val () =
+                    if !m_enable_limit andalso !m_limit_state <> InactiveLimit
+                    then let val angle = !aB - !aA - m_reference_angle
+                             val limitImpulse =
+                                 case !m_limit_state of
+                                     EqualLimits =>
+                                     let (* Prevent large angular correction *)
+                                         val C = clampr (angle - !m_lower_angle,
+                                                         ~BDDSettings.max_angular_correction,
+                                                         BDDSettings.max_angular_correction)
+                                         val () = angularError := abs C
+                                     in ~(!m_motor_mass) * C end
+                                   | AtLowerLimit =>
+                                     let
+                                         val C = angle - !m_lower_angle
+                                         val () = angularError := ~C
+                                         (* Prevent large angular corrections and allow
+                                            some slop. *)
+                                         val C1 = clampr (C + BDDSettings.angular_slop,
+                                                          ~BDDSettings.max_angular_correction,
+                                                          0.0)
+                                     in ~(!m_motor_mass) * C1 end
+                                   | AtUpperLimit =>
+                                     let
+                                         val C = angle - !m_upper_angle
+                                         val () = angularError := C
+                                         (* Prevent large angular corrections and allow
+                                            some slop. *)
+                                         val C1 = clampr (C + BDDSettings.angular_slop,
+                                                          0.0,
+                                                          BDDSettings.max_angular_correction)
+                                     in ~(!m_motor_mass) * C1 end
+                                   | _ => 0.0
+                             val () = aA := !aA - iA * limitImpulse
+                             val () = aB := !aB + iB * limitImpulse
+                         in () end
+                    else ()
+                (* Solve point-to-point constraint. *)
+                val qA = mat22angle (!aA)
+                val qB = mat22angle (!aB)
+                val rA = qA +*: (m_local_anchor_a :-: !m_local_center_a)
+                val rB = qB +*: (m_local_anchor_b :-: !m_local_center_b)
+                val C = !cB :+: rB :-: !cA :-: rA
+                val positionError = vec2length C
+                val mA = D.B.get_inv_mass bA
+                val mB = D.B.get_inv_mass bB
+
+                val (rax, ray) = vec2xy rA
+                val (rbx, rby) = vec2xy rB
+
+                val K = mat22with
+                        (mA + mB + iA * ray * ray + iB * rby * rby,
+                         ~iA * rax * ray - iB * rbx * rby,
+                         ~iA * rax * ray - iB * rbx * rby,
+                         mA + mB + iA * rax * rax + iB * rbx * rbx
+                        )
+                val impulse = ~1.0 *: mat22solve (K, C)
+                val () = cA := !cA :-: mA *: impulse
+                val () = aA := !aA - iA * cross2vv (rA, impulse)
+                val () = cB := !cB :+: mB *: impulse
+                val () = aB := !aB + iB * cross2vv (rB, impulse)
+
+                val sweepA = D.B.get_sweep bA
+                val sweepB = D.B.get_sweep bB
+
+                val () = sweep_set_a (sweepA, !aA)
+                val () = sweep_set_a (sweepB, !aB)
+                val () = sweep_set_c (sweepA, !cA)
+                val () = sweep_set_c (sweepB, !cB)
+
+                (* Do we need these? *)
+                val () = D.B.synchronize_transform bA
+                val () = D.B.synchronize_transform bB
+            in positionError <= BDDSettings.linear_slop andalso
+               !angularError <= BDDSettings.angular_slop
             end
 
         fun get_anchor_a () = D.B.get_world_point (m_body_a, m_local_anchor_a)
