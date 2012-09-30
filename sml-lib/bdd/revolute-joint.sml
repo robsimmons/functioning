@@ -67,24 +67,23 @@ fun new {local_anchor_a : vec2,
                                         warm_starting
                                       } =
             let
-                val b_a = m_body_a
-                val b_b = m_body_b
+                val bA = m_body_a
+                val bB = m_body_b
                 val () = if !m_enable_motor orelse !m_enable_limit
 		(* You cannot create a rotation limit between bodies that
 		   both have fixed rotation. *)
-                         then assert (D.B.get_inv_i b_a > 0.0 orelse
-                                      D.B.get_inv_i b_b > 0.0)
+                         then assert (D.B.get_inv_i bA > 0.0 orelse
+                                      D.B.get_inv_i bB > 0.0)
                          else ()
-                val () = m_local_center_a := sweeplocalcenter (D.B.get_sweep b_a)
-                val () = m_local_center_b := sweeplocalcenter (D.B.get_sweep b_b)
-                val a_a = sweepa (D.B.get_sweep b_a)
-                val a_b = sweepa (D.B.get_sweep b_b)
+                val () = m_local_center_a := sweeplocalcenter (D.B.get_sweep bA)
+                val () = m_local_center_b := sweeplocalcenter (D.B.get_sweep bB)
+                val aA = sweepa (D.B.get_sweep bA)
+                val aB = sweepa (D.B.get_sweep bB)
 
-                (* XXX should these be initialized with the sweep values? *)
-                val q_a = transformr (D.B.get_xf b_a)
-                val q_b = transformr (D.B.get_xf b_b)
-                val () = m_rA := q_a +*: m_local_anchor_a :-: !m_local_center_a
-                val () = m_rB := q_b +*: m_local_anchor_b :-: !m_local_center_b
+                val qA = mat22angle aA
+                val qB = mat22angle aB
+                val () = m_rA := qA +*: (m_local_anchor_a :-: !m_local_center_a)
+                val () = m_rB := qB +*: (m_local_anchor_b :-: !m_local_center_b)
 
 	(* J = [-I -r1_skew I r2_skew]
 	       [ 0       -1 0       1]
@@ -94,28 +93,31 @@ fun new {local_anchor_a : vec2,
 	     [  -r1y*iA*r1x-r2y*iB*r2x, mA+r1x^2*iA+mB+r2x^2*iB,           r1x*iA+r2x*iB]
 	     [          -r1y*iA-r2y*iB,           r1x*iA+r2x*iB,                   iA+iB] *)
 
-                val m_a = D.B.get_inv_mass b_a
-                val m_b = D.B.get_inv_mass b_b
-                val i_a = D.B.get_inv_i b_a
-                val i_b = D.B.get_inv_i b_b
+                val mA = D.B.get_inv_mass bA
+                val mB = D.B.get_inv_mass bB
+                val iA = D.B.get_inv_i bA
+                val iB = D.B.get_inv_i bB
 
-                (* XXX these should be fields *)
                 val (rax, ray) = vec2xy (!m_rA)
                 val (rbx, rby) = vec2xy (!m_rB)
 
+                val eyx = ~ray * rax * iA - rby * rbx * iB
+                val ezx = ~ray * iA - rby * iB
+                val ezy = rax * iA + rbx * iB
+
                 val () = m_mass :=
-                    (mat33with (m_a + m_b + ray * ray * i_a * rby * rby * i_b,
-                                ~ray * rax * i_a - rby * rbx * i_b,
-                                ~ray * i_a - rby * i_b,
-                                vec3x (mat33col2 (!m_mass)),
-                                m_a + m_b + rax * rax * i_a + rbx * rbx * i_b,
-                                rax * i_a + rbx * i_b,
-                                vec3x (mat33col3 (!m_mass)),
-                                vec3y (mat33col3 (!m_mass)),
-                                i_a + i_b
+                    (mat33with (mA + mB + ray * ray * iA + rby * rby * iB,
+                                eyx,
+                                ezx,
+                                eyx,
+                                mA + mB + rax * rax * iA + rbx * rbx * iB,
+                                ezy,
+                                ezx,
+                                ezy,
+                                iA + iB
                     ))
 
-                val () = m_motor_mass := i_a + i_b
+                val () = m_motor_mass := iA + iB
                 val () = if !m_motor_mass > 0.0
                          then m_motor_mass := 1.0 / !m_motor_mass
                          else ()
@@ -125,7 +127,7 @@ fun new {local_anchor_a : vec2,
                          else ()
 
                 val () = if !m_enable_limit (* and fixed_rotation = false? *)
-                         then let val joint_angle = a_b - a_a - m_reference_angle
+                         then let val joint_angle = aB - aA - m_reference_angle
                                   val (ix, iy) = (vec3x (!m_impulse), vec3y (!m_impulse))
                                   val () = if abs (!m_upper_angle - !m_lower_angle)
                                               < 2.0 * BDDSettings.angular_slop
@@ -155,20 +157,20 @@ fun new {local_anchor_a : vec2,
                                   val () = m_motor_impulse := !m_motor_impulse * dt_ratio;
                                   val p = vec2 (vec3x (!m_impulse), vec3y (!m_impulse))
                                   val () = D.B.set_linear_velocity
-                                           (b_a,
-                                            D.B.get_linear_velocity b_a :-: m_a *: p)
+                                           (bA,
+                                            D.B.get_linear_velocity bA :-: mA *: p)
                                   val () = D.B.set_angular_velocity
-                                           (b_a,
-                                            D.B.get_angular_velocity b_a -
-                                            i_a * (cross2vv (!m_rA, p) + !m_motor_impulse
+                                           (bA,
+                                            D.B.get_angular_velocity bA -
+                                            iA * (cross2vv (!m_rA, p) + !m_motor_impulse
                                                    + (vec3z (!m_impulse))))
                                   val () = D.B.set_linear_velocity
-                                           (b_b,
-                                            D.B.get_linear_velocity b_b :-: m_b *: p)
+                                           (bB,
+                                            D.B.get_linear_velocity bB :+: mB *: p)
                                   val () = D.B.set_angular_velocity
-                                           (b_b,
-                                            D.B.get_angular_velocity b_b -
-                                            i_b * (cross2vv (!m_rB, p) + !m_motor_impulse
+                                           (bB,
+                                            D.B.get_angular_velocity bB +
+                                            iB * (cross2vv (!m_rB, p) + !m_motor_impulse
                                                    + (vec3z (!m_impulse))))
                               in () end
                          else (m_impulse := vec3 (0.0, 0.0, 0.0);
@@ -214,7 +216,7 @@ fun new {local_anchor_a : vec2,
                                                   max_impulse)
                                  val impulse = !m_motor_impulse - old_impulse
                                  val () = wA := !wA - iA * impulse
-                                 val () = wB := !wB - iB * impulse
+                                 val () = wB := !wB + iB * impulse
                              in () end
                          else ()
 

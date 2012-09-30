@@ -47,7 +47,7 @@ fun init world =
                                           p = BDDMath.vec2_zero}
         val ball_fixture = BDD.Body.create_fixture_default
                            (ball_body, ball_shape, (), 5.0)
-        val w = 100.0
+        val w = 1.0
         val () = BDD.Body.set_angular_velocity (ball_body, w)
         val () = BDD.Body.set_linear_velocity (ball_body, BDDMath.vec2 (~8.0 * w, 0.0))
 
