@@ -183,18 +183,18 @@ fun new {local_anchor_a : vec2,
                                          warm_starting
                                        } =
             let
-                val b_a = m_body_a
-                val b_b = m_body_b
+                val bA = m_body_a
+                val bB = m_body_b
 
-                val vA = D.B.get_linear_velocity b_a
-                val wA = ref (D.B.get_angular_velocity b_a)
-                val vB = D.B.get_linear_velocity b_b
-                val wB = ref (D.B.get_angular_velocity b_b)
+                val vA = ref (D.B.get_linear_velocity bA)
+                val wA = ref (D.B.get_angular_velocity bA)
+                val vB = ref (D.B.get_linear_velocity bB)
+                val wB = ref (D.B.get_angular_velocity bB)
 
-                val mA = D.B.get_inv_mass b_a
-                val mB = D.B.get_inv_mass b_b
-                val iA = D.B.get_inv_i b_a
-                val iB = D.B.get_inv_i b_b
+                val mA = D.B.get_inv_mass bA
+                val mB = D.B.get_inv_mass bB
+                val iA = D.B.get_inv_i bA
+                val iB = D.B.get_inv_i bB
 
                 (*bool fixedRotation = (iA + iB == 0.0f); *)
 
@@ -218,8 +218,8 @@ fun new {local_anchor_a : vec2,
                 (* Solve limit constraint. *)
                 val () = if !m_enable_limit andalso !m_limit_state <> InactiveLimit
                          then
-                             let val Cdot1 = vB :+: cross2sv (!wB, !m_rB)
-                                             :-: vA :-: cross2sv (!wA, !m_rA)
+                             let val Cdot1 = !vB :+: cross2sv (!wB, !m_rB)
+                                             :-: !vA :-: cross2sv (!wA, !m_rA)
                                  val Cdot2 = !wB - !wA
                                  val Cdot = vec3 (vec2x Cdot1, vec2y Cdot1, Cdot2)
                                  val impulse = ref (~1.0 *% mat33solve33 (!m_mass, Cdot))
@@ -233,7 +233,6 @@ fun new {local_anchor_a : vec2,
                                                         vec2(vec3x (mat33col3 (!m_mass)),
                                                              vec3y (mat33col3 (!m_mass))
                                                             )
-                                             (* is this the right thing to solve? *)
                                              val reduced = mat33solve22 (!m_mass, rhs)
                                              val () = impulse :=
                                                       vec3 (vec2x reduced,
@@ -259,11 +258,34 @@ fun new {local_anchor_a : vec2,
                                                (vec3z (!m_impulse) + vec3z (!impulse) > 0.0)
                                        | _ => ()
                                  val P = vec2 (vec3x (!impulse), vec3y (!impulse))
-
+                                 val () = vA := !vA :-: mA *: P
+                                 val () = wA := !wA - iA *
+                                                      (cross2vv (!m_rA, P) + vec3z (!impulse))
+                                 val () = vB := !vB :+: mB *: P
+                                 val () = wB := !wB + iB *
+                                                      (cross2vv (!m_rB, P) + vec3z (!impulse))
                              in () end
-                         else ()
+                         else
+                             (* Solve point-to-point constraint *)
+                             let val Cdot = !vB :+: cross2sv (!wB, !m_rB)
+                                            :-: !vA :-: cross2sv (!wA, !m_rA)
+                                 val impulse = mat33solve22 (!m_mass, ~1.0 *: Cdot)
+                                 val () = m_impulse :=
+                                          vec3 (vec3x (!m_impulse) + vec2x impulse,
+                                                vec3y (!m_impulse) + vec2y impulse,
+                                                vec3z (!m_impulse))
+                                 val () = vA := !vA :-: mA *: impulse
+                                 val () = wA := !wA - iA *
+                                                      (cross2vv (!m_rA, impulse))
+                                 val () = vB := !vB :+: mB *: impulse
+                                 val () = wB := !wB + iB *
+                                                      (cross2vv (!m_rB, impulse))
+                             in () end
 
-            in ()
+            in D.B.set_linear_velocity (bA, !vA);
+               D.B.set_angular_velocity (bA, !wA);
+               D.B.set_linear_velocity (bB, !vB);
+               D.B.set_angular_velocity (bB, !wB)
             end
 
         fun solve_position_constraints baumgarte =
