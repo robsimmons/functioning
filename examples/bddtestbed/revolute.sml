@@ -4,6 +4,8 @@ struct
 open Types
 
 
+val joint : (BDD.joint option) ref = ref NONE
+
 fun init world =
     let
         val ground_body = BDD.World.create_body (world,
@@ -47,7 +49,7 @@ fun init world =
                                           p = BDDMath.vec2_zero}
         val ball_fixture = BDD.Body.create_fixture_default
                            (ball_body, ball_shape, (), 5.0)
-        val w = 1.0
+        val w = 100.0
         val () = BDD.Body.set_angular_velocity (ball_body, w)
         val () = BDD.Body.set_linear_velocity (ball_body, BDDMath.vec2 (~8.0 * w, 0.0))
 
@@ -71,11 +73,22 @@ fun init world =
                           body_b = ball_body,
                           collide_connected = true
                  })
+        val () = joint := SOME j
     in ()
     end
 
 
- fun handle_event _ _ = ()
+ fun handle_event world (SDL.E_KeyDown {sym = SDL.SDLK_l}) =
+     (case !joint of
+         NONE => ()
+       | SOME j =>
+         (case BDD.Joint.get_typ j of
+              SOME (BDD.Joint.Revolute {enable_limit, is_limit_enabled, ...}) =>
+                enable_limit (not (is_limit_enabled ()))
+            | _ => ()
+         )
+     )
+   | handle_event _ _ = ()
 
  val test = Test {init = init,
                   handle_event = handle_event}

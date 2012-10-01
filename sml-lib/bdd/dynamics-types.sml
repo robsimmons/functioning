@@ -91,11 +91,13 @@ struct
   type mouse_joint = {get_target : unit -> BDDMath.vec2,
                       set_target : BDDMath.vec2 -> unit,
                       base : joint_dispatch}
+
 (* should this have a "this" pointing back to the joint? *)
 
   datatype joint_type =
            Mouse of mouse_joint
-         | Revolute of unit
+         | Revolute of {enable_limit : bool -> unit,
+                        is_limit_enabled : unit -> bool}
          | Unknown of unit
 
 

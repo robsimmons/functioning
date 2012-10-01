@@ -390,6 +390,14 @@ fun new {local_anchor_a : vec2,
 
         fun get_anchor_b () = D.B.get_world_point (m_body_b, m_local_anchor_b)
 
+        fun enable_limit flag =
+            (D.B.set_awake (m_body_a, true);
+             D.B.set_awake (m_body_b, true);
+             m_enable_limit := flag
+            )
+
+        fun is_limit_enabled () = !m_enable_limit
+
 
         val dispatch =
         {
@@ -400,7 +408,8 @@ fun new {local_anchor_a : vec2,
           get_anchor_b = get_anchor_b
         }
 
-        val methods = BDDDynamicsTypes.Revolute ()
+        val methods = BDDDynamicsTypes.Revolute {enable_limit = enable_limit,
+                                                 is_limit_enabled = is_limit_enabled}
 
     in
         (dispatch, methods)
