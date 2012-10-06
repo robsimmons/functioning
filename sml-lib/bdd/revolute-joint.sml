@@ -153,7 +153,7 @@ fun new {local_anchor_a : vec2,
                 val () = if warm_starting
                          then let
                                  (* Scale impulses to support a variable time step. *)
-                                  val () = vec3timeseq (!m_impulse, dt_ratio);
+                                  val () = m_impulse := dt_ratio *% !m_impulse
                                   val () = m_motor_impulse := !m_motor_impulse * dt_ratio;
                                   val p = vec2 (vec3x (!m_impulse), vec3y (!m_impulse))
                                   val () = D.B.set_linear_velocity
@@ -337,7 +337,7 @@ fun new {local_anchor_a : vec2,
                                          val () = angularError := C
                                          (* Prevent large angular corrections and allow
                                             some slop. *)
-                                         val C1 = clampr (C + BDDSettings.angular_slop,
+                                         val C1 = clampr (C - BDDSettings.angular_slop,
                                                           0.0,
                                                           BDDSettings.max_angular_correction)
                                      in ~(!m_motor_mass) * C1 end
