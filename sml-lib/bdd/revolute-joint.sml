@@ -346,6 +346,8 @@ fun new {local_anchor_a : vec2,
                              val () = aB := !aB + iB * limitImpulse
                          in () end
                     else ()
+
+
                 (* Solve point-to-point constraint. *)
                 val qA = mat22angle (!aA)
                 val qB = mat22angle (!aB)
@@ -380,8 +382,9 @@ fun new {local_anchor_a : vec2,
                 val () = sweep_set_c (sweepB, !cB)
 
                 (* Do we need these? *)
-                val () = D.B.synchronize_transform bA
+(*                val () = D.B.synchronize_transform bA
                 val () = D.B.synchronize_transform bB
+*)
             in positionError <= BDDSettings.linear_slop andalso
                !angularError <= BDDSettings.angular_slop
             end
@@ -391,10 +394,15 @@ fun new {local_anchor_a : vec2,
         fun get_anchor_b () = D.B.get_world_point (m_body_b, m_local_anchor_b)
 
         fun enable_limit flag =
-            (D.B.set_awake (m_body_a, true);
-             D.B.set_awake (m_body_b, true);
-             m_enable_limit := flag
-            )
+            if flag <> !m_enable_limit
+            then (D.B.set_awake (m_body_a, true);
+                  D.B.set_awake (m_body_b, true);
+                  m_enable_limit := flag;
+                  m_impulse := vec3 (vec3x (!m_impulse),
+                                     vec3y (!m_impulse),
+                                     0.0)
+                 )
+            else ()
 
         fun is_limit_enabled () = !m_enable_limit
 
