@@ -64,8 +64,8 @@ fun init world =
                                      lower_angle = ~0.25 * Math.pi,
                                      upper_angle = 0.5 * Math.pi,
                                      enable_limit = true,
-                                     max_motor_torque = 0.0,
-                                     motor_speed = 0.0,
+                                     max_motor_torque = 10000.0,
+                                     motor_speed = Math.pi,
                                      enable_motor = false
                                     },
                           user_data = (),
@@ -85,6 +85,16 @@ fun init world =
          (case BDD.Joint.get_typ j of
               SOME (BDD.Joint.Revolute {enable_limit, is_limit_enabled, ...}) =>
                 enable_limit (not (is_limit_enabled ()))
+            | _ => ()
+         )
+     )
+   | handle_event world (SDL.E_KeyDown {sym = SDL.SDLK_m}) =
+     (case !joint of
+         NONE => ()
+       | SOME j =>
+         (case BDD.Joint.get_typ j of
+              SOME (BDD.Joint.Revolute {enable_motor, is_motor_enabled, ...}) =>
+                enable_motor (not (is_motor_enabled ()))
             | _ => ()
          )
      )

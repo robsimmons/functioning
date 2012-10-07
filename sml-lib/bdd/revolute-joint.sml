@@ -406,6 +406,13 @@ fun new {local_anchor_a : vec2,
 
         fun is_limit_enabled () = !m_enable_limit
 
+        fun enable_motor flag =
+            (D.B.set_awake (m_body_a, true);
+             D.B.set_awake (m_body_b, true);
+             m_enable_motor := flag
+            )
+
+        fun is_motor_enabled () = !m_enable_motor
 
         val dispatch =
         {
@@ -417,7 +424,9 @@ fun new {local_anchor_a : vec2,
         }
 
         val methods = BDDDynamicsTypes.Revolute {enable_limit = enable_limit,
-                                                 is_limit_enabled = is_limit_enabled}
+                                                 is_limit_enabled = is_limit_enabled,
+                                                 enable_motor = enable_motor,
+                                                 is_motor_enabled = is_motor_enabled}
 
     in
         (dispatch, methods)

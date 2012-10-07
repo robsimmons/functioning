@@ -97,7 +97,10 @@ struct
   datatype joint_type =
            Mouse of mouse_joint
          | Revolute of {enable_limit : bool -> unit,
-                        is_limit_enabled : unit -> bool}
+                        is_limit_enabled : unit -> bool,
+                        enable_motor : bool -> unit,
+                        is_motor_enabled : unit -> bool
+                       }
          | Unknown of unit
 
 
