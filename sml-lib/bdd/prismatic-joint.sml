@@ -38,8 +38,22 @@ fun new {local_anchor_a : BDDMath.vec2,
     let
         val bA = D.J.get_body_a joint
         val bB = D.J.get_body_b joint
-        val m_local_anchor_a = local_anchor_a
-        val m_local_anchor_b = local_anchor_b
+        val m_localAnchorA = local_anchor_a
+        val m_localAnchorB = local_anchor_b
+        val m_localXAxisA = vec2normalized local_axis_a
+        val m_localYAxisA = cross2sv(1.0, m_localXAxisA)
+        val m_referenceAngle = reference_angle
+        val m_impulse = ref (vec3zero)
+        val m_motorMass = 0.0
+        val m_motorImpulse = ref 0.0
+        val m_lowerTranslation = lower_translation
+        val m_upperTranslation = upper_translation
+        val m_maxMotorForce = max_motor_force
+        val m_enableLimit = ref enable_limit
+        val m_enableMotor = ref enable_motor
+        val m_limitState = ref InactiveLimit
+        val m_axis = vec2 (0.0, 0.0)
+        val m_perp = vec2 (0.0, 0.0)
 
         fun init_velocity_constraints { dt,
                                         inv_dt,
@@ -69,9 +83,9 @@ fun new {local_anchor_a : BDDMath.vec2,
             in true
             end
 
-        fun get_anchor_a () = D.B.get_world_point (bA, m_local_anchor_a)
+        fun get_anchor_a () = D.B.get_world_point (bA, m_localAnchorA)
 
-        fun get_anchor_b () = D.B.get_world_point (bB, m_local_anchor_b)
+        fun get_anchor_b () = D.B.get_world_point (bB, m_localAnchorB)
 
         val dispatch =
         {
