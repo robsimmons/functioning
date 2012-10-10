@@ -11,8 +11,8 @@ structure D = BDDDynamics
 
 exception RevoluteJoint of string
 
-(* Out this here for now.
-  Leter, I think we're just going to put everything in joint.sml.
+(* Put this here for now.
+  Later, I think we're just going to put everything in joint.sml.
 *)
 datatype limit_state = InactiveLimit
                      | AtLowerLimit
@@ -35,8 +35,8 @@ fun new {local_anchor_a : vec2,
         }
         joint =
     let
-        val m_body_a = D.J.get_body_a joint
-        val m_body_b = D.J.get_body_b joint
+        val bA = D.J.get_body_a joint
+        val bB = D.J.get_body_b joint
         val m_local_anchor_a = local_anchor_a
         val m_local_anchor_b = local_anchor_b
         val m_local_center_a = ref (vec2 (0.0, 0.0))
@@ -67,8 +67,6 @@ fun new {local_anchor_a : vec2,
                                         warm_starting
                                       } =
             let
-                val bA = m_body_a
-                val bB = m_body_b
                 val () = if !m_enable_motor orelse !m_enable_limit
 		(* You cannot create a rotation limit between bodies that
 		   both have fixed rotation. *)
@@ -188,9 +186,6 @@ fun new {local_anchor_a : vec2,
                                          warm_starting
                                        } =
             let
-                val bA = m_body_a
-                val bB = m_body_b
-
                 val vA = ref (D.B.get_linear_velocity bA)
                 val wA = ref (D.B.get_angular_velocity bA)
                 val vB = ref (D.B.get_linear_velocity bB)
@@ -295,9 +290,6 @@ fun new {local_anchor_a : vec2,
 
         fun solve_position_constraints baumgarte =
             let
-                val bA = m_body_a
-                val bB = m_body_b
-
                 val aA = ref (sweepa (D.B.get_sweep bA))
                 val cA = ref (sweepc (D.B.get_sweep bA))
                 val aB = ref (sweepa (D.B.get_sweep bB))
@@ -381,22 +373,18 @@ fun new {local_anchor_a : vec2,
                 val () = sweep_set_c (sweepA, !cA)
                 val () = sweep_set_c (sweepB, !cB)
 
-                (* Do we need these? *)
-(*                val () = D.B.synchronize_transform bA
-                val () = D.B.synchronize_transform bB
-*)
             in positionError <= BDDSettings.linear_slop andalso
                !angularError <= BDDSettings.angular_slop
             end
 
-        fun get_anchor_a () = D.B.get_world_point (m_body_a, m_local_anchor_a)
+        fun get_anchor_a () = D.B.get_world_point (bA, m_local_anchor_a)
 
-        fun get_anchor_b () = D.B.get_world_point (m_body_b, m_local_anchor_b)
+        fun get_anchor_b () = D.B.get_world_point (bB, m_local_anchor_b)
 
         fun enable_limit flag =
             if flag <> !m_enable_limit
-            then (D.B.set_awake (m_body_a, true);
-                  D.B.set_awake (m_body_b, true);
+            then (D.B.set_awake (bA, true);
+                  D.B.set_awake (bB, true);
                   m_enable_limit := flag;
                   m_impulse := vec3 (vec3x (!m_impulse),
                                      vec3y (!m_impulse),
@@ -407,8 +395,8 @@ fun new {local_anchor_a : vec2,
         fun is_limit_enabled () = !m_enable_limit
 
         fun enable_motor flag =
-            (D.B.set_awake (m_body_a, true);
-             D.B.set_awake (m_body_b, true);
+            (D.B.set_awake (bA, true);
+             D.B.set_awake (bB, true);
              m_enable_motor := flag
             )
 

@@ -72,7 +72,16 @@ struct
                       motor_speed : real,
                       enable_limit : bool,
                       enable_motor : bool}
-    | PrismaticDef
+    | PrismaticDef of {local_anchor_a : BDDMath.vec2,
+                       local_anchor_b : BDDMath.vec2,
+                       local_axis_a : BDDMath.vec2,
+                       reference_angle : real,
+                       enable_limit : bool,
+                       lower_translation : real,
+                       upper_translation : real,
+                       enable_motor : bool,
+                       max_motor_force : real,
+                       motor_speed : real}
     | DistanceDef
     | PulleyDef
     | MouseDef of mouse_joint_def
@@ -101,6 +110,7 @@ struct
                         enable_motor : bool -> unit,
                         is_motor_enabled : unit -> bool
                        }
+         | Prismatic of unit
          | Unknown of unit
 
 
