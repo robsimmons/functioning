@@ -54,6 +54,7 @@ fun new {local_anchor_a : BDDMath.vec2,
         val m_limitState = ref InactiveLimit
         val m_axis = ref (vec2 (0.0, 0.0))
         val m_perp = ref (vec2 (0.0, 0.0))
+        val m_motorSpeed = ref motor_speed
 
         val m_localCenterA = ref (vec2 (0.0, 0.0))
         val m_localCenterB = ref (vec2 (0.0, 0.0))
@@ -213,6 +214,38 @@ fun new {local_anchor_a : BDDMath.vec2,
                                          warm_starting
                                        } =
             let
+                val vA = ref (D.B.get_linear_velocity bA)
+                val wA = ref (D.B.get_angular_velocity bA)
+                val vB = ref (D.B.get_linear_velocity bB)
+                val wB = ref (D.B.get_angular_velocity bB)
+
+                val mA = !m_invMassA
+                val mB = !m_invMassB
+                val iA = !m_invIA
+                val iB = !m_invIB
+
+                (* Solve linear motor constraint. *)
+                val () =
+                    if !m_enableMotor andalso !m_limitState <> EqualLimits
+                    then
+                        let val Cdot = dot2 (!m_axis, !vB :-: !vA) +
+                                       !m_a2 * !wB - !m_a1 * !wA
+                            val impulse = ref (!m_motorMass * (!m_motorSpeed - Cdot))
+                            val oldImpulse = !m_motorImpulse
+                            val maxImpulse = dt * m_maxMotorForce
+                            val () = m_motorImpulse :=
+                                     clampr (!m_motorImpulse + !impulse,
+                                             ~maxImpulse, maxImpulse)
+                            val () = impulse := !m_motorImpulse - oldImpulse
+                            val P = !impulse *: !m_axis
+                            val LA = !impulse * !m_a1
+                            val LB = !impulse * !m_a2
+                        in vA := !vA :-: mA *: P;
+                           wA := !wA - iA * LA;
+                           vB := !vB :+: mB *: P;
+                           wB := !wB + iB * LB
+                        end
+                    else ()
             in ()
             end
 
