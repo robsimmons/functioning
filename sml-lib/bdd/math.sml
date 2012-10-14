@@ -121,6 +121,7 @@ struct
   fun vec3x ({x, y = _, z = _} : vec3) = !x
   fun vec3y ({x = _, y, z = _} : vec3) = !y
   fun vec3z ({x = _, y = _, z} : vec3) = !z
+  fun vec3xyz {x, y, z} = (!x, !y, !z)
   fun vec3zero {x : real ref, y : real ref, z : real ref} = (x := 0.0; y := 0.0; z := 0.0)
   fun vec3set ({x, y, z}, xx, yy, zz) = (x := xx; y := yy; z := zz)
   fun vec3neg ({x, y, z} : vec3) = { x = ref (0.0 - !x), 

@@ -51,6 +51,7 @@ sig
   val vec3x : vec3 -> real
   val vec3y : vec3 -> real
   val vec3z : vec3 -> real
+  val vec3xyz : vec3 -> real * real * real
   val vec3zero : vec3 -> unit
   val vec3set : vec3 * real * real * real -> unit
   val vec3neg : vec3 -> vec3

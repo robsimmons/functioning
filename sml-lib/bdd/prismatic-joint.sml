@@ -72,6 +72,11 @@ fun new {local_anchor_a : BDDMath.vec2,
                                   0.0, 0.0, 0.0,
                                   0.0, 0.0, 0.0))
 
+        fun zero_impulse_z () = m_impulse := vec3 (vec3x (!m_impulse),
+                                                   vec3y (!m_impulse),
+                                                   0.0)
+
+
         fun init_velocity_constraints { dt,
                                         inv_dt,
                                         dt_ratio,
@@ -143,10 +148,6 @@ fun new {local_anchor_a : BDDMath.vec2,
                          (k11, k12, k13,
                           k12, k22, k23,
                           k13, k23, k33)
-
-                fun zero_impulse_z () = m_impulse := vec3 (vec3x (!m_impulse),
-                                                           vec3y (!m_impulse),
-                                                           0.0)
 
                 (* Compute motor and limit terms. *)
                 val () = if !m_enableLimit
@@ -246,7 +247,65 @@ fun new {local_anchor_a : BDDMath.vec2,
                            wB := !wB + iB * LB
                         end
                     else ()
-            in ()
+                val Cdot1 =
+                    vec2 (dot2 (!m_perp, !vB :-: !vA) + !m_s2 * !wB - !m_s1 * !wA,
+                          !wB - !wA)
+
+                val () =
+                    if !m_enableLimit andalso !m_limitState <> InactiveLimit
+                    then
+                        let (* Solve Prismatic and limit constraint in block form. *)
+                            val Cdot2 = dot2(!m_axis, !vB :-: !vA) +
+                                        !m_a2 * !wB - !m_a1 * !wA
+                            val Cdot = vec3 (vec2x Cdot1, vec2y Cdot1, Cdot2)
+                            val f1 = !m_impulse
+                            val df = ref (mat33solve33 (!m_K, ~1.0 *% Cdot))
+                            val () = m_impulse := !m_impulse %+% !df
+                            val () =
+                                case !m_limitState of
+                                    AtLowerLimit => zero_impulse_z ()
+                                  | AtUpperLimit => zero_impulse_z ()
+                                  | _ => ()
+                            (* f2(1:2) = invK(1:2,1:2) *
+                                  (-Cdot(1:2) - K(1:2,3) * (f2(3) - f1(3))) + f1(1:2) *)
+                            val ez = mat33col3 (!m_K)
+                            val b = ~1.0 *: Cdot1 :-: (vec3z (!m_impulse) - vec3z f1) *:
+                                    vec2(vec3x ez, vec3y ez)
+                            val f2r = mat33solve22 (!m_K, b) :+: vec2 (vec3x f1, vec3y f1)
+                            val () = m_impulse := vec3 (vec2x f2r,
+                                                        vec2y f2r,
+                                                        vec3z (!m_impulse))
+                            val () = df := !m_impulse %-% f1
+                            val (dfx, dfy, dfz) = vec3xyz (!df)
+                            val P = dfx *: !m_perp :+: dfz *: !m_axis
+                            val LA = dfx * !m_s1 + dfy + dfz * !m_a1
+                            val LB = dfx * !m_s2 + dfy + dfz * !m_a2
+                        in vA := !vA :-: mA *: P;
+                           wA := !wA - iA * LA;
+                           vB := !vB :+: mB *: P;
+                           wB := !wB + iB * LB
+                        end
+                    else
+                        let (* Limit is inactive, just solve the prismatic constraint
+                               in block form. *)
+                            val df = mat33solve22 (!m_K, ~1.0 *: Cdot1)
+                            val (ix, iy, iz) = vec3xyz (!m_impulse)
+                            val (dfx, dfy) = vec2xy df
+                            val () = m_impulse := vec3 (ix + dfx,
+                                                        iy + dfy,
+                                                        iz)
+                            val P = dfx *: !m_perp
+                            val LA = dfx * !m_s1 + dfy
+                            val LB = dfx * !m_s2 + dfy
+                        in vA := !vA :-: mA *: P;
+                           wA := !wA - iA * LA;
+                           vB := !vB :+: mB *: P;
+                           wB := !wB + iB * LB
+                        end
+            in D.B.set_linear_velocity (bA, !vA);
+               D.B.set_angular_velocity (bA, !wA);
+               D.B.set_linear_velocity (bB, !vB);
+               D.B.set_angular_velocity (bB, !wB)
             end
 
         fun solve_position_constraints baumgarte =
