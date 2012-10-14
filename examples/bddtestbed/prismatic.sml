@@ -46,7 +46,7 @@ fun init world =
                                                })
         val ball_shape = BDDShape.Polygon (BDDPolygon.box (2.0, 0.5))
         val ball_fixture = BDD.Body.create_fixture_default
-                           (ball_body, ball_shape, (), 0.5)
+                           (ball_body, ball_shape, (), 5.0)
 
 
         val v = BDDMath.vec2 (0.0, 0.0)
@@ -62,7 +62,7 @@ fun init world =
                                      upper_translation = 20.0,
                                      enable_limit = true,
                                      max_motor_force = 10000.0,
-                                     motor_speed = Math.pi,
+                                     motor_speed = 10.0,
                                      enable_motor = false
                                     },
                           user_data = (),

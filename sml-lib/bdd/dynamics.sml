@@ -153,8 +153,6 @@ struct
     val FLAG_COLLIDE_CONNECTED = 0wx2 : Word8.word
 
     datatype joint_type = datatype BDDDynamicsTypes.joint_type
-    type mouse_joint = BDDDynamicsTypes.mouse_joint
-    type mouse_joint_def = BDDDynamicsTypes.mouse_joint_def
     datatype joint_def = datatype BDDDynamicsTypes.joint_def
     open BDDCells.J
 

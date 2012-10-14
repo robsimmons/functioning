@@ -24,8 +24,12 @@ datatype test = Test of
           handle_event : BDD.world -> SDL.event -> unit
          }
 
+type mouse_joint = {get_target : unit -> BDDMath.vec2,
+                    set_target : BDDMath.vec2 -> unit
+                   }
+
 datatype game_state = GS of {world : BDD.world,
-                             mouse_joint : (BDD.Joint.mouse_joint * BDD.joint) option,
+                             mouse_joint : (mouse_joint * BDD.joint) option,
                              test : test
                             }
 

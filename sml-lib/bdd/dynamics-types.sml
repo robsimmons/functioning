@@ -53,15 +53,6 @@ struct
                      position_iterations : int,
                      warm_starting : bool }
 
-
-  type mouse_joint_def =
-       {
-        target : BDDMath.vec2,
-        max_force : real,
-        frequency_hz : real,
-        damping_ratio : real
-       }
-
   datatype joint_def =
       RevoluteDef of {local_anchor_a : BDDMath.vec2,
                       local_anchor_b : BDDMath.vec2,
@@ -84,7 +75,11 @@ struct
                        motor_speed : real}
     | DistanceDef
     | PulleyDef
-    | MouseDef of mouse_joint_def
+    | MouseDef of { target : BDDMath.vec2,
+                    max_force : real,
+                    frequency_hz : real,
+                    damping_ratio : real
+                  }
     | GearDef
     | LineDef
     | WeldDef
@@ -97,14 +92,10 @@ struct
                           get_anchor_b : unit -> BDDMath.vec2
                         }
 
-  type mouse_joint = {get_target : unit -> BDDMath.vec2,
-                      set_target : BDDMath.vec2 -> unit,
-                      base : joint_dispatch}
-
-(* should this have a "this" pointing back to the joint? *)
-
   datatype joint_type =
-           Mouse of mouse_joint
+           Mouse of {get_target : unit -> BDDMath.vec2,
+                      set_target : BDDMath.vec2 -> unit
+                    }
          | Revolute of {enable_limit : bool -> unit,
                         is_limit_enabled : unit -> bool,
                         enable_motor : bool -> unit,

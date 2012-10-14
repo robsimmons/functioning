@@ -172,8 +172,8 @@ fun new { target : vec2,
         }
 
         val methods = BDDDynamicsTypes.Mouse {set_target = set_target,
-                                              get_target = get_target,
-                                              base = dispatch}
+                                              get_target = get_target
+                                             }
 
     in
         (dispatch, methods)

@@ -15,9 +15,6 @@ sig
   type contactedge
   type jointedge
 
-  type mouse_joint_def = BDDDynamicsTypes.mouse_joint_def
-  type mouse_joint = BDDDynamicsTypes.mouse_joint
-
   datatype joint_def =
       RevoluteDef of {local_anchor_a : BDDMath.vec2,
                       local_anchor_b : BDDMath.vec2,
@@ -40,7 +37,11 @@ sig
                        motor_speed : real}
     | DistanceDef
     | PulleyDef
-    | MouseDef of mouse_joint_def
+    | MouseDef of { target : BDDMath.vec2,
+                    max_force : real,
+                    frequency_hz : real,
+                    damping_ratio : real
+                  }
     | GearDef
     | LineDef
     | WeldDef
@@ -48,7 +49,9 @@ sig
 
 
   datatype joint_type =
-           Mouse of mouse_joint
+           Mouse of {get_target : unit -> BDDMath.vec2,
+                     set_target : BDDMath.vec2 -> unit
+                     }
          | Revolute of {enable_limit : bool -> unit,
                         is_limit_enabled : unit -> bool,
                         enable_motor : bool -> unit,
