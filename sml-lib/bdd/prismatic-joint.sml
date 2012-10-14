@@ -72,9 +72,9 @@ fun new {local_anchor_a : BDDMath.vec2,
                                   0.0, 0.0, 0.0,
                                   0.0, 0.0, 0.0))
 
-        fun zero_impulse_z () = m_impulse := vec3 (vec3x (!m_impulse),
-                                                   vec3y (!m_impulse),
-                                                   0.0)
+        fun set_impulse_z z = m_impulse := vec3 (vec3x (!m_impulse),
+                                                 vec3y (!m_impulse),
+                                                 z)
 
 
         fun init_velocity_constraints { dt,
@@ -159,19 +159,19 @@ fun new {local_anchor_a : BDDMath.vec2,
                                 else if jointTranslation <= m_lowerTranslation
                                 then if !m_limitState <> AtLowerLimit
                                      then (m_limitState := AtLowerLimit;
-                                           zero_impulse_z ())
+                                           set_impulse_z 0.0)
                                      else ()
                                 else if jointTranslation >= m_upperTranslation
                                 then if !m_limitState <> AtUpperLimit
                                      then (m_limitState := AtUpperLimit;
-                                           zero_impulse_z ())
+                                           set_impulse_z 0.0)
                                      else ()
                                 else (m_limitState := InactiveLimit;
-                                      zero_impulse_z ()
+                                      set_impulse_z 0.0
                                      )
                              end
                          else (m_limitState := InactiveLimit;
-                               zero_impulse_z ()
+                               set_impulse_z 0.0
                               )
                 val () = if not (!m_enableMotor)
                          then m_motorImpulse := 0.0
@@ -197,7 +197,7 @@ fun new {local_anchor_a : BDDMath.vec2,
                                 vB := !vB :+: mB *: P;
                                 wB := !wB + iB * LB
                              end
-                         else (zero_impulse_z ();
+                         else (set_impulse_z 0.0;
                                m_motorImpulse := 0.0)
 
             in D.B.set_linear_velocity (bA, !vA);
@@ -263,8 +263,10 @@ fun new {local_anchor_a : BDDMath.vec2,
                             val () = m_impulse := !m_impulse %+% !df
                             val () =
                                 case !m_limitState of
-                                    AtLowerLimit => zero_impulse_z ()
-                                  | AtUpperLimit => zero_impulse_z ()
+                                    AtLowerLimit =>
+                                    set_impulse_z (Real.max (0.0, vec3z (!m_impulse)))
+                                  | AtUpperLimit =>
+                                    set_impulse_z (Real.min (0.0, vec3z (!m_impulse)))
                                   | _ => ()
                             (* f2(1:2) = invK(1:2,1:2) *
                                   (-Cdot(1:2) - K(1:2,3) * (f2(3) - f1(3))) + f1(1:2) *)
