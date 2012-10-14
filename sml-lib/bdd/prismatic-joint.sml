@@ -254,7 +254,7 @@ fun new {local_anchor_a : BDDMath.vec2,
                 val () =
                     if !m_enableLimit andalso !m_limitState <> InactiveLimit
                     then
-                        let (* Solve Prismatic and limit constraint in block form. *)
+                        let (* Solve prismatic and limit constraint in block form. *)
                             val Cdot2 = dot2(!m_axis, !vB :-: !vA) +
                                         !m_a2 * !wB - !m_a1 * !wA
                             val Cdot = vec3 (vec2x Cdot1, vec2y Cdot1, Cdot2)
@@ -356,7 +356,7 @@ fun new {local_anchor_a : BDDMath.vec2,
                                 active := true
                                )
                            else if translation <= m_lowerTranslation
-                           then (* Prevent large linear translation and allow some slop. *)
+                           then (* Prevent large linear corrections and allow some slop. *)
                                (C2 := clampr(translation - m_lowerTranslation +
                                              BDDSettings.linear_slop,
                                              ~BDDSettings.max_linear_correction,
@@ -367,7 +367,7 @@ fun new {local_anchor_a : BDDMath.vec2,
                                 active := true
                                )
                            else if translation >= m_upperTranslation
-                           then (* Prevent large linear translation and allow some slop. *)
+                           then (* Prevent large linear corrections and allow some slop. *)
                                (C2 := clampr(translation - m_upperTranslation -
                                              BDDSettings.linear_slop,
                                              0.0,
@@ -418,7 +418,8 @@ fun new {local_anchor_a : BDDMath.vec2,
                                                k12, k22)
                             val impulse1 = mat22solve(K, ~1.0 *: C1)
                             val (ix, iy) = vec2xy impulse1
-                        in vec3 (ix, iy, 0.0)
+                        in
+                            vec3 (ix, iy, 0.0)
                         end
                 val (ix, iy, iz) = vec3xyz impulse
                 val P = ix *: perp :+: iz *: axis
