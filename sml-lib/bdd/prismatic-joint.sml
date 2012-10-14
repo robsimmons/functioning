@@ -441,6 +441,27 @@ fun new {local_anchor_a : BDDMath.vec2,
 
         fun get_anchor_b () = D.B.get_world_point (bB, m_localAnchorB)
 
+        fun enable_limit flag =
+            if flag <> !m_enableLimit
+            then (D.B.set_awake (bA, true);
+                  D.B.set_awake (bB, true);
+                  m_enableLimit := flag;
+                  m_impulse := vec3 (vec3x (!m_impulse),
+                                     vec3y (!m_impulse),
+                                     0.0)
+                 )
+            else ()
+
+        fun is_limit_enabled () = !m_enableLimit
+
+        fun enable_motor flag =
+            (D.B.set_awake (bA, true);
+             D.B.set_awake (bB, true);
+             m_enableMotor := flag
+            )
+
+        fun is_motor_enabled () = !m_enableMotor
+
         val dispatch =
         {
           init_velocity_constraints = init_velocity_constraints,
@@ -450,7 +471,12 @@ fun new {local_anchor_a : BDDMath.vec2,
           get_anchor_b = get_anchor_b
         }
 
-        val methods = BDDDynamicsTypes.Prismatic ()
+        val methods = BDDDynamicsTypes.Prismatic
+                          {enable_limit = enable_limit,
+                           is_limit_enabled = is_limit_enabled,
+                           enable_motor = enable_motor,
+                           is_motor_enabled = is_motor_enabled
+                          }
 
     in
         (dispatch, methods)

@@ -12,6 +12,7 @@ Group is
 types.sml
 bullet-test.sml
 revolute.sml
+prismatic.sml
 varying-restitution.sml
 vertical-stack.sml
 render.sml

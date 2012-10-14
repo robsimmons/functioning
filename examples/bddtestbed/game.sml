@@ -283,6 +283,8 @@ struct
       SOME (init_test BulletTest.test)
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_3}) s =
       SOME (init_test Revolute.test)
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_4}) s =
+      SOME (init_test Prismatic.test)
     | handle_event (SDL.E_MouseDown {button, x, y}) s =
       mouse_down s (screen_to_world (x, y))
     | handle_event (SDL.E_MouseUp {button, x, y}) s =

@@ -110,7 +110,11 @@ struct
                         enable_motor : bool -> unit,
                         is_motor_enabled : unit -> bool
                        }
-         | Prismatic of unit
+         | Prismatic of {enable_limit : bool -> unit,
+                        is_limit_enabled : unit -> bool,
+                        enable_motor : bool -> unit,
+                        is_motor_enabled : unit -> bool
+                       }
          | Unknown of unit
 
 
