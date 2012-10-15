@@ -337,50 +337,45 @@ fun new {local_anchor_a : BDDMath.vec2,
                 val s2 = cross2vv (rB, perp)
 
                 val C1 = vec2 (dot2 (perp, d), !aB - !aA - m_referenceAngle)
-                val linearError = ref (abs (vec2x C1))
+                val linearError1 = abs (vec2x C1)
                 val angularError = abs (vec2y C1)
 
-                val active = ref false
-                val C2 = ref 0.0
-                val () =
+                val {C2, linearError, active} =
                     if !m_enableLimit
                     then
                         let val translation = dot2(axis, d)
                         in if abs(m_upperTranslation - m_lowerTranslation) <
                               2.0 * BDDSettings.linear_slop
                            then (* Prevent large angular corrections *)
-                               (C2 := clampr(translation,
-                                             ~BDDSettings.max_linear_correction,
-                                             BDDSettings.max_linear_correction);
-                                linearError := Real.max (!linearError, abs(translation));
-                                active := true
-                               )
+                               {C2 = clampr(translation,
+                                            ~BDDSettings.max_linear_correction,
+                                            BDDSettings.max_linear_correction),
+                                linearError = Real.max (linearError1, abs(translation)),
+                                active = true}
                            else if translation <= m_lowerTranslation
                            then (* Prevent large linear corrections and allow some slop. *)
-                               (C2 := clampr(translation - m_lowerTranslation +
-                                             BDDSettings.linear_slop,
-                                             ~BDDSettings.max_linear_correction,
-                                             0.0);
-                                linearError := Real.max (!linearError,
-                                                         m_lowerTranslation -
-                                                        translation);
-                                active := true
-                               )
+                               {C2 = clampr(translation - m_lowerTranslation +
+                                            BDDSettings.linear_slop,
+                                            ~BDDSettings.max_linear_correction,
+                                            0.0),
+                                linearError = Real.max (linearError1,
+                                                        m_lowerTranslation -
+                                                        translation),
+                                active = true}
                            else if translation >= m_upperTranslation
                            then (* Prevent large linear corrections and allow some slop. *)
-                               (C2 := clampr(translation - m_upperTranslation -
+                               {C2 = clampr(translation - m_upperTranslation -
                                              BDDSettings.linear_slop,
                                              0.0,
-                                             BDDSettings.max_linear_correction);
-                                linearError := Real.max (!linearError,
-                                                         translation - m_upperTranslation);
-                                active := true
-                               )
-                           else ()
+                                             BDDSettings.max_linear_correction),
+                                linearError = Real.max (linearError1,
+                                                        translation - m_upperTranslation),
+                                active = true}
+                           else {C2 = 0.0, linearError = linearError1, active = false}
                         end
-                    else ()
+                    else {C2 = 0.0, linearError = linearError1, active = false}
                 val impulse =
-                    if !active
+                    if active
                     then
                         let val k11 = mA + mB + iA * s1 * s1 + iB * s2 * s2
                             val k12 = iA * s1 + iB * s2
@@ -400,7 +395,7 @@ fun new {local_anchor_a : BDDMath.vec2,
                                                k12, k22, k23,
                                                k13, k23, k33)
 
-                            val C = vec3 (vec2x C1, vec2y C1, !C2)
+                            val C = vec3 (vec2x C1, vec2y C1, C2)
                         in
                             mat33solve33(K, ~1.0 *% C)
                         end
@@ -436,7 +431,7 @@ fun new {local_anchor_a : BDDMath.vec2,
                 sweep_set_a (sweepA, !aA);
                 sweep_set_c (sweepB, !cB);
                 sweep_set_a (sweepB, !aB);
-                !linearError <= BDDSettings.linear_slop andalso
+                linearError <= BDDSettings.linear_slop andalso
                 angularError <= BDDSettings.angular_slop
             end
 
