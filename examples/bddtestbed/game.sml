@@ -14,16 +14,18 @@ struct
   val height = 480
   val use_gl = true
 
-  (* These will be mutated to the corners of the screen *)
-  val lower_left = BDDMath.vec2 (0.0, 0.0)
-  val upper_right = BDDMath.vec2 (0.0, 0.0)
-
-  fun screen_to_world (x, y) =
-      let val (left, bottom) = BDDMath.vec2xy lower_left
-          val (right, top) = BDDMath.vec2xy upper_right
-      in BDDMath.vec2
-          ((Real.fromInt x  / Real.fromInt width) * (right - left) + left,
-           (Real.fromInt (height - y)  / Real.fromInt height) * (top - bottom) + bottom)
+  fun screen_to_world (x, y) (View {center, zoom, ...}) =
+      let val u = Real.fromInt x / Real.fromInt width
+          val v = Real.fromInt (height - y) / Real.fromInt height
+          val ratio = (Real.fromInt width) / (Real.fromInt height)
+          val extents = BDDMath.vec2 (ratio * zoom * 25.0, zoom * 25.0)
+          val lower = center :-: extents
+          val upper = center :+: extents
+          val (lx, ly) = BDDMath.vec2xy lower
+          val (ux, uy) = BDDMath.vec2xy upper
+          val px = (1.0 - u) * lx + u * ux
+          val py = (1.0 - v) * ly + v * uy
+      in BDDMath.vec2 (px, py)
       end
 
   fun body_color b =
@@ -66,47 +68,50 @@ struct
           ()
       end
 
+  fun resize (v as View {center, zoom, needs_resize = false}) = v
+    | resize (View {center, zoom, needs_resize = true}) =
+       let
+           val ratio = (Real.fromInt width) / (Real.fromInt height)
+           val extents = BDDMath.vec2 (ratio * zoom * 25.0, zoom * 25.0)
+           val lower = center :-: extents
+           val upper = center :+: extents
+           val (lx, ly) = BDDMath.vec2xy lower
+           val (ux, uy) = BDDMath.vec2xy upper
+       in
+        glMatrixMode GL_PROJECTION;
+        glLoadIdentity();
+        glOrtho lx ux ly uy 5.0 ~5.0;
+        glMatrixMode GL_MODELVIEW;
+        glLoadIdentity();
+        View {center = center, zoom = zoom,
+              needs_resize = false}
+       end
 
   fun init_test (test as Test {init, ...}) =
       let val gravity = BDDMath.vec2 (0.0, ~10.0)
           val world = BDD.World.world (gravity, true)
           val () = BDD.World.set_pre_solve (world, pre_solve)
           val () = init world
-      in GS { test = test, mouse_joint = NONE, world = world }
+          val center = BDDMath.vec2 (0.0, 20.0)
+          val zoom = 1.0
+          val view = View {center = center, zoom = zoom,
+                           needs_resize = true}
+      in GS { test = test, mouse_joint = NONE, world = world,
+              view = view}
       end
 
   val initstate = init_test VerticalStack.test
 
   fun initscreen screen =
       (
-
        glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA;
        glEnable GL_BLEND;
-
        glEnable GL_TEXTURE_2D;
-
        glClearColor 0.0 0.0 0.0 1.0;
        glClearDepth 1.0;
        glViewport 0 0 width height;
        glClear GL_COLOR_BUFFER_BIT;
-       glMatrixMode GL_PROJECTION;
-       glLoadIdentity();
-
-       let val viewCenter = BDDMath.vec2 (0.0, 20.0)
-           val ratio = (Real.fromInt width) / (Real.fromInt height)
-           val extents = BDDMath.vec2 (ratio * 25.0, 25.0)
-           val lower = viewCenter :-: extents
-           val upper = viewCenter :+: extents
-           val (lx, ly) = BDDMath.vec2xy lower
-           val (ux, uy) = BDDMath.vec2xy upper
-           val () = BDDMath.vec2set (lower_left, lx, ly)
-           val () = BDDMath.vec2set (upper_right, ux, uy)
-       in
-           glOrtho lx ux ly uy 5.0 ~5.0
-       end;
-
        glMatrixMode GL_MODELVIEW;
-
        glLoadIdentity();
        ()
       )
@@ -202,21 +207,22 @@ struct
    ()
   end
 
-  fun mouse_motion (s as GS {world, mouse_joint = NONE, test}) p = SOME s
-    | mouse_motion (s as GS {world, mouse_joint = SOME ({set_target, ...}, _), test}) p =
+  fun mouse_motion (s as GS {world, mouse_joint = NONE, test, ...}) p = SOME s
+    | mouse_motion (s as GS {world, mouse_joint = SOME ({set_target, ...}, _),
+                             test, ...}) p =
       let
           val () = set_target p
       in
           SOME s
       end
 
-  fun mouse_up (s as GS {world, mouse_joint = NONE, test}) p = SOME s
-    | mouse_up (s as GS {world, mouse_joint = SOME (mj, j), test}) p =
+  fun mouse_up (s as GS {world, mouse_joint = NONE, test, ...}) p = SOME s
+    | mouse_up (s as GS {world, mouse_joint = SOME (mj, j), test, view}) p =
       let val () = BDD.World.destroy_joint (world, j)
-      in SOME (GS {world = world, mouse_joint = NONE, test = test})
+      in SOME (GS {world = world, mouse_joint = NONE, test = test, view = view})
       end
 
-  fun mouse_down (s as GS {world, mouse_joint, test}) p =
+  fun mouse_down (s as GS {world, mouse_joint, test, view}) p =
       let val d = BDDMath.vec2 (0.001, 0.001)
           val aabb = { lowerbound = p :-: d,
                        upperbound = p :+: d
@@ -270,8 +276,14 @@ struct
                                SOME (BDD.Joint.Mouse mj) => SOME (mj, j)
                              | _ => raise Fail "expected a mouse joint"
                         end
-      in SOME (GS {world = world, mouse_joint = mbe_new_joint, test = test})
+      in SOME (GS {world = world, mouse_joint = mbe_new_joint, test = test, view = view})
       end
+
+  fun update_view (GS {world, mouse_joint, test, view = View {center, zoom, ...}}) v s =
+      SOME (GS {world = world, mouse_joint = mouse_joint, test = test,
+                view = View {center = center :+: v,
+                             zoom = zoom * s,
+                             needs_resize = true}})
 
   fun handle_event (SDL.E_KeyDown {sym = SDL.SDLK_ESCAPE}) s = NONE
     | handle_event SDL.E_Quit s = NONE
@@ -285,12 +297,26 @@ struct
       SOME (init_test Revolute.test)
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_4}) s =
       SOME (init_test Prismatic.test)
-    | handle_event (SDL.E_MouseDown {button, x, y}) s =
-      mouse_down s (screen_to_world (x, y))
-    | handle_event (SDL.E_MouseUp {button, x, y}) s =
-      mouse_up s (screen_to_world (x, y))
-    | handle_event (SDL.E_MouseMotion {which, state, x, y, xrel, yrel}) s =
-      mouse_motion s (screen_to_world (x, y))
+
+    | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_LEFT}) s =
+      update_view s (BDDMath.vec2 (~0.5, 0.0)) 1.0
+    | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_RIGHT}) s =
+      update_view s (BDDMath.vec2 (0.5, 0.0)) 1.0
+    | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_UP}) s =
+      update_view s (BDDMath.vec2 (0.0, 0.5)) 1.0
+    | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_DOWN}) s =
+      update_view s (BDDMath.vec2 (0.0, ~0.5)) 1.0
+    | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_z}) s =
+      update_view s (BDDMath.vec2 (0.0, 0.0)) 1.1
+    | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_x}) s =
+      update_view s (BDDMath.vec2 (0.0, 0.0)) 0.9
+
+    | handle_event (SDL.E_MouseDown {button, x, y}) (s as (GS gs)) =
+      mouse_down s (screen_to_world (x, y) (#view gs))
+    | handle_event (SDL.E_MouseUp {button, x, y}) (s as (GS gs)) =
+      mouse_up s (screen_to_world (x, y) (#view gs))
+    | handle_event (SDL.E_MouseMotion {which, state, x, y, xrel, yrel}) (s as (GS gs)) =
+      mouse_motion s (screen_to_world (x, y) (#view gs))
     | handle_event e (s as GS {world, test = Test {handle_event = he, ... }, ...})  =
       (he world e; SOME s)
 
@@ -301,10 +327,11 @@ struct
           val () = BDD.World.step (world, timestep, 8, 3)
       in () end
 
-  fun tick (s as GS {world, ...}) =
+  fun tick (s as GS {world, view, test, mouse_joint}) =
     let val () = dophysics world
+        val view' = resize view
     in
-        SOME s
+        SOME (GS {world = world, view = view', test = test, mouse_joint = mouse_joint})
     end
 end
 

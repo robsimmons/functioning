@@ -10,14 +10,11 @@ structure BDD = BDDWorld(
                 end
                 )
 
-
-datatype constants = CONST of {width : int,
-                               height : int,
-                               left : real,
-                               right : real,
-                               bottom : real,
-                               top : real,
-                               gravity : BDDMath.vec2}
+datatype view = View of
+         {center : BDDMath.vec2,
+          zoom : real,
+          needs_resize : bool
+         }
 
 datatype test = Test of
          {init : BDD.world -> unit,
@@ -30,9 +27,8 @@ type mouse_joint = {get_target : unit -> BDDMath.vec2,
 
 datatype game_state = GS of {world : BDD.world,
                              mouse_joint : (mouse_joint * BDD.joint) option,
-                             test : test
+                             test : test,
+                             view : view
                             }
-
-
 
 end
