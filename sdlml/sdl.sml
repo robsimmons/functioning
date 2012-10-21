@@ -5,7 +5,7 @@ struct
      it is imperatively freed, so that we can
      then later block operations on it *)
   type safe = MLton.Pointer.t ref
-  type ptr = MLton.Pointer.t 
+  type ptr = MLton.Pointer.t
 
   (* XXX as RGBA, though it's not clear we use
      this consistently *)
@@ -25,7 +25,7 @@ struct
   fun !! (ref p) = if p = null then raise Invalid else p
 
   fun readcstring r =
-      let val len = 
+      let val len =
           (case Array.findi (fn (_, #"\000") => true | _ => false) r of
                NONE => Array.length r
              | SOME (i, _) => i)
@@ -34,7 +34,7 @@ struct
       end
 
   (* XXX endianness...?! *)
-  fun color (r, g, b, a) = 
+  fun color (r, g, b, a) =
     Word32.orb
     (Word32.<< (Word32.fromInt (Word8.toInt r), 0w24),
      Word32.orb
@@ -44,7 +44,7 @@ struct
        Word32.fromInt (Word8.toInt a))))
 
   (* 32-bit words, but must be 0w0-0w255. *)
-  fun color32 (r : Word32.word, g, b, a) = 
+  fun color32 (r : Word32.word, g, b, a) =
     Word32.orb
     (Word32.<< (r, 0w24),
      Word32.orb
@@ -310,12 +310,12 @@ struct
     | SDLK_UNDO
 
   datatype platform = WIN32 | LINUX | OSX
-      
+
   datatype event =
     E_Active
   | E_KeyDown of { sym : sdlk }
   | E_KeyUp of { sym : sdlk }
-  | E_MouseMotion of { which : int, state : mousestate, 
+  | E_MouseMotion of { which : int, state : mousestate,
                        x : int, y : int, xrel : int, yrel : int }
   | E_MouseDown of { button : int, x : int, y : int }
   | E_MouseUp of { button : int, x : int, y : int }
@@ -872,7 +872,7 @@ struct
     fun sdlkey n =
       if n < 0 orelse n > Vector.length sdlk
       then SDLK_UNKNOWN
-      else 
+      else
           let val r = Vector.sub(sdlk, n)
           in
               (* print ("key @ " ^ Int.toString n ^ " is " ^ sdlktos r ^ "\n"); *)
@@ -939,7 +939,7 @@ struct
      | 2 => E_KeyDown { sym = sdlkey (event_keyboard_sym_ e) }
      | 3 => E_KeyUp { sym = sdlkey (event_keyboard_sym_ e) }
      | 4 => E_MouseMotion
-         { which = event8_2nd_ e, 
+         { which = event8_2nd_ e,
            state = Word8.fromInt (event8_3rd_ e),
            x = event_mmotion_x_ e,
            y = event_mmotion_y_ e,
@@ -959,15 +959,15 @@ struct
                        hat = event8_3rd_ e,
                        state = Word8.fromInt (event8_4th_ e) }
      | 10 => E_JoyDown
-         { which = event8_2nd_ e, 
+         { which = event8_2nd_ e,
            button = event8_3rd_ e }
      | 11 => E_JoyUp
-         { which = event8_2nd_ e, 
+         { which = event8_2nd_ e,
            button = event8_3rd_ e }
      | 12 => E_Quit
      | 13 => E_SysWM
      (* reserved..
-     | 14 => 
+     | 14 =>
      | 15 =>
         *)
      | 16 => E_Resize
@@ -981,14 +981,14 @@ struct
       val e = newevent_ ()
     in
       case p e of
-        0 => 
+        0 =>
           let in
           (* no event *)
             free_ e;
             NONE
           end
       | _ =>
-          let 
+          let
             val ret = convertevent_ e
           in
             free_ e;
@@ -1014,7 +1014,7 @@ struct
     fun show_cursor true = ignore (sc SDL_ENABLE)
       | show_cursor false = ignore (sc SDL_DISABLE)
   end
-      
+
   local val fl = _import "SDL_Flip" : ptr -> unit ;
   in
     fun flip p = fl (!!p)
@@ -1023,7 +1023,7 @@ struct
   val glflip = _import "SDL_GL_SwapBuffers" : unit -> unit ;
 
 
-  local 
+  local
     val mkfscreen = _import "ml_makefullscreen" : int * int -> ptr ;
   in
     fun makefullscreen (w, h) =
@@ -1036,7 +1036,7 @@ struct
       end
   end
 
-  local 
+  local
     val mkscreen = _import "ml_makescreen" : int * int -> ptr ;
   in
     fun makescreen (w, h) =
@@ -1049,7 +1049,7 @@ struct
       end
   end
 
-  local 
+  local
     val mkscreen = _import "ml_glmakescreen" : int * int -> ptr ;
   in
     fun makeglscreen (w, h) =
@@ -1066,14 +1066,14 @@ struct
   local val ba = _import "ml_blitall" : ptr * ptr * int * int -> unit ;
         val b  = _import "ml_blit" : ptr * int * int * int * int * ptr * int * int -> unit ;
   in
-    fun blitall (s1, s2, x, y) = 
+    fun blitall (s1, s2, x, y) =
         let in
             (* print ("blitall to " ^ Int.toString x ^ "," ^ Int.toString y ^ "!\n"); *)
             ba (!!s1, !!s2, x, y)
         end
     fun blit (s, sx, sy, sw, sh, d, dx, dy) = b (!!s, sx, sy, sw, sh, !!d, dx, dy)
   end
-   
+
   (* PERF: Probably porting the C code to unsafe ML code would result in significantly
      improved performance. The C call overhead is big and the compiler can't optimize
      over the call boundary. *)
@@ -1138,7 +1138,7 @@ struct
 
               fun loop (x, y, f, ddF_x, ddF_y) =
                   if x < y
-                  then 
+                  then
                       let
                           (*
                           val () =
@@ -1172,7 +1172,7 @@ struct
           end
   end
 
-  local 
+  local
       val dp = _import "ml_drawpixel" : ptr * int * int * Word32.word * Word32.word * Word32.word -> unit ;
       structure W = Word32
 
@@ -1186,14 +1186,14 @@ struct
               if x0 = x1
               then NONE
               else
-                  let val (y0, frac) = if frac >= 0 
-                                       then (y0 + stepy, frac - dx) 
+                  let val (y0, frac) = if frac >= 0
+                                       then (y0 + stepy, frac - dx)
                                        else (y0, frac)
                       val x0 = x0 + stepx
                       val frac = frac + dy
-                  in SOME ((x0, y0, frac), post (x0, y0)) 
+                  in SOME ((x0, y0, frac), post (x0, y0))
                   end
-        in ({step = step, seed = (x0, y0, frac0)}, post (x0, y0)) 
+        in ({step = step, seed = (x0, y0, frac0)}, post (x0, y0))
         end
 
       fun line p0 p1 =
@@ -1230,13 +1230,13 @@ struct
                   else dp (s, x, y, r, g, b)
 
               fun app (f : int * int -> unit) p0 p1 =
-                  let 
+                  let
                       val ({step, seed}, v) = line p0 p1
                       fun loop seed =
                           case step seed of
                               NONE => ()
                             | SOME (seed', v) => (f v; loop seed')
-                  in 
+                  in
                       f v;
                       loop seed
                   end
@@ -1255,7 +1255,7 @@ struct
           drawline (surf, x0, y1, x1, y1, c);
           drawline (surf, x0, y0, x0, y1, c)
       end
-      
+
 
   (* PERF: similar *)
   (* XXX no alpha.. *)
@@ -1271,7 +1271,7 @@ struct
                   raise SDL ("getpixel out of bounds: " ^ Int.toString x ^ "," ^ Int.toString y ^
                               " with surface size: " ^ Int.toString (surface_width s) ^ "x" ^
                               Int.toString (surface_height s))
-              else 
+              else
                 let
                   val r = ref 0w0
                   val g = ref 0w0
@@ -1332,8 +1332,8 @@ struct
 
   local val fr = _import "ml_fillrecta" : ptr * int * int * int * int   * Word32.word * Word32.word * Word32.word * Word32.word -> unit ;
   in
-    fun fillrect (s1, x, y, w, h, c) = 
-        let 
+    fun fillrect (s1, x, y, w, h, c) =
+        let
           val (r, g, b, a) = components32 c
         in
           fr (!!s1, x, y, w, h, r, g, b, a)
@@ -1343,7 +1343,6 @@ struct
   local val fs = _import "SDL_FreeSurface" : ptr -> unit ;
   in fun freesurface s = fs (!!s)
   end
-      
 
   local val ms = _import "ml_makesurface" : int * int * int -> ptr ;
   in
@@ -1356,14 +1355,26 @@ struct
           end
   end
 
+  local val sa = _import "ml_setalpha" :
+                 ptr * Word8.word * Word8.word * Word8.word -> int;
+  in
+      fun setalpha surf srcalpha rleaccel alpha =
+          let val srcalpha8 =
+                  if srcalpha then 0w1 else 0w0
+              val rleaccel8 =
+                  if rleaccel then 0w1 else 0w0
+              val _ = sa (!!surf, srcalpha8, rleaccel8, alpha)
+          in () end
+  end
+
   (* **** initialization **** *)
-  local 
+  local
       val init = _import "ml_init" : unit -> int ;
       val plat = _import "ml_platform" : unit -> int ;
       val cmode = _import "ml_consolemode" : unit -> int ;
   in
 
-    val () = 
+    val () =
       case init () of
         0 => raise SDL "could not initialize"
       | _ => ()
@@ -1387,9 +1398,9 @@ struct
   struct
       datatype event_state = ENABLE | IGNORE
       type hatstate = joyhatstate
-      
+
       val number = _import "SDL_NumJoysticks" : unit -> int ;
-          
+
       val oj_  = _import "SDL_JoystickOpen" : int -> MLton.Pointer.t ;
       val cj_  = _import "SDL_JoystickClose" : MLton.Pointer.t -> unit ;
       val nj_  = _import "ml_joystickname" : int * char array -> unit ;
@@ -1406,7 +1417,7 @@ struct
 
       fun setstate es =
           jes_ (case es of ENABLE => 1 | IGNORE => 0)
-                  
+
       fun name n =
           let val n = check n
               val MAX_NAME = 512
@@ -1441,7 +1452,7 @@ struct
   structure Image =
   struct
       fun load s =
-      let 
+      let
           val lp = _import "IMG_Load" : string -> ptr ;
           val p = lp (s ^ "\000")
       in
@@ -1455,8 +1466,8 @@ struct
   struct
 
     fun surf2x src =
-        let 
-            val dst = makesurface(2 * surface_width src, 
+        let
+            val dst = makesurface(2 * surface_width src,
                                   2 * surface_height src)
         in
             Util.for 0 (surface_height src - 1)
@@ -1471,7 +1482,7 @@ struct
 
     local val ad = _import "ml_alphadim" : ptr -> ptr ;
     in
-      fun alphadim s = 
+      fun alphadim s =
         let val p = ad(!!s)
         in
           if p = null
@@ -1488,7 +1499,7 @@ struct
        (fn xx =>
         let val color = getpixel(src, xx, yy)
         in
-          fillrect(dst, 
+          fillrect(dst,
                    dx + ((xx - sx) * 16),
                    dy + ((yy - sy) * 16),
                    16, 16, color)
@@ -1496,7 +1507,7 @@ struct
 
     (* PERF: reduce overlaps in corners *)
     fun outline (surf, n, c) =
-        let 
+        let
             val w = surface_width surf
             val h = surface_height surf
         in

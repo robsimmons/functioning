@@ -138,7 +138,7 @@ SDL_Surface * ml_makesurface(int w, int h, int alpha) {
 
   if (ss && !alpha) SDL_SetAlpha(ss, 0, 255);
 
-  // XXX we probably don't want this is we are using GL.
+  // XXX we probably don't want this if we are using GL.
 # if USE_DISPLAY_FORMAT
   if (ss) {
     SDL_Surface * rr;
@@ -152,6 +152,16 @@ SDL_Surface * ml_makesurface(int w, int h, int alpha) {
 # else
   return ss;
 # endif
+}
+
+
+int ml_setalpha(SDL_Surface *surf, Uint8 srcalpha, Uint8 rleaccel, Uint8 alpha) {
+  Uint32 flags = 0;
+  if (srcalpha)
+    flags |= SDL_SRCALPHA;
+  if (rleaccel)
+    flags |= SDL_RLEACCEL;
+  return SDL_SetAlpha(surf, flags, alpha);
 }
 
 SDL_Surface * ml_makescreen(int w, int h) {

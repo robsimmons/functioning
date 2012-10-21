@@ -348,7 +348,7 @@ sig
   val clippixel : surface * int * int * color -> unit
   val getpixel  : surface * int * int -> color
 
-  val getpixels : surface -> MLton.Pointer.t 
+  val getpixels : surface -> MLton.Pointer.t
   val is_rgb : surface -> bool
   val get_bytes_per_pixel : surface -> int
 
@@ -358,7 +358,7 @@ sig
   val drawcircle : surface * int * int * int * color -> unit
   (* drawline (surf, x0, y0, x1, y1, color) *)
   val drawline : surface * int * int * int * int * color -> unit
-  (* drawrect (surf, x0, y0, x1, y1, color) 
+  (* drawrect (surf, x0, y0, x1, y1, color)
      Axis aligned hollow rectangle. Includes corners. *)
   val drawbox : surface * int * int * int * int * color -> unit
 
@@ -375,6 +375,8 @@ sig
   val makesurface : int * int -> surface
   (* invalidates the surface *)
   val freesurface : surface -> unit
+
+  val setalpha : surface -> bool -> bool -> Word8.word -> unit
 
   val version : unit -> { major : int, minor : int, patch : int }
 
@@ -401,8 +403,8 @@ sig
     (* make an alpha rectangle with a vertical gradient between the two
        specified colors. bias should be between 0 and 1; a higher bias
        means the gradient will have more of the bottom color. *)
-    val makealpharectgrad : { w : int, h : int, 
-                              ctop : color, cbot : color, 
+    val makealpharectgrad : { w : int, h : int,
+                              ctop : color, cbot : color,
                               bias : real } -> surface
 
     (* create a version of the surface that's 50% transparent *)
@@ -411,7 +413,7 @@ sig
     (* make a surface twice as wide and twice as tall, doing nearest-neighbor
        interpolation. *)
     val surf2x : surface -> surface
-        
+
     val blit16x : surface * int * int * int * int  * surface * int * int -> unit
   end
 

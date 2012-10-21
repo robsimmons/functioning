@@ -48,6 +48,8 @@ struct
 
   val message = make_message "font uses glDrawPixels; robot uses texture mapping"
 
+  val message2 = make_message "sweeeeeeeeet"
+
   fun load_texture surface =
       let
           val w = SDL.surface_width surface
@@ -136,6 +138,12 @@ struct
    glRasterPos2d ~4.5 4.5;
    glPixelZoom 1.0 ~1.0;
    blit message;
+
+   (* draw message2 *)
+   glColor3f 1.0 1.0 1.0;
+   glRasterPos2d ~4.5 3.0;
+   glPixelZoom 1.0 ~1.0;
+   blit message2;
 
    glEnable GL_TEXTURE_2D;
    glColor3f 1.0 1.0 1.0;
