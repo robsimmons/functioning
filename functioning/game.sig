@@ -4,7 +4,7 @@ sig
   type screen = SDL.surface
   val initstate : state
   val initscreen : screen -> unit
-  val width : int 
+  val width : int
   val height : int
   val render : screen -> state -> unit
   val use_gl : bool

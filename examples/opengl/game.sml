@@ -50,37 +50,38 @@ struct
 
   val message2 = make_message "sweeeeeeeeet"
 
-  fun load_texture surface =
+  fun surface_metadata surface =
       let
           val w = SDL.surface_width surface
           val h = SDL.surface_height surface
+          val format = case (SDL.get_bytes_per_pixel surface,
+                             SDL.is_rgb surface) of
+                           (4, true) => GL_RGBA
+                         | (4, false) => GL_BGRA
+                         | (_, true) => GL_RGB
+                         | (_, false) => GL_BGR
+      in
+          {width = w, height = h, format = format}
+      end
+
+  fun load_texture surface =
+      let
+          val {width, height, format} = surface_metadata surface
           val texture = glGenSingleTexture ()
-          val mode = case (SDL.get_bytes_per_pixel surface,
-                           SDL.is_rgb surface) of
-                         (4, true) => GL_RGBA
-                       | (4, false) => GL_BGRA
-                       | (_, true) => GL_RGB
-                       | (_, false) => GL_BGR
       in
           glBindTexture GL_TEXTURE_2D texture;
           glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_NEAREST;
           glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_NEAREST;
-          glTexImage2D GL_TEXTURE_2D 0 4 w h 0 mode GL_UNSIGNED_BYTE (SDL.getpixels surface);
+          glTexImage2D GL_TEXTURE_2D 0 4 width height
+                       0 format GL_UNSIGNED_BYTE (SDL.getpixels surface);
           texture
       end
 
   fun blit surface =
       let
-          val w = SDL.surface_width surface
-          val h = SDL.surface_height surface
-          val mode = case (SDL.get_bytes_per_pixel surface,
-                           SDL.is_rgb surface) of
-                         (4, true) => GL_RGBA
-                       | (4, false) => GL_BGRA
-                       | (_, true) => GL_RGB
-                       | (_, false) => GL_BGR
+          val {width, height, format} = surface_metadata surface
       in
-          glDrawPixels w h mode GL_UNSIGNED_BYTE (SDL.getpixels surface)
+          glDrawPixels width height format GL_UNSIGNED_BYTE (SDL.getpixels surface)
       end
 
 
@@ -89,7 +90,6 @@ struct
 
   fun initscreen screen =
       (
-
        glBlendFunc GL_SRC_ALPHA GL_ONE_MINUS_SRC_ALPHA;
        glEnable GL_BLEND;
 
@@ -148,7 +148,6 @@ struct
    glEnable GL_TEXTURE_2D;
    glColor3f 1.0 1.0 1.0;
 
-
    (* draw the robot *)
    glBindTexture GL_TEXTURE_2D (!robot_texture);
    glBegin(GL_QUADS);
@@ -175,9 +174,7 @@ struct
    glVertex3f (2.0) (~3.0) 0.0;
    glEnd();
 
-
    glFlush();
-
    SDL.glflip();
    ()
   end
