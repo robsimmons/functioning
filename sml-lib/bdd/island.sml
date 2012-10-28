@@ -287,4 +287,23 @@ struct
           else ()
       end
 
+  exception BDDIsland
+  fun assert b = if b then () else raise BDDIsland
+
+  fun solve_island_toi (bodies : ('b, 'f, 'j) D.body list,
+                        contacts : ('b, 'f, 'j) D.contact list,
+                        world : ('b, 'f, 'j) D.world,
+                        step : BDDDynamicsTypes.time_step,
+                        toiIndexA : int,
+                        toiIndexB : int) : unit =
+      let
+          val body_count = List.length bodies
+          val () = assert (toiIndexA < body_count)
+          val () = assert (toiIndexB < body_count)
+      in
+          raise Fail "unimplemented"
+      end
+
+
+
 end

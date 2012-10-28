@@ -23,4 +23,11 @@ sig
                      bool ->
                      unit
 
+  val solve_island_toi : ('b, 'f, 'j) BDDDynamics.body list *
+                         ('b, 'f, 'j) BDDDynamics.contact list *
+                         ('b, 'f, 'j) BDDDynamics.world *
+                         BDDDynamicsTypes.time_step *
+                         int * int ->
+                         unit
+
 end
