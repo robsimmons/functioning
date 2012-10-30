@@ -876,12 +876,8 @@ struct
           (* XXX all debug *)
           fun onecontact c =
         let
-            val world_manifold = { normal = vec2 (~999.0, ~999.0),
-                                   points = Array.fromList
-                                   [ vec2 (~111.0, ~111.0),
-                                     vec2 (~222.0, ~222.0) ] }
             val { point_count, ... } = Contact.get_manifold c
-            val () = Contact.get_world_manifold (world_manifold, c)
+            val world_manifold = Contact.get_world_manifold c
             val name1 = (* getfixturename (Contact.get_fixture_a c) *) "name1"
             val name2 = (* getfixturename (Contact.get_fixture_b c) *) "name2"
             val rtos = Real.fmt (StringCvt.FIX (SOME 2))
@@ -923,12 +919,8 @@ struct
           (* XXX all debug *)
           fun onecontact2 c =
         let
-            val world_manifold = { normal = vec2 (~999.0, ~999.0),
-                                   points = Array.fromList
-                                   [ vec2 (~111.0, ~111.0),
-                                     vec2 (~222.0, ~222.0) ] }
             val { point_count, ... } = Contact.get_manifold c
-            val () = Contact.get_world_manifold (world_manifold, c)
+            val world_manifold = Contact.get_world_manifold c
             val name1 = (* getfixturename (Contact.get_fixture_a c) *) "name1"
             val name2 = (* getfixturename (Contact.get_fixture_b c) *) "name2"
             (* val rtos = Real.fmt (StringCvt.FIX (SOME 2)) *)

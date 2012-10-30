@@ -33,10 +33,10 @@ sig
      understand the internals of BoxDiaDia. *)
   val get_manifold : contact -> BDDTypes.manifold
 
-  (* Get the world manifold. World manifold is modified in place. *)
+  (* Get the world manifold. *)
   (* TODO: Weird that I don't get the number of points in the
      array. It'll be the same as in the manifold above. *)
-  val get_world_manifold : BDDTypes.world_manifold * contact -> unit
+  val get_world_manifold : contact -> BDDTypes.world_manifold
 
   (* Is this contact touching? *)
   val is_touching : contact -> bool
