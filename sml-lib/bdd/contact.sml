@@ -29,7 +29,7 @@ struct
 
   open D.C
 
-  fun get_world_manifold (world_manifold, c : contact) =
+  fun get_world_manifold (c : contact) =
       let
           val fix_a = D.C.get_fixture_a c
           val fix_b = D.C.get_fixture_b c
@@ -40,8 +40,8 @@ struct
               
           val manifold = D.C.get_manifold c
       in
-          BDDCollision.initialize_manifold
-          (world_manifold, manifold, 
+          BDDCollision.create_world_manifold
+          (manifold,
            D.B.get_xf body_a, BDDShape.get_radius shape_a,
            D.B.get_xf body_b, BDDShape.get_radius shape_b)
       end

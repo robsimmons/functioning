@@ -50,14 +50,7 @@ struct
   fun pre_solve (contact, old_manifold) =
       let val manifold = BDD.Contact.get_manifold contact
           val (state1, state2) = BDDCollision.get_point_states (old_manifold, manifold)
-
-          (* ??? *)
-          val world_manifold = {normal = BDDMath.vec2 (~999.0, ~999.0),
-                                points = Array.fromList
-                                [ BDDMath.vec2 (~111.0, ~111.0),
-                                  BDDMath.vec2 (~222.0, ~222.0)]}
-          val () = BDD.Contact.get_world_manifold (world_manifold, contact)
-
+          val world_manifold = BDD.Contact.get_world_manifold contact
           val points = #points world_manifold
           fun addpoint (i, p) =
               let val cp = CP {position = p, state = Array.sub (state2, i)}
