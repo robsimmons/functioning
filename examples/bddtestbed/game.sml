@@ -290,6 +290,8 @@ struct
       SOME (init_test Revolute.test)
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_4}) s =
       SOME (init_test Prismatic.test)
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_5}) s =
+      SOME (init_test Cradle.test)
 
     | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_LEFT}) s =
       update_view s (BDDMath.vec2 (~0.5, 0.0)) 1.0
