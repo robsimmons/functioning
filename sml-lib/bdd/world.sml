@@ -638,6 +638,7 @@ struct
 
           (* for control flow *)
           exception Return
+          exception ContinueLoop
 
           (* Find TOI events and solve them. *)
           fun loop () =
@@ -759,11 +760,33 @@ struct
                   val () = D.B.advance (b_b, min_alpha)
 
                   (* The TOI contact likely has some new contact points. *)
+                  val () = Contact.update (min_contact, world)
+                  val () = D.C.clear_flag (min_contact, D.C.FLAG_TOI)
+                  val () = D.C.set_toi_count (min_contact, 1 + D.C.get_toi_count min_contact)
+
+                  (* Is the contact solid? *)
+                  val () = if (* TODO isenabled *) not (Contact.is_touching min_contact)
+                           then
+                               (* Restore the sweeps. *)
+                               ( (* TODO set enabled false *)
+                                D.B.set_sweep (b_a, backup_a);
+                                D.B.set_sweep (b_b, backup_b);
+                                D.B.synchronize_transform b_a;
+                                D.B.synchronize_transform b_b;
+                                raise ContinueLoop
+                               )
+                           else ()
+
+                  val () = Body.set_awake (b_a, true)
+                  val () = Body.set_awake (b_b, true)
+
+                  (* Build the island *)
                   val () = ()
 
               in
                   loop ()
               end handle Return => ()
+                       | ContinueLoop => loop ()
       in
           ()
       end
