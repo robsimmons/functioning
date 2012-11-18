@@ -451,7 +451,11 @@ struct
                  c : vec2,
                  (* world angles *)
                  a0 : real ref,
-                 a : real ref
+                 a : real ref,
+
+                 (* Fraction of the current time step in the range [0, 1] *)
+                 (* c0 and a0 are the positions at alpha0. *)
+                 alpha0 : real ref
                }
   fun sweep { local_center, c0, c, a0, a } : sweep =
       let in
@@ -462,19 +466,20 @@ struct
       then raise BDDMath ("Angle overflow in sweep ctor: " ^ rtos a)
       else ();
 
-      { local_center = local_center, 
-        c0 = vec2copy c0, 
-        c = vec2copy c, a0 = ref a0, a = ref a }
+      { local_center = local_center,
+        c0 = vec2copy c0,
+        c = vec2copy c, a0 = ref a0, a = ref a, alpha0 = ref 0.0 }
       end
-  fun sweepcopy { local_center, c0, c, a0, a } : sweep =
+  fun sweepcopy { local_center, c0, c, a0, a, alpha0 } : sweep =
       { local_center = vec2copy local_center,
         c0 = vec2copy c0,
         c = vec2copy c,
         a0 = ref (!a0),
-        a = ref (!a) }
+        a = ref (!a),
+        alpha0 = ref (!alpha0) }
   (* PERF some of the copying is superfluous *)
-  fun sweep_gettransform ({ local_center, c0, c, a0, a }, 
-                          transform : transform, 
+  fun sweep_gettransform ({ local_center, c0, c, a0, a, alpha0 },
+                          transform : transform,
                           alpha : real) =
       let val angle : real = (1.0 - alpha) * !a0 + alpha * !a
       in
@@ -494,6 +499,7 @@ struct
 
   fun sweepa0 ({ a0, ... } : sweep) = !a0
   fun sweepc0 ({ c0, ... } : sweep) = vec2copy c0
+  fun sweepalpha0 ({ alpha0, ...} : sweep) = !alpha0
 
   val MAX_ANGLE = BDDSettings.epsilon + 2.0 * BDDSettings.pi
 
@@ -525,11 +531,17 @@ struct
           transform
       end
 
-  fun sweep_advance({c0, c, a0, a, ...} : sweep, t : real) =
-      let in
-          vec2setfrom(c0, vec2add(vec2stimes(1.0 - t, c0),
-                                  vec2stimes(t, c)));
-          a0 := (1.0 - t) * !a0 + t * !a
+  fun sweep_advance({c0, c, a0, a, alpha0, ...} : sweep, alpha : real) =
+      let
+          val () = if not (!alpha0 < 1.0)
+                   then raise BDDMath "assert"
+                   else ()
+          val beta = (alpha - !alpha0) / (1.0 - !alpha0)
+      in
+          vec2setfrom(c0, vec2add(vec2stimes(1.0 - beta, c0),
+                                  vec2stimes(beta, c)));
+          a0 := (1.0 - beta) * !a0 + beta * !a;
+          alpha0 := alpha
       end
 
   (* Normalize the sweep's angle (in radians) to be between -pi and pi *)

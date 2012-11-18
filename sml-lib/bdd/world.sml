@@ -636,6 +636,9 @@ struct
             end
           val () = oapp D.C.get_next onecontact (get_contact_list world)
 
+          (* for control flow *)
+          exception Return
+
           (* Find TOI events and solve them. *)
           fun loop () =
               let
@@ -661,6 +664,7 @@ struct
                                   let
                                       val f_a = D.C.get_fixture_a c
                                       val f_b = D.C.get_fixture_b c
+
                                       (* Is there a sensor? *)
                                       val () = if D.F.get_sensor f_a orelse
                                                   D.F.get_sensor f_b
@@ -669,6 +673,44 @@ struct
 
                                       val b_a = D.F.get_body f_a
                                       val b_b = D.F.get_body f_b
+
+                                      val type_a = D.B.get_typ b_a
+                                      val type_b = D.B.get_typ b_b
+                                      val () = assert (type_a = T.Dynamic orelse
+                                                       type_b = T.Dynamic)
+
+                                      val active_a = Body.get_awake b_a andalso type_a <> T.Static
+                                      val active_b = Body.get_awake b_b andalso type_b <> T.Static
+
+                                      (* Is at least one body active (awake and
+                                         dynamic or kinematic)? *)
+                                      val () = if (not active_a) andalso (not active_b)
+                                               then raise Continue
+                                               else ()
+
+                                      val collide_a = Body.get_bullet b_a orelse
+                                                      type_a <> T.Dynamic
+                                      val collide_b = Body.get_bullet b_b orelse
+                                                      type_b <> T.Dynamic
+
+                                      (* Are these two non-bullet dynamic bodies? *)
+                                      val () = if (not collide_a) andalso (not collide_b)
+                                               then raise Continue
+                                               else ()
+
+                                      (* Compute the TOI for this contact. *)
+                                      (* Put the sweeps onto the same time interval. *)
+                                      val sweep_a = D.B.get_sweep b_a
+                                      val sweep_b = D.B.get_sweep b_b
+                                      val alpha0_a = sweepalpha0 sweep_a
+                                      val alpha0_b = sweepalpha0 sweep_b
+                                      val alpha0 =
+                                          if alpha0_a < alpha0_b
+                                          then (sweep_advance (sweep_a, alpha0_b);
+                                                alpha0_b)
+                                          else (sweep_advance (sweep_b, alpha0_a);
+                                                alpha0_a)
+                                      val () = assert (alpha0 < 1.0)
                                   in
                                       1.0
                                   end
@@ -677,8 +719,8 @@ struct
                       end handle Continue => ()
 
               in
-                  ()
-              end
+                  loop ()
+              end handle Return => ()
       in
           ()
       end

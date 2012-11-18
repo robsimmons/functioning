@@ -81,6 +81,12 @@ struct
 
     fun dprint f = print (f ())
     val dprint = ignore
+
+
+    exception AssertFail
+    fun assert b = if b then () else raise AssertFail
+(*    val assert = ignore *)
+
   end
 
 end
