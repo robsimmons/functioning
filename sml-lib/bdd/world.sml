@@ -613,255 +613,79 @@ struct
       ContactManager.find_new_contacts world
     end
 
-    (* Advance a dynamic body to its first time of contact
-       and adjust the position to ensure clearance. *)
-    fun solve_toi_body (world : world, body : body) : unit =
-      let
-        (* Find the minimum contact. *)
-        val toi_contact : contact option ref = ref NONE
-        val toi : real ref = ref 1.0
-        val toi_other : body option ref = ref NONE
-        val found : bool ref = ref false
-        val count : int ref = ref 0
 
-        val bullet = Body.get_bullet body
-
-        (* Iterate until all contacts agree on the minimum TOI. We have
-           to iterate because the TOI algorithm may skip some intermediate
-           collisions when objects rotate through each other. *)
-        fun loop iter =
-          let
-              val () = dprint (fn () => "(iter " ^ itos iter ^ ")\n")
-              fun one_edge ce =
-                  (* n.b. weird behavior if contact 
-                     was not initialized *)
-                if oeq D.C.eq (D.E.get_contact ce, !toi_contact)
-                then ()
-                else
-                  let val other = !! (D.E.get_other ce)
-                      val typ = D.B.get_typ other
-                      (* Port note: Technically the null check only happens if we get
-                         into the bullet case below *)
-                      val contact = !! (D.E.get_contact ce) 
-                  in
-                      (* Only bullets perform TOI with dynamic bodies. *)
-                      if (if bullet
-                          then (* Bullets only perform TOI with bodies that have their TOI resolved. *)
-                               not (D.B.get_flag (other, D.B.FLAG_TOI)) orelse
-                               (* No repeated hits on non-static bodies *)
-                               (typ <> T.Static andalso D.C.get_flag (contact, D.C.FLAG_BULLET_HIT))
-                          else typ = T.Dynamic)
-                      then ()
-                      else (* check for a disabled contact *)
-                      if not (D.C.get_flag (contact, D.C.FLAG_ENABLED))
-                      then ()
-                      (* prevent infinite looping *)
-                      else 
-                      if D.C.get_toi_count contact > 10
-                      then ()
-                      else
-                      let val fixture_a = D.C.get_fixture_a contact
-                          val fixture_b = D.C.get_fixture_b contact
-                      in
-                          (* Cull sensors. *)
-                          if Fixture.is_sensor fixture_a orelse Fixture.is_sensor fixture_b
-                          then ()
-                          else let val body_a = D.F.get_body fixture_a
-                                   val body_b = D.F.get_body fixture_b
-
-                                   val () = dprint (fn () => "sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^ "\n")
-                                   val () = dprint (fn () => "sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n")
-
-                                   (* Compute the time of impact in interval [0, minTOI] *)
-                                   val toi_input = 
-                                       { proxya = BDDDistance.shape_proxy (D.F.get_shape fixture_a),
-                                         proxyb = BDDDistance.shape_proxy (D.F.get_shape fixture_b),
-                                         sweepa = BDDMath.sweepcopy (D.B.get_sweep body_a),
-                                         sweepb = BDDMath.sweepcopy (D.B.get_sweep body_b),
-                                         tmax = !toi }
-
-                                   val () = dprint (fn () => "tmax: " ^ rtos (!toi) ^ " toi test:\n");
-                                   val toires = BDDTimeOfImpact.time_of_impact toi_input
-                               in
-                                   dprint (fn () => "2sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^ "\n");
-                                   dprint (fn () => "2sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n");
-
-                                   case toires of
-                                     (BDDTimeOfImpact.STouching, t) =>
-                                         if t < !toi
-                                         then let in
-                                                dprint (fn () => "  yes at " ^ rtos t ^ "\n");
-                                                toi_contact := SOME contact;
-                                                toi := t;
-                                                toi_other := SOME other;
-                                                found := true
-                                              end
-                                         else dprint (fn () => "  not in time\n")
-                                   | _ => dprint (fn () => "  not touching\n");
-
-                                   count := !count + 1
-                               end
-                      end
-                  end
-           in
-               oapp D.E.get_next one_edge (D.B.get_contact_list body);
-               if !found andalso !count > 1 andalso iter < 49
-               then loop (iter + 1)
-               else
-                   (* XXX *)
-                   dprint (fn () => Int.toString (iter + 1) ^ " iters, " ^
-                           Int.toString (!count) ^ " count\n")
-           end
-        val () = loop 0
-
-      in
-        dprint (fn () => 
-                (case !toi_contact of
-                     NONE => "NO "
-                   | SOME _ => "YES ") ^
-                     (case !toi_other of
-                          NONE => "NO"
-                        | SOME _ => "YES") ^ "\n");
-        case (!toi_contact, !toi_other) of
-            (NONE, NONE) => D.B.advance (body, 1.0)
-          | (SOME _, NONE) => raise BDDWorld "impossible"
-          | (NONE, SOME _) => raise BDDWorld "impossible"
-          | (SOME toi_contact, SOME toi_other) => 
-        let
-          val backup : sweep = sweepcopy (D.B.get_sweep body)
-          val () = D.B.advance (body, !toi)
-          val () = Contact.update (toi_contact, world)
-          val () = if not (D.C.get_flag (toi_contact, D.C.FLAG_ENABLED))
-                   (* Contact disabled. Backup and recurse. *)
-                   then let in
-                           D.B.set_sweep (body, backup);
-                           solve_toi_body (world, body)
-                        end
-                   else ()
-          val () = D.C.set_toi_count (toi_contact, D.C.get_toi_count toi_contact + 1)
-          (* Update all the valid contacts on this body and build a contact island. 
-             Port note: This was a fixed array in Box2D. *)
-          val contacts = ref nil
-          (* Port note: 'count' var reused in Box2D. *)
-          val ncontacts = ref 0
-          fun one_edge ce =
-            if !ncontacts >= BDDSettings.max_toi_contacts
-            then ()
-            else let val other = !! (D.E.get_other ce)
-                     val typ = D.B.get_typ other
-                     val contact = !! (D.E.get_contact ce)
-                     val fixture_a = D.C.get_fixture_a contact
-                     val fixture_b = D.C.get_fixture_b contact
-                 in
-                     (* Only perform correction with static bodies, so the
-                        body won't get pushed out of the world. *)
-                     if typ = T.Dynamic
-                     then dprint (fn () => "* skipped -- dynamic\n")
-                     else
-                     (* Check for a disabled contact. *)
-                     if not (D.C.get_flag (contact, D.C.FLAG_ENABLED))
-                     then dprint (fn () => "* skipped -- disabled\n")
-                     else
-                     (* Cull sensors. *)
-                     if Fixture.is_sensor fixture_a orelse 
-                        Fixture.is_sensor fixture_b
-                     then dprint (fn () => "* skipped -- sensors\n")
-                     else
-                     let in
-                         (* The contact likely has some new contact points. The listener
-                            gives the client a chance to disable the contact. *)
-                         if not (D.C.eq (contact, toi_contact))
-                         then Contact.update (contact, world)
-                         else dprint (fn () => "* (not update)\n");
-                         
-                         (* Did the user disable the contact? *)
-                         if not (D.C.get_flag (contact, D.C.FLAG_ENABLED))
-                         then dprint (fn () => "* skipped -- disabled during callback\n")
-                         else
-                         if not (Contact.is_touching contact)
-                         then dprint (fn () => "* skipped -- not touching\n")
-                         else 
-                             let in
-                                 contacts := contact :: !contacts;
-                                 ncontacts := !ncontacts + 1
-                             end
-                     end
-                 end
-          val () = oapp D.E.get_next one_edge (D.B.get_contact_list body)
-
-          (* Reduce the TOI body's overlap with the contact island. *)
-          val TOI_BAUMGARTE = 0.75
-          val solver = BDDTOISolver.solver (!contacts, body)
-          fun loop 20 = ()
-            | loop iter =
-              if BDDTOISolver.solve (solver, TOI_BAUMGARTE)
-              then ()
-              else loop (iter + 1)
-        in
-          loop 0;
-          dprint (fn () => "(done toi-solving)\n");
-          if D.B.get_typ toi_other <> T.Static
-          then D.C.set_flag (toi_contact, D.C.FLAG_BULLET_HIT)
-          else ()
-        end
-      end
-
-    (* Sequentially solve TOIs for each body. We bring each
-       body to the time of contact and perform some position correction.
-       Time is not conserved. *)
+    (* Find TOI contacts and solve them. *)
     fun solve_toi (world : world) : unit =
       let
           val () = dprint (fn () => "SOLVE_TOI()\n")
 
-        (* Prepare all contacts. *)
+          (* build an island ... *)
+
+          fun onebody b =
+              let in
+                  D.B.clear_flag (b, D.B.FLAG_ISLAND);
+                  sweep_set_a0 (D.B.get_sweep b, 0.0)
+              end
+          val () = oapp D.B.get_next onebody (get_body_list world)
+
           fun onecontact c =
             let in
-                (* Enable the contact *)
-                D.C.set_flag (c, D.C.FLAG_ENABLED);
-                (* Set the number of TOI events for this contact to zero. *)
-                D.C.set_toi_count (c, 0)
+                (* Invalidate TOI *)
+                D.C.clear_flag (c, D.C.FLAG_TOI);
+                D.C.clear_flag (c, D.C.FLAG_ISLAND);
+                D.C.set_toi_count (c, 0);
+                D.C.set_toi (c, 1.0)
             end
           val () = oapp D.C.get_next onecontact (get_contact_list world)
 
-          (* Initialize the TOI flag. *)
-          fun onebody_toi b =
-            (* Kinematic and static bodies will not be affected by the TOI event.
-               If a body was not in an island then it did not move. *)
-            if not (D.B.get_flag (b, D.B.FLAG_ISLAND)) orelse
-               (case D.B.get_typ b of
-                    T.Kinematic => true
-                  | T.Static => true
-                  | T.Dynamic => false)
-            then D.B.set_flag (b, D.B.FLAG_TOI)
-            else D.B.clear_flag (b, D.B.FLAG_TOI)
-          val () = oapp D.B.get_next onebody_toi (get_body_list world)
+          (* Find TOI events and solve them. *)
+          fun loop () =
+              let
+                  (* Find the first TOI. *)
+                  val min_contact : DT.contact option ref = ref NONE
+                  val min_alpha = ref 1.0
+                  fun onecontact_toi c =
+                      let
+                          (* for control flow *)
+                          exception Continue
+                          (* Is this contact disabled? *)
+                          val () = if (* TODO *) false
+                                   then raise Continue
+                                   else ()
+                          (* Prevent excessive sub-stepping. *)
+                          val () = if D.C.get_toi_count c > max_substeps
+                                   then raise Continue
+                                   else ()
+                          val alpha =
+                              if D.C.get_flag (c, D.C.FLAG_TOI)
+                              then D.C.get_toi c
+                              else
+                                  let
+                                      val f_a = D.C.get_fixture_a c
+                                      val f_b = D.C.get_fixture_b c
+                                      (* Is there a sensor? *)
+                                      val () = if D.F.get_sensor f_a orelse
+                                                  D.F.get_sensor f_b
+                                               then raise Continue
+                                               else ()
 
-          (* Collide non-bullets. *)
-          fun onebody_nonbullet b =
-            if D.B.get_flag (b, D.B.FLAG_TOI)
-            then ()
-            else if Body.get_bullet b
-                 then ()
-                 else (dprint (fn () => "Collide non-bullet.\n");
-                       solve_toi_body (world, b);
-                       D.B.set_flag (b, D.B.FLAG_TOI))
-          val () = oapp D.B.get_next onebody_nonbullet (get_body_list world)
+                                      val b_a = D.F.get_body f_a
+                                      val b_b = D.F.get_body f_b
+                                  in
+                                      1.0
+                                  end
+                      in
+                          ()
+                      end
 
-          (* Collide bullets. *)
-          fun onebody_bullet b =
-            if D.B.get_flag (b, D.B.FLAG_TOI)
-            then ()
-            else if not (Body.get_bullet b)
-                 then ()
-                 else (dprint (fn () => "Collide bullet.\n");
-                       solve_toi_body (world, b);
-                       D.B.set_flag (b, D.B.FLAG_TOI))
-          val () = oapp D.B.get_next onebody_bullet (get_body_list world)
+              in
+                  ()
+              end
       in
           ()
       end
 
-    fun step (world : world, dt : real, 
+    fun step (world : world, dt : real,
               velocity_iterations : int, position_iterations : int) : unit =
       let
           (* XXX good, but not implemented in box2d *)

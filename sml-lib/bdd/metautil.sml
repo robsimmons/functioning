@@ -78,7 +78,8 @@ fun contact cc = ("C", "Contact", "contact", "CONTACT",
                 ("fixture_a", cc "fixture"),
                 ("fixture_b", cc "fixture"),
                 ("manifold", "BDDTypes.manifold"),
-                ("toi_count", "int")])
+                ("toi_count", "int"),
+                ("toi", "real")])
 
 (* A contact edge is used to connect bodies and contacts together
    in a contact graph where each body is a node and each contact

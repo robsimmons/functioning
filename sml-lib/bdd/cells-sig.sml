@@ -142,6 +142,7 @@ sig
     val get_fixture_b : ('b, 'f, 'j) contact -> (('b, 'f, 'j) fixture)
     val get_manifold : ('b, 'f, 'j) contact -> (BDDTypes.manifold)
     val get_toi_count : ('b, 'f, 'j) contact -> (int)
+    val get_toi : ('b, 'f, 'j) contact -> (real)
 
     val set_flags : ('b, 'f, 'j) contact * (Word32.word) -> unit
     val set_prev : ('b, 'f, 'j) contact * (('b, 'f, 'j) contact option) -> unit
@@ -152,6 +153,7 @@ sig
     val set_fixture_b : ('b, 'f, 'j) contact * (('b, 'f, 'j) fixture) -> unit
     val set_manifold : ('b, 'f, 'j) contact * (BDDTypes.manifold) -> unit
     val set_toi_count : ('b, 'f, 'j) contact * (int) -> unit
+    val set_toi : ('b, 'f, 'j) contact * (real) -> unit
 
     val new : {
       flags : Word32.word,
@@ -162,7 +164,8 @@ sig
       fixture_a : ('b, 'f, 'j) fixture,
       fixture_b : ('b, 'f, 'j) fixture,
       manifold : BDDTypes.manifold,
-      toi_count : int } -> ('b, 'f, 'j) contact
+      toi_count : int,
+      toi : real } -> ('b, 'f, 'j) contact
     val eq : ('b, 'f, 'j) contact * ('b, 'f, 'j) contact -> bool
   end
 

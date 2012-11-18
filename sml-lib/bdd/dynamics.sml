@@ -434,6 +434,8 @@ struct
     val FLAG_FILTER = 0wx8 : Word32.word
     (* This bullet contact had a TOI event. *)
     val FLAG_BULLET_HIT = 0wx10 : Word32.word
+    (* This contact has a valid TOI in its toi cell. *)
+    val FLAG_TOI = 0wx20
 
     open BDDCells.C
 
@@ -505,7 +507,8 @@ struct
                            next = NONE,
                            node_a = E.new (),
                            node_b = E.new (),
-                           toi_count = 0 }
+                           toi_count = 0,
+                           toi = 0.0}
         end
   end
 

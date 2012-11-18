@@ -48,6 +48,9 @@ struct
      Making it larger may create artifacts for vertex collision. *)
   val polygon_radius : real = 2.0 * linear_slop
 
+  (* Maximum number of sub-steps per contact in continuous physics simulation. *)
+  val max_substeps = 8
+
   (* Dynamics. *)
 
   (* Maximum number of contacts to be handled to solve a TOI impact. *)

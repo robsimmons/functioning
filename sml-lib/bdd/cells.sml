@@ -49,7 +49,8 @@ struct
     fixture_a : (('b, 'f, 'j) fixturecell) ref,
     fixture_b : (('b, 'f, 'j) fixturecell) ref,
     manifold : (BDDTypes.manifold) ref,
-    toi_count : (int) ref }
+    toi_count : (int) ref,
+    toi : (real) ref }
 
   and ('b, 'f, 'j) contactedgecell = E of {
     other : (('b, 'f, 'j) bodycell option) ref,
@@ -215,6 +216,7 @@ struct
     fun get_fixture_b (C { fixture_b, ... }) = !fixture_b
     fun get_manifold (C { manifold, ... }) = !manifold
     fun get_toi_count (C { toi_count, ... }) = !toi_count
+    fun get_toi (C { toi, ... }) = !toi
     fun set_flags (C { flags, ... }, v) = flags := v
     fun set_prev (C { prev, ... }, v) = prev := v
     fun set_next (C { next, ... }, v) = next := v
@@ -224,11 +226,13 @@ struct
     fun set_fixture_b (C { fixture_b, ... }, v) = fixture_b := v
     fun set_manifold (C { manifold, ... }, v) = manifold := v
     fun set_toi_count (C { toi_count, ... }, v) = toi_count := v
+    fun set_toi (C { toi, ... }, v) = toi := v
     fun new ({ flags, prev, next, node_a, node_b, fixture_a, fixture_b,
-    manifold, toi_count }) = 
+    manifold, toi_count, toi }) = 
       C { flags = ref flags, prev = ref prev, next = ref next, node_a = ref
       node_a, node_b = ref node_b, fixture_a = ref fixture_a, fixture_b = ref
-      fixture_b, manifold = ref manifold, toi_count = ref toi_count }
+      fixture_b, manifold = ref manifold, toi_count = ref toi_count, toi = ref
+      toi }
     fun eq (C { flags, ... }, C { flags = r___, ... }) =
         flags = r___
   end
