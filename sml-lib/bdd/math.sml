@@ -518,6 +518,7 @@ struct
 
   fun sweep_set_a0 ({a0, ... } : sweep, aa0) = a0 := aa0
   fun sweep_set_c0 ({c0, ... } : sweep, cc0) = vec2setfrom (c0, cc0)
+  fun sweep_set_alpha0 ({alpha0, ...} : sweep, aalpha0) = alpha0 := aalpha0
 
   fun sweep_set_localcenter ({ local_center, ... } : sweep, lc) =
       vec2setfrom (local_center, lc)

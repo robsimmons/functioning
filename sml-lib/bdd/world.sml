@@ -622,7 +622,7 @@ struct
           fun onebody b =
               let in
                   D.B.clear_flag (b, D.B.FLAG_ISLAND);
-                  sweep_set_a0 (D.B.get_sweep b, 0.0)
+                  sweep_set_alpha0 (D.B.get_sweep b, 0.0)
               end
           val () = oapp D.B.get_next onebody (get_body_list world)
 
@@ -643,8 +643,8 @@ struct
           fun loop () =
               let
                   (* Find the first TOI. *)
-                  val min_contact : DT.contact option ref = ref NONE
-                  val min_alpha = ref 1.0
+                  val mbe_min_contact : DT.contact option ref = ref NONE
+                  val min_alpha_ref = ref 1.0
                   fun onecontact_toi c =
                       let
                           (* for control flow *)
@@ -711,12 +711,55 @@ struct
                                           else (sweep_advance (sweep_b, alpha0_a);
                                                 alpha0_a)
                                       val () = assert (alpha0 < 1.0)
+
+                                      val toi_input =
+                                          { proxya = BDDDistance.shape_proxy (D.F.get_shape f_a),
+                                            proxyb = BDDDistance.shape_proxy (D.F.get_shape f_b),
+                                            sweepa = sweepcopy (sweep_a),
+                                            sweepb = sweepcopy (sweep_b),
+                                            tmax = 1.0 }
+                                      val toires = BDDTimeOfImpact.time_of_impact toi_input
+                                      val alpha =
+                                          case toires of
+                                              (BDDTimeOfImpact.STouching, beta) =>
+                                                Real.min(alpha0 + (1.0 - alpha0) * beta, 1.0)
+                                            | _ => 1.0
+                                      val () = D.C.set_toi (c, alpha)
+                                      val () = D.C.set_flag (c, D.C.FLAG_TOI)
                                   in
-                                      1.0
+                                      alpha
                                   end
+                          val () = if alpha < (!min_alpha_ref)
+                                   then (mbe_min_contact := SOME c;
+                                         min_alpha_ref := alpha)
+                                   else ()
                       in
                           ()
                       end handle Continue => ()
+
+                  val () = oapp D.C.get_next onecontact_toi (get_contact_list world)
+
+                  val (min_contact, min_alpha) =
+                      case (!mbe_min_contact, 1.0 - 10.0 * epsilon < (!min_alpha_ref)) of
+                          (SOME c, false) => (c, !min_alpha_ref)
+                        | _ =>
+                          (* No more TOI events. Done! *)
+                          raise Return
+
+                  (* Advance the bodies to the TOI. *)
+                  val f_a = D.C.get_fixture_a min_contact
+                  val f_b = D.C.get_fixture_b min_contact
+                  val b_a = D.F.get_body f_a
+                  val b_b = D.F.get_body f_b
+
+                  val backup_a = sweepcopy (D.B.get_sweep b_a)
+                  val backup_b = sweepcopy (D.B.get_sweep b_b)
+
+                  val () = D.B.advance (b_a, min_alpha)
+                  val () = D.B.advance (b_b, min_alpha)
+
+                  (* The TOI contact likely has some new contact points. *)
+                  val () = ()
 
               in
                   loop ()
