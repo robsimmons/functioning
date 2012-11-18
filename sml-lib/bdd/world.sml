@@ -615,7 +615,7 @@ struct
 
 
     (* Find TOI contacts and solve them. *)
-    fun solve_toi (world : world) : unit =
+    fun solve_toi (world : world, step : T.time_step) : unit =
       let
           val () = dprint (fn () => "SOLVE_TOI()\n")
 
@@ -781,7 +781,106 @@ struct
                   val () = Body.set_awake (b_b, true)
 
                   (* Build the island *)
-                  val () = ()
+                  val bodies = ref [b_b, b_a]
+                  val contacts = ref [min_contact]
+
+                  val () = D.B.set_flag (b_a, D.B.FLAG_ISLAND)
+                  val () = D.B.set_flag (b_b, D.B.FLAG_ISLAND)
+                  val () = D.C.set_flag (min_contact, D.C.FLAG_ISLAND)
+
+                  (* Get contacts on bodyA and bodyB. *)
+                  fun onebody b =
+                      case Body.get_type b of
+                          T.Dynamic =>
+                          let
+                              exception Continue
+                              fun onecontactedge ce =
+                                  let
+                                      (* TODO bodyCapacity? contactCapacity? *)
+                                      val contact = !! (D.E.get_contact ce)
+
+                                      (* Has this contact already been added to the island? *)
+                                      val () = if D.C.get_flag (contact, D.C.FLAG_ISLAND)
+                                               then raise Continue
+                                               else ()
+
+                                      (* Only add static, kinemetic, or bullet bodies. *)
+                                      val other = !! (D.E.get_other ce)
+                                      val () = if Body.get_type other = T.Dynamic andalso
+                                                  (not (Body.get_bullet b)) andalso
+                                                  (not (Body.get_bullet other))
+                                               then raise Continue
+                                               else ()
+
+                                      (* Skip sensors. *)
+                                      val sensor_a = Fixture.is_sensor (D.C.get_fixture_a contact)
+                                      val sensor_b = Fixture.is_sensor (D.C.get_fixture_b contact)
+                                      val () = if sensor_a orelse sensor_b
+                                               then raise Continue
+                                               else ()
+
+                                      (* Tentatively advance the body to the TOI. *)
+                                      val backup = D.B.get_sweep other
+                                      val () = if D.B.get_flag (other, D.B.FLAG_ISLAND)
+                                               then D.B.advance (other, min_alpha)
+                                               else ()
+
+                                      (* Update the contact points *)
+                                      val () = Contact.update (contact, world)
+
+                                      (* Was the contact disabled by the user? *)
+                                      val () = if (* TODO contact not enabled *) false
+                                               then (D.B.set_sweep (other, backup);
+                                                     D.B.synchronize_transform other;
+                                                     raise Continue
+                                                    )
+                                               else ()
+
+                                      (* Are there contact points? *)
+                                      val () = if not (Contact.is_touching contact)
+                                               then (D.B.set_sweep (other, backup);
+                                                     D.B.synchronize_transform other;
+                                                     raise Continue
+                                                    )
+                                               else ()
+
+                                      (* Add the contact to the island *)
+                                      val () = D.C.set_flag (contact, D.C.FLAG_ISLAND)
+                                      val () = contacts := contact :: !contacts
+
+                                      (* Has the other body already been added to the island? *)
+                                      val () = if D.B.get_flag (other, D.B.FLAG_ISLAND)
+                                               then raise Continue
+                                               else ()
+
+                                      (* Add the other body to the island. *)
+                                      val () = D.B.set_flag (other, D.B.FLAG_ISLAND)
+                                      val () = if D.B.get_typ other <> T.Static
+                                               then Body.set_awake (other, true)
+                                               else ()
+
+                                      val () = bodies := other :: !bodies
+
+                                  in
+                                      ()
+                                  end handle Continue => ()
+
+                              val () = oapp D.E.get_next onecontactedge (D.B.get_contact_list b)
+                          in
+                              ()
+                          end
+                        | _ => ()
+                  val () = List.app onebody [b_a, b_b]
+
+                  val dt = (1.0 - min_alpha) * (#dt step)
+                  val substep = {dt = dt,
+                                 inv_dt = 1.0 / dt,
+                                 dt_ratio = 1.0,
+                                 position_iterations = 20,
+                                 velocity_iterations = #velocity_iterations step,
+                                 warm_starting = false
+                                }
+                  val () = BDDIsland.solve_island_toi (!bodies, !contacts, world, substep)
 
               in
                   loop ()
@@ -893,7 +992,7 @@ struct
 
           (* Handle TOI events. *)
           val () = if get_continuous_physics world andalso dt > 0.0
-                   then solve_toi world
+                   then solve_toi (world, step)
                    else ()
 
           (* XXX just debug *)
