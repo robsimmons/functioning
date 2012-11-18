@@ -619,8 +619,6 @@ struct
       let
           val () = dprint (fn () => "SOLVE_TOI()\n")
 
-          (* build an island ... *)
-
           fun onebody b =
               let in
                   D.B.clear_flag (b, D.B.FLAG_ISLAND);
@@ -676,7 +674,7 @@ struct
                                   end
                       in
                           ()
-                      end
+                      end handle Continue => ()
 
               in
                   ()
