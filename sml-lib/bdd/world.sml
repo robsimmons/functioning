@@ -882,12 +882,37 @@ struct
                                 }
                   val () = BDDIsland.solve_island_toi (!bodies, !contacts, world, substep)
 
+                  (* Reset island flags and synchronize broad-phase proxies. *)
+                  fun onebody body =
+                      (D.B.clear_flag (body, D.B.FLAG_ISLAND);
+                       case D.B.get_typ body of
+                           T.Dynamic =>
+                           let
+                               val () = D.B.synchronize_fixtures (body, get_broad_phase world)
+                               fun onece ce =
+                                   ( D.C.clear_flag (!! (D.E.get_contact ce), D.C.FLAG_TOI);
+                                     D.C.clear_flag (!! (D.E.get_contact ce), D.C.FLAG_ISLAND)
+                                   )
+                               val () = oapp D.E.get_next onece (D.B.get_contact_list body)
+                           in
+                               ()
+                           end
+                         | _ => ()
+                      )
+                  val () = List.app onebody (!bodies)
+
+                  (* Commit fixture proxy movements to the broad-phase so that new
+                     contacts are created. Also, some contacts can be destroyed. *)
+                  val () = ContactManager.find_new_contacts world
+
+              (* TODO substepping? *)
+
               in
                   loop ()
               end handle Return => ()
                        | ContinueLoop => loop ()
       in
-          ()
+          loop ()
       end
 
     fun step (world : world, dt : real,

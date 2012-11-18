@@ -295,7 +295,10 @@ struct
                         world : ('b, 'f, 'j) D.world,
                         step : BDDDynamicsTypes.time_step) : unit =
       let
-          val body_count = List.length bodies
+          val bodies = rev bodies
+          val contacts = rev contacts
+
+          val solver = CS.contact_solver
       in
           raise Fail "unimplemented"
       end
