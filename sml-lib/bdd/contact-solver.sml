@@ -10,9 +10,8 @@ struct
   infix 7 *: *% +*: +*+ #*% @*:
   structure D = BDDDynamics
 
-  type constraint_point =
-      { local_point : BDDMath.vec2,
-        r_a : BDDMath.vec2,
+  type velocity_constraint_point =
+      { r_a : BDDMath.vec2,
         r_b : BDDMath.vec2,
         normal_impulse : real ref,
         tangent_impulse : real ref,
@@ -20,37 +19,67 @@ struct
         tangent_mass : real,
         velocity_bias : real }
 
-  type ('b, 'f, 'j) constraint =
+  type velocity_constraint =
       { points : constraint_point Array.array,
-        local_normal : BDDMath.vec2,
-        local_point : BDDMath.vec2,
         normal : BDDMath.vec2,
         normal_mass : BDDMath.mat22,
         k : BDDMath.mat22,
-        body_a : ('b, 'f, 'j) BDDDynamics.body,
-        body_b : ('b, 'f, 'j) BDDDynamics.body,
-        typ : BDDTypes.manifold_type,
-        radius : real,
+        index_a : int,
+        index_b : int,
+        inv_mass_a : real,
+        inv_mass_b : real,
+        inv_i_a : real,
+        inv_i_b : real,
         friction : real,
+        restitution : real,
+        tangent_speed : real,
         point_count : int,
-        manifold : BDDTypes.manifold }
+        contact_index : int }
+
+  type position_constraint =
+       { local_points : BDDMath.vec2 Array.array,
+         local_normal : BDDMath.vec2,
+         local_point : BDDMath.vec2,
+         index_a : int,
+         index_b : int,
+         inv_mass_a : real,
+         inv_mass_b : real,
+         local_center_a : BDDMath.vec2,
+         local_center_b : BDDMath.vec2,
+         inv_i_a : real,
+         inv_i_b : real,
+         typ : BDDTypes.manifold_type,
+         radius_a : real,
+         radius_b : real,
+         point_count : int
+       }
 
   (* Parameterized by user data, since it uses the internal
      polymorpic types. *)
   type ('b, 'f, 'j) contact_solver =
       (* Representation invariant: These two have the
          same length. *)
-      { constraints : ('b, 'f, 'j) constraint array,
+      { step : BDDDynamicsTypes.time_step,
+        positionsc : BDDMath.vec2 Array.array,
+        positionsa : real Array.array,
+        velocitiesv : BDDMath.vec2 Array.array,
+        velocitiesw : real Array.array,
+        position_constraints : position_constraint Array.array,
+        velocity_constraints : velocity_constraint Array.array,
         (* Kept for 'report'; just a copy of island's contacts. *)
         contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector }
-        
 
-  fun contact_solver 
-      (contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector,
-       impulse_ratio : real) : ('b, 'f, 'j) contact_solver =
+
+  fun contact_solver
+      (time_step : BDDDynamicsTypes.time_step,
+       contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector,
+       positionsc : BDDMath.vec2 Array.array,
+       positionsa : real Array.array,
+       velocitiesv : BDDMath.vec2 Array.array,
+       velocitiesw : real Array.array) : ('b, 'f, 'j) contact_solver =
     let
-        (* Convert a contact into a constraint. *)
-        fun onecontact (contact : ('b, 'f, 'j) BDDDynamics.contact) =
+        (* Initialize position independent porions of the constraints. *)
+        fun onecontact (ii : int, contact : ('b, 'f, 'j) BDDDynamics.contact) =
           let
             val fixture_a = D.C.get_fixture_a contact
             val fixture_b = D.C.get_fixture_b contact
@@ -61,6 +90,46 @@ struct
             val body_a = D.F.get_body fixture_a
             val body_b = D.F.get_body fixture_b
             val manifold = D.C.get_manifold contact
+
+            val point_count = #point_count manifold
+            val () = assert (point_count > 0)
+
+            val vc = { points = Array.array (max_manifold_points, vec2zero),
+                       friction = D.C.get_friction contact,
+                       restitution = D.C.get_restitution contact,
+                       tangent_speed = 0.0, (* TODO *)
+
+                       (* TODO these need to be set up by the island *)
+                       index_a = D.B.get_island_index body_a,
+                       index_b = D.B.get_island_index body_b,
+                       inv_mass_a = D.B.get_inv_mass body_a,
+                       inv_mass_b = D.B.get_inv_mass body_b,
+                       inv_i_a = D.B.get_inv_i body_a,
+                       inv_i_b = D.B.get_inv_i body_b,
+                       contact_index = ii,
+                       point_count = point_count,
+                       k = mat22with (0.0, 0.0, 0.0, 0.0)
+                       normal_mass = mat22with (0.0, 0.0, 0.0, 0.0) }
+
+
+            val pc = { index_a = D.B.get_island_index body_a,
+                       index_b = D.B.get_island_index body_b,
+                       inv_mass_a = D.B.get_inv_mass body_a,
+                       inv_mass_b = D.B.get_inv_mass body_b,
+                       local_center_a = sweeplocalcenter (D.B.get_sweep body_a),
+                       local_center_b = sweeplocalcenter (D.B.get_sweep body_b),
+                       inv_i_a = D.B.get_inv_i body_a,
+                       inv_i_b = D.B.get_inv_i body_b,
+                       local_normal = vec2copy (#local_normal manifold),
+                       local_point = vec2copy (#local_point manifold),
+                       point_count point_count,
+                       radius_a = radius_a,
+                       radius_b = radius_b,
+                       typ = #typ manifold }
+
+
+            (* working here... *)
+
 
             val friction = mix_friction(D.F.get_friction fixture_a,
                                         D.F.get_friction fixture_b)
@@ -84,10 +153,6 @@ struct
                             "    xfa: " ^ xftos (D.B.get_xf body_a) ^ "\n" ^
                             "    xfb: " ^ xftos (D.B.get_xf body_b) ^ "\n")
 
-            (* PERF assert *)
-            val () = if #point_count manifold > 0
-                     then ()
-                     else raise BDDContactSolver "pointcount assertion"
 
             val world_manifold = 
                 BDDCollision.create_world_manifold (manifold,
@@ -280,6 +345,14 @@ struct
         { contacts = contacts,
           constraints = constraints }
     end
+
+
+    fun warm_start _ = ()
+
+(*   fun warm_start ({ constraints, ... } : ('b, 'f, 'j) contact_solver) : unit =
+      Array.app solve_one_velocity_constraint constraints
+*)
+
 
   (* Port note: Inner case analysis in solve_one_velocity_constraint,
      for two points. The Box2D code has a for(;;) loop, but this just
@@ -584,7 +657,7 @@ struct
               " bav " ^ rtos (!w_b) ^ "\n")
   end
 
-  fun solve_velocity_constraints 
+  fun solve_velocity_constraints
       ({ constraints, ... } : ('b, 'f, 'j) contact_solver) : unit =
       Array.app solve_one_velocity_constraint constraints
 
