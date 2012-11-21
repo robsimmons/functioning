@@ -22,6 +22,8 @@ sig
                        BDDMath.vec2 Array.array ->
                        ('b, 'f, 'j) contact_solver
 
+  val initialize_velocity_constraints : ('b, 'f, 'j) contact_solver -> unit
+
   val warm_start : ('b, 'f, 'j) contact_solver -> unit
 
   val solve_velocity_constraints : ('b, 'f, 'j) contact_solver -> unit

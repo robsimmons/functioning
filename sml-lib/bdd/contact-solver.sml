@@ -15,12 +15,12 @@ struct
         r_b : BDDMath.vec2,
         normal_impulse : real ref,
         tangent_impulse : real ref,
-        normal_mass : real,
-        tangent_mass : real,
-        velocity_bias : real }
+        normal_mass : real ref,
+        tangent_mass : real ref,
+        velocity_bias : real ref }
 
   type velocity_constraint =
-      { points : constraint_point Array.array,
+      { points : velocity_constraint_point Array.array,
         normal : BDDMath.vec2,
         normal_mass : BDDMath.mat22,
         k : BDDMath.mat22,
@@ -66,7 +66,6 @@ struct
         velocitiesw : real Array.array,
         position_constraints : position_constraint Array.array,
         velocity_constraints : velocity_constraint Array.array,
-        (* Kept for 'report'; just a copy of island's contacts. *)
         contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector }
 
 
@@ -94,7 +93,28 @@ struct
             val point_count = #point_count manifold
             val () = assert (point_count > 0)
 
-            val vc = { points = Array.array (max_manifold_points, vec2zero),
+            fun one_vc_point jj =
+                let
+                    val cp = Array.sub(#points manifold, jj)
+                    val (normal_impulse, tangent_impulse) =
+                        if #warm_starting time_step
+                        then ((#dt_ratio time_step) * (#normal_impulse cp),
+                              (#dt_ratio time_step) * (#tangent_impulse cp))
+                        else (0.0, 0.0)
+                in
+                    {r_a = vec2 (0.0, 0.0),
+                     r_b = vec2 (0.0, 0.0),
+                     normal_mass = ref 0.0,
+                     tangent_mass = ref 0.0,
+                     velocity_bias = ref 0.0,
+                     normal_impulse = ref normal_impulse,
+                     tangent_impulse = ref tangent_impulse
+                    }
+                end
+
+            val vc_points = Array.tabulate (point_count, one_vc_point)
+
+            val vc = { points = vc_points,
                        friction = D.C.get_friction contact,
                        restitution = D.C.get_restitution contact,
                        tangent_speed = 0.0, (* TODO *)
@@ -112,6 +132,8 @@ struct
                        normal_mass = mat22with (0.0, 0.0, 0.0, 0.0) }
 
 
+            fun one_pc_local_point jj = #local_point (Array.sub (#points, manifold, jj))
+
             val pc = { index_a = D.B.get_island_index body_a,
                        index_b = D.B.get_island_index body_b,
                        inv_mass_a = D.B.get_inv_mass body_a,
@@ -122,91 +144,122 @@ struct
                        inv_i_b = D.B.get_inv_i body_b,
                        local_normal = vec2copy (#local_normal manifold),
                        local_point = vec2copy (#local_point manifold),
-                       point_count point_count,
+                       local_points = Array.tabulate (point_count, one_pc_local_point),
+                       point_count = point_count,
                        radius_a = radius_a,
                        radius_b = radius_b,
                        typ = #typ manifold }
+          in
+              (vc, pc)
+          end
+
+        val constraint_pairs = Vector.mapi onecontact contacts
+        val velocity_contraints = Vector.map (#1) constraint_pairs
+        val position_constraints = Vector.map (#2) constraint_pairs
+    in
+      { step = time_step,
+        positionsc = positionsc,
+        positionsa = positionsa,
+        velocitiesv = velocitiesv,
+        velocitiesw = velocitiesw,
+        position_constraints = position_constraints,
+        velocity_constraints = velocity_constraints,
+        contacts = contacts }
+    end
+
+fun initialize_velocity_constraints { step,
+                                      positionsc,
+                                      positionsa,
+                                      velocitiesv,
+                                      velocitiesw,
+                                      position_constraints,
+                                      velocity_constraints,
+                                      contacts } =
+    let
+        fun one_constraint ii =
+            let
+                val vc = Array.sub(velocity_constraints, ii)
+                val pc = Array.sub(position_constraints, ii)
+                val radius_a = #radius_a pc
+                val radius_b = #radius_b pc
+                val manifold = D.C.get_manifold (Vector.sub(contacts, (#contact_index vc))
+
+                val index_a = #index_a vc
+                val index_b = #index_b vc
+
+                val m_a = #inv_mass_a vc
+                val m_b = #inv_mass_b vc
+                val i_a = #inv_mass_a vc
+                val i_b = #inv_mass_b vc
+                val local_center_a = #local_center_a pc
+                val local_center_b = #local_center_b pc
+
+                val c_a = Array.sub(index_a, positionsc)
+                val a_a = Array.sub(index_a, positionsa)
+                val v_a = Array.sub(index_a, velocitiesv)
+                val w_a = Array.sub(index_a, velocitiesw)
+
+                val c_b = Array.sub(index_b, positionsc)
+                val a_b = Array.sub(index_b, positionsa)
+                val v_b = Array.sub(index_b, velocitiesv)
+                val w_b = Array.sub(index_b, velocitiesw)
+
+                val () = assert (#point_count manifold > 0)
+
+                val xf_a = transform_pos_angle (c_a :-: (mat22angle a_a +*: local_center_a),
+                                                a_a)
+                val xf_b = transform_pos_angle (c_b :-: (mat22angle a_b +*: local_center_b),
+                                                a_b)
+
+                val world_manifold =
+                    BDDCollision.create_world_manifold (manifold,
+                                                        xf_a, radius_a,
+                                                        xf_b, radius_b)
+
+                val normal = #normal vc
+                val () = vec2setfrom (normal, #normal world_manifold)
+
+                fun one_point (jj, vcp) =
+                    let
+                        val r_a = #r_a vcp
+                        val r_b = #r_b vcp
+                        val () = r_a := Array.sub(#points world_manifold, jj) - c_a
+                        val () = r_b := Array.sub(#points world_manifold, jj) - c_b
+                        val rn_a = cross2vv(!r_a, normal)
+                        val rn_b = cross2vv(!r_b, normal)
+                        val k_normal = m_a + m_b + i_a * rn_a * rn_A + i_b * rn_b * rn_b
+                        val () = (#normal_mass vcp) =
+                                 if k_normal > 0.0 then 1.0 / k_normal else 0.0
+
+                        val tangent = cross2vs(normal, 1.0)
+                        val rt_a = cross2vv(!r_a, tangent)
+                        val rt_b = cross2vv(!r_b, tangent)
+                        val k_tangent = m_a + m_b + i_a * rt_a * rt_A + i_b * rt_b * rt_b
+                        val () = (#tangent_mass vcp) =
+                                 if k_tangent > 0.0 then 1.0 / k_tangent else 0.0
+
+                        (* Set up a velocity bias for restitution. *)
+                        val v_rel : real = dot2(normal,
+                                                v_b :+: cross2sv(w_b, !r_b) :-:
+                                                v_a :-: cross2sv(w_a, !r_a))
+                        val velocity_bias =
+                            if v_rel < ~ velocity_threshold
+                            then ~(#restitution vc) * v_rel
+                            else 0.0
+
+                    in
+                        ()
+                    end
+            in
+                ()
+            end
+    in
+        ()
+    end
 
 
-            (* working here... *)
 
 
-            val friction = mix_friction(D.F.get_friction fixture_a,
-                                        D.F.get_friction fixture_b)
-            val restitution = mix_restitution(D.F.get_restitution fixture_a,
-                                              D.F.get_restitution fixture_b)
-            val v_a : vec2 = D.B.get_linear_velocity body_a
-            val v_b : vec2 = D.B.get_linear_velocity body_b
-            val w_a : real = D.B.get_angular_velocity body_a
-            val w_b : real = D.B.get_angular_velocity body_b
-
-            val () = dprint (fn () => "CS: ra " ^ rtos radius_a ^ 
-                            " rb " ^ rtos radius_b ^ 
-                            " f " ^ rtos friction ^
-                            " r " ^ rtos restitution ^ "\n" ^
-                            "    va " ^ vtos v_a ^
-                            " vb " ^ vtos v_b ^
-                            " wa " ^ rtos w_a ^
-                            " wb " ^ rtos w_b ^ "\n" ^
-                            "    sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^ "\n" ^
-                            "    sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n" ^
-                            "    xfa: " ^ xftos (D.B.get_xf body_a) ^ "\n" ^
-                            "    xfb: " ^ xftos (D.B.get_xf body_b) ^ "\n")
-
-
-            val world_manifold = 
-                BDDCollision.create_world_manifold (manifold,
-                                                    D.B.get_xf body_a, radius_a,
-                                                    D.B.get_xf body_b, radius_b)
-
-            val normal = #normal world_manifold
-
-            fun one_point (j : int) : constraint_point =
-              let
-                val cp : manifold_point = Array.sub (#points manifold, j)
-                val wmpj = Array.sub(#points world_manifold, j)
-                val r_a = wmpj :-: sweepc (D.B.get_sweep body_a)
-                val r_b = wmpj :-: sweepc (D.B.get_sweep body_b)
-                val rn_a = cross2vv(r_a, normal)
-                val rn_b = cross2vv(r_b, normal)
-                val rn_a = rn_a * rn_a
-                val rn_b = rn_b * rn_b
-                val k_normal : real = 
-                    D.B.get_inv_mass body_a +
-                    D.B.get_inv_mass body_b +
-                    D.B.get_inv_i body_a * rn_a +
-                    D.B.get_inv_i body_b * rn_b
-
-                (* PERF assert *)
-                val () = if k_normal > epsilon
-                         then ()
-                         else raise BDDContactSolver "knormal assertion"
-
-                val tangent : vec2 = cross2vs(normal, 1.0)
-                val rt_a = cross2vv(r_a, tangent)
-                val rt_b = cross2vv(r_b, tangent)
-                val rt_a = rt_a * rt_a
-                val rt_b = rt_b * rt_b
-
-                val k_tangent = 
-                    D.B.get_inv_mass body_a +
-                    D.B.get_inv_mass body_b +
-                    D.B.get_inv_i body_a * rt_a +
-                    D.B.get_inv_i body_b * rt_b
-
-                (* PERF assert *)
-                val () = if k_tangent > epsilon
-                         then ()
-                         else raise BDDContactSolver "ktangent assertion"
-
-                (* Set up a velocity bias for restitution. *)
-                val v_rel : real = dot2(normal, 
-                                        v_b :+: cross2sv(w_b, r_b) :-:
-                                        v_a :-: cross2sv(w_a, r_a))
-                val velocity_bias =
-                  if v_rel < ~ velocity_threshold
-                  then ~restitution * v_rel
-                  else 0.0
               in
                 { normal_impulse = ref (impulse_ratio * #normal_impulse cp),
                   tangent_impulse = ref (impulse_ratio * #tangent_impulse cp),
