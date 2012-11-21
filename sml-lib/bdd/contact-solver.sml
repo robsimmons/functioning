@@ -650,25 +650,25 @@ fun warm_start { step,
 
   fun store_impulses (solver : ('b, 'f, 'j) contact_solver) : unit =
     Array.app
-    (fn ({manifold, point_count, points, ... } : ('b, 'f, 'j) constraint) =>
-     for 0 (point_count - 1)
-     (fn j =>
-      let
-          val { local_point, id, ... } =
-              Array.sub(#points manifold, j)
-      in
-          dprint (fn () => "SI #" ^ itos j ^
-                  " lp " ^ vtos local_point ^
-                  " ni " ^ rtos (!(#normal_impulse (Array.sub (points, j)))) ^
-                  " ti " ^ rtos (!(#tangent_impulse (Array.sub (points, j)))) ^ "\n");
-          Array.update (#points manifold, j,
-                        { local_point = local_point,
-                          id = id,
-                          normal_impulse =
-                            !(#normal_impulse (Array.sub (points, j))),
-                          tangent_impulse =
-                            !(#tangent_impulse (Array.sub (points, j))) })
-      end)) (#constraints solver)
+    (fn ({contact_index, point_count, points, ... } : velocity_constraint) =>
+        let
+            val manifold = D.C.get_manifold (Array.sub(#contacts solver, contact_index))
+        in
+            for 0 (point_count - 1)
+                (fn j =>
+                    let
+                        val { local_point, id, ... } =
+                            Array.sub(#points manifold, j)
+                    in
+                        Array.update (#points manifold, j,
+                                      { local_point = local_point,
+                                        id = id,
+                                        normal_impulse =
+                                        !(#normal_impulse (Array.sub (points, j))),
+                                        tangent_impulse =
+                                        !(#tangent_impulse (Array.sub (points, j))) })
+                    end
+        end )) (#velocity_constraints solver)
 
   (* Port note: A class in Box2D; it's just a function that
      returns multiple values.
