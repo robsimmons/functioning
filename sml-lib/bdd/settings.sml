@@ -33,7 +33,7 @@ struct
      This is a dimensionless multiplier. *)
   val aabb_multiplier : real = 2.0
 
-      
+
   (* A small length used as a collision and constraint tolerance. Usually it is
      chosen to be numerically significant, but visually insignificant. *)
   val linear_slop : real = 0.005
@@ -42,8 +42,8 @@ struct
      chosen to be numerically significant, but visually insignificant. *)
   val angular_slop : real = 2.0 / 180.0 * pi
 
-  (* The radius of the polygon/edge shape skin. This should not be modified. 
-     Making this smaller means polygons will have an insufficient buffer for 
+  (* The radius of the polygon/edge shape skin. This should not be modified.
+     Making this smaller means polygons will have an insufficient buffer for
      continuous collision.
      Making it larger may create artifacts for vertex collision. *)
   val polygon_radius : real = 2.0 * linear_slop
@@ -61,11 +61,11 @@ struct
      inelastic. *)
   val velocity_threshold : real = 1.0
 
-  (* The maximum linear position correction used when solving constraints. 
+  (* The maximum linear position correction used when solving constraints.
      This helps to prevent overshoot. *)
   val max_linear_correction : real = 0.2
 
-  (* The maximum angular position correction used when solving constraints. 
+  (* The maximum angular position correction used when solving constraints.
      This helps to prevent overshoot. *)
   val max_angular_correction : real = 8.0 / 180.0 * pi
 
@@ -79,10 +79,11 @@ struct
   val max_rotation : real = 0.5 * pi
   val max_rotation_squared = max_rotation * max_rotation
 
-  (* This scale factor controls how fast overlap is resolved. Ideally 
+  (* This scale factor controls how fast overlap is resolved. Ideally
      this would be 1 so that overlap is removed in one time step. However
      using values close to 1 often lead to overshoot. *)
   val contact_baumgarte : real = 0.2
+  val toi_baumgarte : real = 0.75
 
   (* Sleep. *)
 

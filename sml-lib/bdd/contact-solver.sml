@@ -729,42 +729,45 @@ fun warm_start { step,
      if you change something here, it probably should be changed there
      too. The duplication comes from Box2D. Obviously it would be
      better to factor out this common routine. *)
-  fun solve_position_constraints (solver : ('b, 'f, 'j) contact_solver,
-                                  baumgarte : real) : bool =
+  fun solve_position_constraints { position_constraints,
+                                   velocitiesv,
+                                   velocitiesw,
+                                   positionsc,
+                                   positionsa, ... }
+                                  : bool =
     let
-
-      val () = dprint
-          (fn () =>
-           "SolvePositionConstraints: " ^ Int.toString (Array.length (#constraints solver)) ^
-           "\n")
-
       val min_separation = ref 0.0
-      fun oneconstraint (c : ('b, 'f, 'j) constraint) =
+      fun oneconstraint (pc : position_constraint) =
         let
-            val body_a = #body_a c
-            val body_b = #body_b c
+            val index_a = #index_a pc
+            val index_b = #index_b pc
+            val m_a = #inv_mass_a pc
+            val i_a = #inv_i_a pc
+            val local_center_a = #local_center_a pc
+            val m_b = #inv_mass_b pc
+            val i_b = #inv_i_b pc
+            val local_center_b = #local_center_b pc
 
-            val inv_mass_a = D.B.get_mass body_a * D.B.get_inv_mass body_a
-            val inv_i_a = D.B.get_mass body_a * D.B.get_inv_i body_a
-            val inv_mass_b = D.B.get_mass body_b * D.B.get_inv_mass body_b
-            val inv_i_b = D.B.get_mass body_b * D.B.get_inv_i body_b
-
-            val () = dprint (fn () => "  Solve pos: ima " ^ rtos inv_mass_a ^
-                            " imb " ^ rtos inv_mass_b ^
-                            " iia " ^ rtos inv_i_a ^
-                            " iib " ^ rtos inv_i_b ^
-                            " pts " ^ itos (#point_count c) ^ "\n")
-
+            val c_a = ref (Array.sub(positionsc, index_a))
+            val a_a = ref (Array.sub(positionsa, index_a))
+            val c_b = ref (Array.sub(positionsc, index_b))
+            val a_b = ref (Array.sub(positionsa, index_b))
         in
             (* Solve normal constraints. *)
-            for 0 (#point_count c - 1)
+            for 0 (#point_count pc - 1)
             (fn j =>
              let
+                val xf_a = transform_pos_angle
+                               (!c_a :-: (mat22angle (!a_a) +*: local_center_a),
+                                !a_a)
+                val xf_b = transform_pos_angle
+                               (!c_b :-: (mat22angle (!a_b) +*: local_center_b),
+                                !a_b)
                  val { normal : vec2, point : vec2, separation : real } =
-                     position_solver_manifold (c, j)
+                     position_solver_manifold (pc, xf_a, xf_b, j)
 
-                 val r_a : vec2 = point :-: sweepc (D.B.get_sweep body_a)
-                 val r_b : vec2 = point :-: sweepc (D.B.get_sweep body_b)
+                 val r_a : vec2 = point :-: !c_a
+                 val r_b : vec2 = point :-: !c_b
 
                  val () = dprint (fn () => "    pt " ^ vtos point ^
                                  " sep " ^ rtos separation ^
@@ -778,38 +781,28 @@ fun warm_start { step,
 
                  (* Prevent large corrections and allow slop. *)
                  val capital_c : real =
-                     clampr (baumgarte * (separation + linear_slop),
+                     clampr (contact_baumgarte * (separation + linear_slop),
                              ~max_linear_correction,
                              0.0)
 
                  (* Compute the effective mass. *)
                  val rn_a : real = cross2vv (r_a, normal)
                  val rn_b : real = cross2vv (r_b, normal)
-                 val k : real = inv_mass_a + inv_mass_b +
-                     inv_i_a * rn_a * rn_a +
-                     inv_i_b * rn_b * rn_b
+                 val k = m_a + m_b + i_a * rn_a * rn_a + i_b * rn_b * rn_b
 
                  (* Compute normal impulse. *)
                  val impulse : real = if k > 0.0 then ~ capital_c / k else 0.0
                  val p : vec2 = impulse *: normal
-
-                 val sweep_a : sweep = D.B.get_sweep body_a
-                 val sweep_b : sweep = D.B.get_sweep body_b
              in
-                 sweep_set_c (sweep_a, sweepc sweep_a :-: (inv_mass_a *: p));
-                 sweep_set_a (sweep_a, sweepa sweep_a -
-                              (inv_i_a * cross2vv (r_a, p)));
-                 dprint (fn () => "    ba sweep: " ^ sweeptos (sweep_a) ^ "\n");
-                 D.B.synchronize_transform body_a;
-
-                 sweep_set_c (sweep_b, sweepc sweep_b :+: (inv_mass_b *: p));
-                 sweep_set_a (sweep_b, sweepa sweep_b +
-                              (inv_i_b * cross2vv (r_b, p)));
-                 dprint (fn () => "    bb sweep: " ^ sweeptos (sweep_b) ^ "\n");
-                 D.B.synchronize_transform body_b
+                 c_a := (!c_a) :-: (m_a *: p);
+                 a_a := (!a_a) :-: (i_a * cross2vv (r_a, p));
+                 c_b := (!c_b) :+: (m_b *: p);
+                 a_b := (!a_b) :+: (i_b * cross2vv (r_b, p))
              end);
-            dprint (fn () => "  sweepa: " ^ sweeptos (D.B.get_sweep body_a) ^
-                   "\n  sweepb: " ^ sweeptos (D.B.get_sweep body_b) ^ "\n")
+            Array.update(positionsc, index_a, !c_a);
+            Array.update(positionsa, index_a, !a_a);
+            Array.update(positionsc, index_b, !c_b);
+            Array.update(positionsa, index_b, !a_b)
         end
     in
       Array.app oneconstraint (#constraints solver);
