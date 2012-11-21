@@ -314,57 +314,44 @@ fun warm_start { step,
                  positionsa,
                  velocitiesv,
                  velocitiesw,
-                 position_constraints,
                  velocity_constraints,
-                 contacts } =
+                 ... } =
     let
-
-        fun warm_start_one ({ body_a, body_b, normal, points, ... }
-                            : ('b, 'f, 'j) constraint) : unit =
+        fun warm_start_one ({ index_a, index_b, normal, points,
+                              inv_mass_a = m_a, inv_i_a = i_a,
+                              inv_mass_b = m_b, inv_i_b = i_b,
+                              ... }
+                            : velocity_constraint) : unit =
           let
             val tangent = cross2vs(normal, 1.0)
-            val inv_mass_a = D.B.get_inv_mass body_a
-            val inv_i_a = D.B.get_inv_i body_a
-            val inv_mass_b = D.B.get_inv_mass body_b
-            val inv_i_b = D.B.get_inv_i body_b
 
-            fun warm_point ({ normal_impulse, 
-                              tangent_impulse, 
+            fun warm_point ({ normal_impulse,
+                              tangent_impulse,
                               r_a, r_b, ... } : constraint_point) : unit =
               let
-                val p : vec2 = 
+                val p : vec2 =
                     !normal_impulse *: normal :+: !tangent_impulse *: tangent
+                val v_a = Array.sub(velocitiesv, index_a)
+                val w_a = Array.sub(velocitesw, index_a)
+                val v_b = Array.sub(velocitiesv, index_b)
+                val w_b = Array.sub(velocitesw, index_b)
+
               in
-                D.B.set_angular_velocity (body_a,
-                                          D.B.get_angular_velocity body_a -
-                                          inv_i_a * cross2vv(r_a, p));
-                D.B.set_linear_velocity (body_a,
-                                         D.B.get_linear_velocity body_a :-:
-                                         inv_mass_a *: p);
-                D.B.set_angular_velocity (body_b,
-                                          D.B.get_angular_velocity body_b +
-                                          inv_i_b * cross2vv(r_b, p));
-                D.B.set_linear_velocity (body_b,
-                                         D.B.get_linear_velocity body_b :+:
-                                         inv_mass_b *: p)
+                  Array.update (velocitiesw, index_a,
+                                w_a - i_a * cross2vv(r_a, p));
+                  Array.update (velocitiesv, index_a,
+                                v_a :-: m_a *: p);
+                  Array.update (velocitiesw, index_b,
+                                w_b + i_b * cross2vv(r_b, p));
+                  Array.update (velocitiesv, index_b,
+                                v_b :+: m_b *: p)
               end
           in
             Array.app warm_point points
           end
     in
-        (* Port note: Rolled the warm start function, which is always
-           called immediately after initialization, into this. *)
-        Array.app warm_start_one constraints;
-        { contacts = contacts,
-          constraints = constraints }
+        Array.app warm_start_one velocity_constraints
     end
-
-
-    fun warm_start _ = ()
-
-(*   fun warm_start ({ constraints, ... } : ('b, 'f, 'j) contact_solver) : unit =
-      Array.app solve_one_velocity_constraint constraints
-*)
 
 
   (* Port note: Inner case analysis in solve_one_velocity_constraint,
