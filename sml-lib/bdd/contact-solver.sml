@@ -675,43 +675,29 @@ fun warm_start { step,
 
      Note, this is almost the same function as in toi-solver.
      (Redundancy is present in Box2D too.) *)
-  fun position_solver_manifold (cc : ('b, 'f, 'j) constraint, index : int) :
+  fun position_solver_manifold (pc : position_constraint, xf_a, xf_b, index : int) :
       { normal : vec2, point : vec2, separation : real } =
-    case #typ cc of
+    case #typ pc of
         E_Circles =>
           let
-              val point_a : vec2 =
-                  D.B.get_world_point (#body_a cc,
-                                       #local_point cc)
-              val point_b : vec2 =
-                  D.B.get_world_point (#body_b cc,
-                                       #local_point
-                                       (Array.sub (#points cc, 0)))
-
-              val normal =
-                if distance_squared (point_a, point_b) > epsilon * epsilon
-                then vec2normalized (point_b :-: point_a)
-                else vec2 (1.0, 0.0)
+              val point_a : vec2 = xf_a @*: (#local_point pc)
+              val point_b : vec2 = xf_b @*: (Array.sub(#local_points pc, 0))
+              val normal = vec2normalized (point_b :-: point_a)
           in
               dprint (fn () => "    circles: pa " ^ vtos (point_a) ^
                      " pb " ^ vtos (point_b) ^
-                     " sep " ^ rtos(dot2(point_b :-: point_a, normal) - #radius cc) ^ "\n");
+                     " sep " ^ rtos(dot2(point_b :-: point_a, normal) - #radius pc) ^ "\n");
               { normal = normal,
                 point = 0.5 *: (point_a :+: point_b),
-                separation = dot2(point_b :-: point_a, normal) - #radius cc }
+                separation = dot2(point_b :-: point_a, normal) - #radius_a pc - #radius_b pc }
           end
     | E_FaceA =>
           let
-              val normal = D.B.get_world_vector (#body_a cc,
-                                                 #local_normal cc)
-              val plane_point : vec2 =
-                  D.B.get_world_point(#body_a cc, #local_point cc)
-              val clip_point : vec2 =
-                  D.B.get_world_point(#body_b cc, #local_point
-                                      (Array.sub(#points cc,
-                                                 index)))
+              val normal = transformr xf_a +*: (#local_normal pc)
+              val plane_point = xf_a @*: (#local_point pc)
+              val clip_point = xf_b @*: (Array.sub(#local_points, index))
               val separation : real =
-                  dot2(clip_point :-: plane_point, normal) - #radius cc
+                  dot2(clip_point :-: plane_point, normal) - #radius_a pc - #radius_b pc
           in
               dprint (fn () => "    facea: pp " ^ vtos plane_point ^
                      " cp " ^ vtos clip_point ^
@@ -722,16 +708,11 @@ fun warm_start { step,
           end
     | E_FaceB =>
           let
-              val normal = D.B.get_world_vector (#body_b cc,
-                                                 #local_normal cc)
-              val plane_point : vec2 =
-                  D.B.get_world_point(#body_b cc, #local_point cc)
-              val clip_point : vec2 =
-                  D.B.get_world_point(#body_a cc, #local_point
-                                      (Array.sub(#points cc,
-                                                 index)))
+              val normal = transformr xf_b +*: (#local_normal pc)
+              val plane_point = xf_b @*: (#local_point pc)
+              val clip_point = xf_a @*: (Array.sub(#local_points, index))
               val separation : real =
-                  dot2(clip_point :-: plane_point, normal) - #radius cc
+                  dot2(clip_point :-: plane_point, normal) - #radius pc
           in
               dprint (fn () => "    faceb: pp " ^ vtos plane_point ^
                      " cp " ^ vtos clip_point ^
