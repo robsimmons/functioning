@@ -15,9 +15,9 @@ struct
         r_b : BDDMath.vec2,
         normal_impulse : real ref,
         tangent_impulse : real ref,
-        normal_mass : real ref,
-        tangent_mass : real ref,
-        velocity_bias : real ref }
+        normal_mass : real,
+        tangent_mass : real,
+        velocity_bias : real }
 
   type velocity_constraint =
       { points : velocity_constraint_point Array.array,
@@ -56,9 +56,16 @@ struct
 
   (* Parameterized by user data, since it uses the internal
      polymorpic types. *)
+  type ('b, 'f, 'j) pre_contact_solver =
+      { step : BDDDynamicsTypes.time_step,
+        positionsc : BDDMath.vec2 Array.array,
+        positionsa : real Array.array,
+        velocitiesv : BDDMath.vec2 Array.array,
+        velocitiesw : real Array.array,
+        position_constraints : position_constraint Array.array,
+        contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector }
+
   type ('b, 'f, 'j) contact_solver =
-      (* Representation invariant: These two have the
-         same length. *)
       { step : BDDDynamicsTypes.time_step,
         positionsc : BDDMath.vec2 Array.array,
         positionsa : real Array.array,
@@ -69,7 +76,7 @@ struct
         contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector }
 
 
-  fun contact_solver
+  fun pre_contact_solver
       (time_step : BDDDynamicsTypes.time_step,
        contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector,
        positionsc : BDDMath.vec2 Array.array,
@@ -77,7 +84,7 @@ struct
        velocitiesv : BDDMath.vec2 Array.array,
        velocitiesw : real Array.array) : ('b, 'f, 'j) contact_solver =
     let
-        (* Initialize position independent porions of the constraints. *)
+        (* Initialize position independent portions of the constraints. *)
         fun onecontact (ii : int, contact : ('b, 'f, 'j) BDDDynamics.contact) =
           let
             val fixture_a = D.C.get_fixture_a contact
@@ -92,45 +99,6 @@ struct
 
             val point_count = #point_count manifold
             val () = assert (point_count > 0)
-
-            fun one_vc_point jj =
-                let
-                    val cp = Array.sub(#points manifold, jj)
-                    val (normal_impulse, tangent_impulse) =
-                        if #warm_starting time_step
-                        then ((#dt_ratio time_step) * (#normal_impulse cp),
-                              (#dt_ratio time_step) * (#tangent_impulse cp))
-                        else (0.0, 0.0)
-                in
-                    {r_a = vec2 (0.0, 0.0),
-                     r_b = vec2 (0.0, 0.0),
-                     normal_mass = ref 0.0,
-                     tangent_mass = ref 0.0,
-                     velocity_bias = ref 0.0,
-                     normal_impulse = ref normal_impulse,
-                     tangent_impulse = ref tangent_impulse
-                    }
-                end
-
-            val vc_points = Array.tabulate (point_count, one_vc_point)
-
-            val vc = { points = vc_points,
-                       friction = D.C.get_friction contact,
-                       restitution = D.C.get_restitution contact,
-                       tangent_speed = 0.0, (* TODO *)
-
-                       (* TODO these need to be set up by the island *)
-                       index_a = D.B.get_island_index body_a,
-                       index_b = D.B.get_island_index body_b,
-                       inv_mass_a = D.B.get_inv_mass body_a,
-                       inv_mass_b = D.B.get_inv_mass body_b,
-                       inv_i_a = D.B.get_inv_i body_a,
-                       inv_i_b = D.B.get_inv_i body_b,
-                       contact_index = ii,
-                       point_count = point_count,
-                       k = mat22with (0.0, 0.0, 0.0, 0.0)
-                       normal_mass = mat22with (0.0, 0.0, 0.0, 0.0) }
-
 
             fun one_pc_local_point jj = #local_point (Array.sub (#points, manifold, jj))
 
@@ -150,12 +118,10 @@ struct
                        radius_b = radius_b,
                        typ = #typ manifold }
           in
-              (vc, pc)
+              pc
           end
 
-        val constraint_pairs = Vector.mapi onecontact contacts
-        val velocity_contraints = Vector.map (#1) constraint_pairs
-        val position_constraints = Vector.map (#2) constraint_pairs
+        val position_constraints = Vector.mapi onecontact contacts
     in
       { step = time_step,
         positionsc = positionsc,
@@ -163,9 +129,15 @@ struct
         velocitiesv = velocitiesv,
         velocitiesw = velocitiesw,
         position_constraints = position_constraints,
-        velocity_constraints = velocity_constraints,
         contacts = contacts }
     end
+
+
+
+
+
+
+
 
 fun initialize_velocity_constraints { step,
                                       positionsc,
@@ -173,24 +145,29 @@ fun initialize_velocity_constraints { step,
                                       velocitiesv,
                                       velocitiesw,
                                       position_constraints,
-                                      velocity_constraints,
                                       contacts } =
     let
-        fun one_constraint ii =
+        fun onecontact (ii, contact) =
             let
-                val vc = Array.sub(velocity_constraints, ii)
                 val pc = Array.sub(position_constraints, ii)
                 val radius_a = #radius_a pc
                 val radius_b = #radius_b pc
-                val manifold = D.C.get_manifold (Vector.sub(contacts, (#contact_index vc))
+                val fixture_a = D.C.get_fixture_a contact
+                val fixture_b = D.C.get_fixture_b contact
+                val body_a = D.F.get_body fixture_a
+                val body_b = D.F.get_body fixture_b
+                val manifold = D.C.get_manifold contact
+                val point_count = #point_count manifold
 
-                val index_a = #index_a vc
-                val index_b = #index_b vc
+                val index_a = D.B.get_island_index body_a,
+                val index_b = D.B.get_island_index body_b,
 
-                val m_a = #inv_mass_a vc
-                val m_b = #inv_mass_b vc
-                val i_a = #inv_mass_a vc
-                val i_b = #inv_mass_b vc
+                val m_a = D.B.get_inv_mass body_a
+                val m_b = D.B.get_inv_mass body_b
+                val i_a = D.B.get_inv_i body_a
+                val i_b = D.B.get_inv_i body_b
+                val friction = D.B.get_friction contact
+                val restitution = D.B.get_restitution contact
                 val local_center_a = #local_center_a pc
                 val local_center_b = #local_center_b pc
 
@@ -216,45 +193,67 @@ fun initialize_velocity_constraints { step,
                                                         xf_a, radius_a,
                                                         xf_b, radius_b)
 
-                val normal = #normal vc
-                val () = vec2setfrom (normal, #normal world_manifold)
+                val normal = #normal world_manifold
 
-                fun one_point (jj, vcp) =
+                fun one_vc_point jj =
                     let
-                        val r_a = #r_a vcp
-                        val r_b = #r_b vcp
-                        val () = r_a := Array.sub(#points world_manifold, jj) - c_a
-                        val () = r_b := Array.sub(#points world_manifold, jj) - c_b
-                        val rn_a = cross2vv(!r_a, normal)
-                        val rn_b = cross2vv(!r_b, normal)
+                        val cp = Array.sub(#points manifold, jj)
+                        val (normal_impulse, tangent_impulse) =
+                            if #warm_starting time_step
+                            then ((#dt_ratio time_step) * (#normal_impulse cp),
+                                  (#dt_ratio time_step) * (#tangent_impulse cp))
+                            else (0.0, 0.0)
+
+                        val r_a = Array.sub(#points world_manifold, jj) - c_a
+                        val r_b = Array.sub(#points world_manifold, jj) - c_b
+                        val rn_a = cross2vv(r_a, normal)
+                        val rn_b = cross2vv(r_b, normal)
                         val k_normal = m_a + m_b + i_a * rn_a * rn_A + i_b * rn_b * rn_b
-                        val () = (#normal_mass vcp) =
-                                 if k_normal > 0.0 then 1.0 / k_normal else 0.0
+                        val normal_mass =
+                            if k_normal > 0.0 then 1.0 / k_normal else 0.0
 
                         val tangent = cross2vs(normal, 1.0)
-                        val rt_a = cross2vv(!r_a, tangent)
-                        val rt_b = cross2vv(!r_b, tangent)
+                        val rt_a = cross2vv(r_a, tangent)
+                        val rt_b = cross2vv(r_b, tangent)
                         val k_tangent = m_a + m_b + i_a * rt_a * rt_A + i_b * rt_b * rt_b
-                        val () = (#tangent_mass vcp) =
-                                 if k_tangent > 0.0 then 1.0 / k_tangent else 0.0
+                        val tangent_mass =
+                            if k_tangent > 0.0 then 1.0 / k_tangent else 0.0
 
                         (* Set up a velocity bias for restitution. *)
                         val v_rel : real = dot2(normal,
-                                                v_b :+: cross2sv(w_b, !r_b) :-:
-                                                v_a :-: cross2sv(w_a, !r_a))
+                                                v_b :+: cross2sv(w_b, r_b) :-:
+                                                v_a :-: cross2sv(w_a, r_a))
                         val velocity_bias =
                             if v_rel < ~ velocity_threshold
-                            then ~(#restitution vc) * v_rel
+                            then ~restitution * v_rel
                             else 0.0
 
                     in
-                        ()
+                        {r_a = r_a,
+                         r_b = r_b,
+                         normal_mass = normal_mass,
+                         tangent_mass = tangent_mass,
+                         velocity_bias = velocity_bias,
+                         normal_impulse = ref normal_impulse,
+                         tangent_impulse = ref tangent_impulse
+                        }
                     end
+
+                val vc_points = Array.tabulate (point_count, one_vc_point)
+
+            (* If we have two points, then prepare the block solver. *)
             in
                 ()
             end
     in
-        ()
+        { step = time_step,
+          positionsc = positionsc,
+          positionsa = positionsa,
+          velocitiesv = velocitiesv,
+          velocitiesw = velocitiesw,
+          position_constraints = position_constraints,
+          velocity_constraints = velocity_constraints,
+          contacts = contacts }
     end
 
 

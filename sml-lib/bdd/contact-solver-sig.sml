@@ -13,24 +13,32 @@ sig
      polymorpic types. *)
   type ('b, 'f, 'j) contact_solver
 
-  (* contact_solver (contacts, impulse_ratio) *)
-  val contact_solver : BDDDynamicsTypes.time_step *
-                       ('b, 'f, 'j) BDDDynamics.contact Vector.vector *
-                       real Array.array *
-                       BDDMath.vec2 Array.array *
-                       real Array.array *
-                       BDDMath.vec2 Array.array ->
-                       ('b, 'f, 'j) contact_solver
+  type ('b, 'f, 'j) pre_contact_solver
 
-  val initialize_velocity_constraints : ('b, 'f, 'j) contact_solver -> unit
+  (* contact_solver (contacts, impulse_ratio) *)
+  val pre_contact_solver : BDDDynamicsTypes.time_step *
+                           ('b, 'f, 'j) BDDDynamics.contact Vector.vector *
+                           real Array.array *
+                           BDDMath.vec2 Array.array *
+                           real Array.array *
+                           BDDMath.vec2 Array.array ->
+                           ('b, 'f, 'j) pre_contact_solver
+
+
+  val solve_toi_position_constraints : ('b, 'f, 'j) pre_contact_solver * int * int ->
+                                       ('b, 'f, 'j) pre_contact_solver
+
+  val initialize_velocity_constraints : ('b, 'f, 'j) pre_contact_solver ->
+                                        ('b, 'f, 'j) contact_solver
 
   val warm_start : ('b, 'f, 'j) contact_solver -> unit
 
   val solve_velocity_constraints : ('b, 'f, 'j) contact_solver -> unit
   val store_impulses : ('b, 'f, 'j) contact_solver -> unit
 
-  (* solve_position_constraints (solver, baumgarte) *)
-  val solve_position_constraints : ('b, 'f, 'j) contact_solver * real -> bool
+  val solve_position_constraints : ('b, 'f, 'j) contact_solver -> bool
+
+
 
   (* Apply the function to every contact, paired with all of its
      impulses. *)
