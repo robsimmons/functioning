@@ -33,7 +33,6 @@ struct
         friction : real,
         restitution : real,
         tangent_speed : real,
-        point_count : int,
         contact_index : int }
 
   type position_constraint =
@@ -121,7 +120,9 @@ struct
               pc
           end
 
-        val position_constraints = Vector.mapi onecontact contacts
+        val position_constraints =
+            Array.tabulate (Vector.length contacts,
+                            fn ii => onecontact (ii, Vector.sub(contacts, ii)))
     in
       { step = time_step,
         positionsc = positionsc,
@@ -131,12 +132,6 @@ struct
         position_constraints = position_constraints,
         contacts = contacts }
     end
-
-
-
-
-
-
 
 
 fun initialize_velocity_constraints { step,
@@ -241,10 +236,67 @@ fun initialize_velocity_constraints { step,
 
                 val vc_points = Array.tabulate (point_count, one_vc_point)
 
-            (* If we have two points, then prepare the block solver. *)
+                val (k, normal_mass, points) =
+                    (* If we have two points, then prepare the block solver. *)
+                    if point_count = 2
+                    then
+                        let
+                            val vcp1 = Array.sub(vc_points, 0)
+                            val vcp2 = Array.sub(vc_points, 1)
+
+                            val rn1_a = cross2vv(#r_a vcp1, normal)
+                            val rn1_b = cross2vv(#r_b vcp1, normal)
+                            val rn2_a = cross2vv(#r_a vcp2, normal)
+                            val rn2_b = cross2vv(#r_b vcp2, normal)
+
+                            val k11 = m_a + m_b + i_a * rn1_a * rn1_a + i_b * rn1_b * rn1_b
+                            val k22 = m_a + m_b + i_a * rn2_a * rn2_a + i_b * rn2_b * rn2_b
+                            val k12 = m_a + m_b + i_a * rn1_a * rn2_a + i_b * rn1_b * rn2_b
+
+                            (* Ensure a reasonable condition number. *)
+                            val MAX_CONDITION_NUMBER = 1000.0
+                        in
+                            if k11 * k11 <
+                               MAX_CONDITION_NUMBER * (k11 * k22 - k12 * k12)
+                            then (* K is safe to invert. *)
+                                let
+                                    val k = mat22cols (vec2(k11, k12), vec2(k12, k22))
+                                    val normal_mass = mat22inverse k
+                                in
+                                    (k, normal_mass, vc_points)
+                                end
+                            else
+                                (* The constraints are redundant; just use one.
+                                     TODO_ERIN: use deepest? *)
+                                (mat22with (0.0, 0.0, 0.0, 0.0),
+                                 mat22with (0.0, 0.0, 0.0, 0.0),
+                                 Array.tabulate(1, fn _ => Array.sub(vc_points, 0)))
+                        end
+                    (* PERF uninitialized *)
+                    else (mat22with (0.0, 0.0, 0.0, 0.0),
+                          mat22with (0.0, 0.0, 0.0, 0.0),
+                          vc_points)
+
             in
-                ()
+                { points = points,
+                  normal = normal,
+                  normal_mass = normal_mass,
+                  k = k,
+                  index_a = index_a,
+                  index_b = index_b,
+                  inv_mass_a = m_a,
+                  inv_mass_b = m_b,
+                  inv_i_a = i_a,
+                  inv_i_b = i_b,
+                  friction = friction,
+                  restitution = restitution,
+                  tangent_speed = 0.0,
+                  contact_index = ii }
             end
+
+        val velocity_constraints =
+            Array.tabulate (Vector.length contacts,
+                         fn ii => onecontact (ii, Vector.sub(contacts, ii)))
     in
         { step = time_step,
           positionsc = positionsc,
@@ -257,108 +309,17 @@ fun initialize_velocity_constraints { step,
     end
 
 
+fun warm_start { step,
+                 positionsc,
+                 positionsa,
+                 velocitiesv,
+                 velocitiesw,
+                 position_constraints,
+                 velocity_constraints,
+                 contacts } =
+    let
 
-
-              in
-                { normal_impulse = ref (impulse_ratio * #normal_impulse cp),
-                  tangent_impulse = ref (impulse_ratio * #tangent_impulse cp),
-                  local_point = #local_point cp,
-                  r_a = r_a,
-                  r_b = r_b,
-                  normal_mass = 1.0 / k_normal,
-                  tangent_mass = 1.0 / k_tangent,
-                  velocity_bias = velocity_bias } : constraint_point
-
-              end
-
-            val points = Array.tabulate(Array.length (#points manifold),
-                                        one_point)
-
-            val (k, normal_mass, points) =
-                (* If we have two points, then prepare the block solver. *)
-                if Array.length points = 2
-                then 
-                  let
-                      val ccp1 = Array.sub(points, 0)
-                      val ccp2 = Array.sub(points, 1)
-
-                      val inv_mass_a = D.B.get_inv_mass body_a
-                      val inv_i_a = D.B.get_inv_i body_a
-                      val inv_mass_b = D.B.get_inv_mass body_b
-                      val inv_i_b = D.B.get_inv_i body_b
-
-                      val rn1_a = cross2vv(#r_a ccp1, normal)
-                      val rn1_b = cross2vv(#r_b ccp1, normal)
-                      val rn2_a = cross2vv(#r_a ccp2, normal)
-                      val rn2_b = cross2vv(#r_b ccp2, normal)
-
-                      val () = dprint (fn () => "Block solver: " ^
-                                      rtos rn1_a ^ " " ^
-                                      rtos rn1_b ^ " " ^
-                                      rtos rn2_a ^ " " ^
-                                      rtos rn2_b ^ " " ^
-                                      "\n")
-
-                      val k11 = inv_mass_a + inv_mass_b + 
-                          inv_i_a * rn1_a * rn1_a +
-                          inv_i_b * rn1_b * rn1_b
-                      val k22 = inv_mass_a + inv_mass_b +
-                          inv_i_a * rn2_a * rn2_a + 
-                          inv_i_b * rn2_b * rn2_b
-                      val k12 = inv_mass_a + inv_mass_b +
-                          inv_i_a * rn1_a * rn2_a +
-                          inv_i_b * rn1_b * rn2_b
-
-                      val () = dprint (fn () => "          ks: " ^ rtos k11 ^ 
-                                      " " ^ rtos k22 ^
-                                      " " ^ rtos k12 ^ "\n")
-
-                      (* Ensure a reasonable condition number. *)
-                      val MAX_CONDITION_NUMBER = 100.0
-                  in
-                      if k11 * k11 < 
-                         MAX_CONDITION_NUMBER * (k11 * k22 - k12 * k12)
-                      then (* K is safe to invert. *)
-                          let
-                              val k = mat22cols (vec2(k11, k12), vec2(k12, k22))
-                              val norm = mat22inverse k
-                          in
-                              dprint (fn () => "    inverted: " ^ mat22tos norm ^ "\n");
-                              (k, norm, points)
-                          end
-                      else
-                          (* The constraints are redundant; just use one.
-                             TODO_ERIN: use deepest? *)
-                          (mat22with (0.0, 0.0, 0.0, 0.0),
-                           mat22with (0.0, 0.0, 0.0, 0.0),
-                           Array.tabulate(1, fn _ => Array.sub(points, 0)))
-
-                  end
-                      (* PERF uninitialized *)
-                else (mat22with (0.0, 0.0, 0.0, 0.0), 
-                      mat22with (0.0, 0.0, 0.0, 0.0), 
-                      points)
-                
-          in
-              { body_a = body_a,
-                body_b = body_b,
-                manifold = manifold,
-                normal = #normal world_manifold,
-                point_count = Array.length points,
-                friction = friction,
-                local_normal = #local_normal manifold,
-                local_point = #local_point manifold,
-                radius = radius_a + radius_b,
-                typ = #typ manifold,
-                points = points,
-                k = k,
-                normal_mass = normal_mass }
-          end
-        val constraints = 
-            Array.tabulate (Vector.length contacts,
-                            fn x => onecontact (Vector.sub(contacts, x)))
-
-        fun warm_start_one ({ body_a, body_b, normal, points, ... } 
+        fun warm_start_one ({ body_a, body_b, normal, points, ... }
                             : ('b, 'f, 'j) constraint) : unit =
           let
             val tangent = cross2vs(normal, 1.0)
