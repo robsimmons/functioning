@@ -161,9 +161,6 @@ struct
 
           (* Integrate positions. *)
           fun integrate_onebody ii =
-            case D.B.get_typ b of
-               T.Static => ()
-             | _ =>
                let
                  val c = ref (Array.sub(positionsc, ii))
                  val a = ref (Array.sub(positionsa, ii))
@@ -289,7 +286,7 @@ struct
           val bodies = rev bodies
           val contacts = rev contacts
 
-          val solver = CS.contact_solver
+(*           val solver = CS.contact_solver *)
       in
           raise Fail "unimplemented"
       end
