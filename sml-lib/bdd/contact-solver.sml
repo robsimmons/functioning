@@ -164,6 +164,7 @@ fun initialize_velocity_constraints ({ step,
                 val i_b = D.B.get_inv_i body_b
                 val friction = D.C.get_friction contact
                 val restitution = D.C.get_restitution contact
+                val tangent_speed = D.C.get_tangent_speed contact
                 val local_center_a = #local_center_a pc
                 val local_center_b = #local_center_b pc
 
@@ -292,7 +293,7 @@ fun initialize_velocity_constraints ({ step,
                   inv_i_b = i_b,
                   friction = friction,
                   restitution = restitution,
-                  tangent_speed = 0.0,
+                  tangent_speed = tangent_speed,
                   contact_index = ii }
             end
 

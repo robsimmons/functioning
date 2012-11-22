@@ -323,11 +323,19 @@ struct
           val () = iterate 0
 
           (* Leap of faith to new safe state. *)
-          val sweep_a = D.B.get_sweep
+          val sweep_a = D.B.get_sweep (Vector.sub(bodies, toi_index_a))
+          val sweep_b = D.B.get_sweep (Vector.sub(bodies, toi_index_b))
+          val () = sweep_set_c0 (sweep_a, Array.sub(positionsc, toi_index_a))
+          val () = sweep_set_a0 (sweep_a, Array.sub(positionsa, toi_index_a))
+          val () = sweep_set_c0 (sweep_b, Array.sub(positionsc, toi_index_b))
+          val () = sweep_set_a0 (sweep_b, Array.sub(positionsa, toi_index_b))
 
           (* No warm starting is needed for TOI events because warm
              starting impulses were applied in the discrete solver. *)
           val solver = CS.initialize_velocity_constraints presolver
+
+          (* Solve velocity constraints. *)
+          val () = ()
 
       in
           raise Fail "unimplemented"
