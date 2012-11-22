@@ -281,12 +281,54 @@ struct
   fun solve_island_toi (bodies : ('b, 'f, 'j) D.body list,
                         contacts : ('b, 'f, 'j) D.contact list,
                         world : ('b, 'f, 'j) D.world,
-                        step : BDDDynamicsTypes.time_step) : unit =
+                        sub_step : BDDDynamicsTypes.time_step) : unit =
       let
-          val bodies = rev bodies
-          val contacts = rev contacts
+          (* *)
+          val toi_index_a = 0
+          val toi_index_b = 0
 
-(*           val solver = CS.contact_solver *)
+          val bodies = Vector.fromList (rev bodies)
+          val count = Vector.length bodies
+          val contacts = Vector.fromList (rev contacts)
+
+          (* Initialize the body state. *)
+          val positionsc =
+              Array.tabulate (count, fn ii => sweepc (D.B.get_sweep (Vector.sub(bodies, ii))))
+          val positionsa =
+              Array.tabulate (count, fn ii => sweepa (D.B.get_sweep (Vector.sub(bodies, ii))))
+          val velocitiesv =
+              Array.tabulate (count, fn ii => D.B.get_linear_velocity (Vector.sub(bodies, ii)))
+          val velocitiesw =
+              Array.tabulate (count, fn ii => D.B.get_angular_velocity (Vector.sub(bodies, ii)))
+
+          val presolver = CS.pre_contact_solver (sub_step,
+                                                 contacts,
+                                                 positionsc,
+                                                 positionsa,
+                                                 velocitiesv,
+                                                 velocitiesw)
+
+          (* Solve position constraints. *)
+          fun iterate n =
+            if n = #position_iterations sub_step
+            then ()
+            else
+            let val contacts_okay =
+                  CS.solve_toi_position_constraints (presolver, toi_index_a, toi_index_b)
+            in
+              if contacts_okay
+              then ()
+              else iterate (n + 1)
+            end
+          val () = iterate 0
+
+          (* Leap of faith to new safe state. *)
+          val sweep_a = D.B.get_sweep
+
+          (* No warm starting is needed for TOI events because warm
+             starting impulses were applied in the discrete solver. *)
+          val solver = CS.initialize_velocity_constraints presolver
+
       in
           raise Fail "unimplemented"
       end

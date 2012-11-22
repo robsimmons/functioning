@@ -15,7 +15,7 @@ sig
 
   type ('b, 'f, 'j) pre_contact_solver
 
-  (* contact_solver (contacts, impulse_ratio) *)
+  (* pre_contact_solver (step, contacts, positionsc, positionsa, velocitiesv, velocitiesw) *)
   val pre_contact_solver : BDDDynamicsTypes.time_step *
                            ('b, 'f, 'j) BDDDynamics.contact Vector.vector *
                            BDDMath.vec2 Array.array *
