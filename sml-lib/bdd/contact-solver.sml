@@ -21,6 +21,7 @@ struct
 
   type velocity_constraint =
       { points : velocity_constraint_point Array.array,
+        point_count : int,
         normal : BDDMath.vec2,
         normal_mass : BDDMath.mat22,
         k : BDDMath.mat22,
@@ -134,13 +135,13 @@ struct
     end
 
 
-fun initialize_velocity_constraints { step,
+fun initialize_velocity_constraints ({ step,
                                       positionsc,
                                       positionsa,
                                       velocitiesv,
                                       velocitiesw,
                                       position_constraints,
-                                      contacts } =
+                                      contacts } : ('b, 'f, 'j) pre_contact_solver) =
     let
         fun onecontact (ii, contact) =
             let
@@ -199,8 +200,8 @@ fun initialize_velocity_constraints { step,
                                   (#dt_ratio step) * (#tangent_impulse cp))
                             else (0.0, 0.0)
 
-                        val r_a = Array.sub(#points world_manifold, jj) - c_a
-                        val r_b = Array.sub(#points world_manifold, jj) - c_b
+                        val r_a = Array.sub(#points world_manifold, jj) :-: c_a
+                        val r_b = Array.sub(#points world_manifold, jj) :-: c_b
                         val rn_a = cross2vv(r_a, normal)
                         val rn_b = cross2vv(r_b, normal)
                         val k_normal = m_a + m_b + i_a * rn_a * rn_a + i_b * rn_b * rn_b
@@ -279,6 +280,7 @@ fun initialize_velocity_constraints { step,
 
             in
                 { points = points,
+                  point_count = point_count,
                   normal = normal,
                   normal_mass = normal_mass,
                   k = k,
@@ -309,13 +311,13 @@ fun initialize_velocity_constraints { step,
     end
 
 
-fun warm_start { step,
+fun warm_start ({ step,
                  positionsc,
                  positionsa,
                  velocitiesv,
                  velocitiesw,
                  velocity_constraints,
-                 ... } =
+                 ... } : ('b, 'f, 'j) contact_solver) =
     let
         fun warm_start_one ({ index_a, index_b, normal, points,
                               inv_mass_a = m_a, inv_i_a = i_a,
@@ -637,7 +639,7 @@ fun warm_start { step,
       Array.update(velocitiesv, index_a, !v_a);
       Array.update(velocitiesw, index_a, !w_a);
       Array.update(velocitiesv, index_b, !v_b);
-      Array.update(velocitiesw, index_b, !v_b);
+      Array.update(velocitiesw, index_b, !w_b);
 
       dprint (fn () => "      aft alv " ^ vtos (!v_a) ^
               " aav " ^ rtos (!w_a) ^
@@ -645,14 +647,16 @@ fun warm_start { step,
               " bav " ^ rtos (!w_b) ^ "\n")
   end
 
-  fun solve_velocity_constraints { velocity_constraints, velocitiesv, velocitiesw, ... } =
+  fun solve_velocity_constraints
+          ({ velocity_constraints, velocitiesv, velocitiesw, ... }
+           : ('b, 'f, 'j) contact_solver) =
       Array.appi (solve_one_velocity_constraint velocitiesv velocitiesw) velocity_constraints
 
   fun store_impulses (solver : ('b, 'f, 'j) contact_solver) : unit =
     Array.app
     (fn ({contact_index, point_count, points, ... } : velocity_constraint) =>
         let
-            val manifold = D.C.get_manifold (Array.sub(#contacts solver, contact_index))
+            val manifold = D.C.get_manifold (Vector.sub(#contacts solver, contact_index))
         in
             for 0 (point_count - 1)
                 (fn j =>
@@ -684,9 +688,6 @@ fun warm_start { step,
               val point_b : vec2 = xf_b @*: (Array.sub(#local_points pc, 0))
               val normal = vec2normalized (point_b :-: point_a)
           in
-              dprint (fn () => "    circles: pa " ^ vtos (point_a) ^
-                     " pb " ^ vtos (point_b) ^
-                     " sep " ^ rtos(dot2(point_b :-: point_a, normal) - #radius pc) ^ "\n");
               { normal = normal,
                 point = 0.5 *: (point_a :+: point_b),
                 separation = dot2(point_b :-: point_a, normal) - #radius_a pc - #radius_b pc }
@@ -695,7 +696,7 @@ fun warm_start { step,
           let
               val normal = transformr xf_a +*: (#local_normal pc)
               val plane_point = xf_a @*: (#local_point pc)
-              val clip_point = xf_b @*: (Array.sub(#local_points, index))
+              val clip_point = xf_b @*: (Array.sub(#local_points pc, index))
               val separation : real =
                   dot2(clip_point :-: plane_point, normal) - #radius_a pc - #radius_b pc
           in
@@ -710,9 +711,9 @@ fun warm_start { step,
           let
               val normal = transformr xf_b +*: (#local_normal pc)
               val plane_point = xf_b @*: (#local_point pc)
-              val clip_point = xf_a @*: (Array.sub(#local_points, index))
+              val clip_point = xf_a @*: (Array.sub(#local_points pc, index))
               val separation : real =
-                  dot2(clip_point :-: plane_point, normal) - #radius pc
+                  dot2(clip_point :-: plane_point, normal) - #radius_a pc - #radius_b pc
           in
               dprint (fn () => "    faceb: pp " ^ vtos plane_point ^
                      " cp " ^ vtos clip_point ^
@@ -733,7 +734,7 @@ fun warm_start { step,
                               velocitiesv,
                               velocitiesw,
                               positionsc,
-                              positionsa, ... }
+                              positionsa }
                             baumgarte
                             slop_factor
                             mbe_toi_indices
@@ -812,9 +813,9 @@ fun warm_start { step,
                  val p : vec2 = impulse *: normal
              in
                  c_a := (!c_a) :-: (m_a *: p);
-                 a_a := (!a_a) :-: (i_a * cross2vv (r_a, p));
+                 a_a := (!a_a) - (i_a * cross2vv (r_a, p));
                  c_b := (!c_b) :+: (m_b *: p);
-                 a_b := (!a_b) :+: (i_b * cross2vv (r_b, p))
+                 a_b := (!a_b) + (i_b * cross2vv (r_b, p))
              end);
             Array.update(positionsc, index_a, !c_a);
             Array.update(positionsa, index_a, !a_a);
@@ -822,28 +823,46 @@ fun warm_start { step,
             Array.update(positionsa, index_b, !a_b)
         end
     in
-      Array.app oneconstraint (#constraints solver);
+      Array.app oneconstraint position_constraints;
       dprint (fn () => "  minsep: " ^ rtos (!min_separation) ^ "\n");
       (* We can't expect minSeparation >= -b2_linearSlop because we don't
          push the separation above -b2_linearSlop. *)
       !min_separation >= ~ slop_factor * linear_slop
     end
 
-  fun solve_position_constraints solver =
-      solve_position_common solver contact_baumgarte 3.0 NONE
+  fun solve_position_constraints (solver : ('b, 'f, 'j) contact_solver) =
+      let
+          val arg = { position_constraints = #position_constraints solver,
+                      velocitiesv = #velocitiesv solver,
+                      velocitiesw = #velocitiesw solver,
+                      positionsc = #positionsc solver,
+                      positionsa = #positionsa solver }
+      in
+          solve_position_common arg contact_baumgarte 3.0 NONE
+      end
 
-  fun solve_toi_position_constraints (presolver, toi_index_a, toi_index_b) =
-      solve_position_common presolver toi_baumgarte 1.5 (SOME (toi_index_a, toi_index_b))
+  fun solve_toi_position_constraints (presolver : ('b, 'f, 'j) pre_contact_solver,
+                                      toi_index_a, toi_index_b) =
+      let
+          val arg = { position_constraints = #position_constraints presolver,
+                      velocitiesv = #velocitiesv presolver,
+                      velocitiesw = #velocitiesw presolver,
+                      positionsc = #positionsc presolver,
+                      positionsa = #positionsa presolver }
+      in
+          solve_position_common arg toi_baumgarte 1.5 (SOME (toi_index_a, toi_index_b))
+      end
+
 
   (* Apply the function to every contact, paired with all of its
      impulses. *)
   fun app_contacts ({ contacts,
-                      constraints,
+                      position_constraints,
                       ... } : ('b, 'f, 'j) contact_solver,
                     f : ('b, 'f, 'j) BDDDynamics.contact *
                         { normal_impulses : real array,
-                          tangent_impulses : real array } -> unit) : unit =
-      Vector.appi
+                          tangent_impulses : real array } -> unit) : unit = ()
+(*      Vector.appi
       (fn (i, c : ('b, 'f, 'j) BDDDynamics.contact) =>
        let
            val cc : ('b, 'f, 'j) constraint = Array.sub(constraints, i)
@@ -859,5 +878,6 @@ fun warm_start { step,
            f (c, { normal_impulses = normal_impulses,
                    tangent_impulses = tangent_impulses })
        end) contacts
+*)
 
 end

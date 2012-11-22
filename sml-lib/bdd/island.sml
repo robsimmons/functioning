@@ -79,7 +79,8 @@ struct
                            Int.toString (length contacts) ^ " contacts\n")
           (* Contacts are partitioned so that constraints with
              static bodies are solved last. *)
-(*           val contacts = partition_contacts_to_vector contacts *)
+          (* Is this necessary? *)
+           val contacts = partition_contacts_to_vector contacts
 
           val h = #dt step
 
@@ -96,7 +97,7 @@ struct
                   (* Store positions for continuous collision. *)
                   sweep_set_c0 (sweep, c);
                   sweep_set_a0 (sweep, a);
-                  (case D.B.get_typ body of
+                  (case D.B.get_typ b of
                        T.Dynamic =>
                        let
                        in
@@ -117,26 +118,27 @@ struct
                               Taylor expansion:
                               v2 = (1.0f - c * dt) * v1 *)
                            v := clampr (1.0 - h * D.B.get_linear_damping b, 0.0, 1.0) *: (!v);
-                           w := (!w) * (clampr (1.0 - h * D.B.get_angular_damping b, 0.0, 1.0)
+                           w := (!w) * (clampr (1.0 - h * D.B.get_angular_damping b, 0.0, 1.0))
                        end
                      | _ => ());
                   {c = c, a = a, v = !v, w = !w}
               end
 
-          val vectors = Vector.appi onebody bodies
+          val vectors = Vector.mapi onebody bodies
           val count = Vector.length vectors
           val positionsc = Array.tabulate (count, fn ii => #c (Vector.sub(vectors, ii)))
           val positionsa = Array.tabulate (count, fn ii => #a (Vector.sub(vectors, ii)))
           val velocitiesv = Array.tabulate (count, fn ii => #v (Vector.sub(vectors, ii)))
           val velocitiesw = Array.tabulate (count, fn ii => #w (Vector.sub(vectors, ii)))
 
-          val pre_solver = CS.pre_contact_solver (h, contacts,
+          val pre_solver = CS.pre_contact_solver (step, contacts,
                                                   positionsc, positionsa,
-                                                  velocitiesw, velocitiesw)
+                                                  velocitiesv, velocitiesw)
 
-          val solver = CS.init_velocity_constraints pre_solver
+          val solver = CS.initialize_velocity_constraints pre_solver
           val () = if #warm_starting step
                    then CS.warm_start solver
+                   else ()
 
           (* Initialize velocity constraints. *)
           val () = Vector.app (fn j =>

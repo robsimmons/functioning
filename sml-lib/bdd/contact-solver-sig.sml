@@ -25,8 +25,7 @@ sig
                            ('b, 'f, 'j) pre_contact_solver
 
 
-  val solve_toi_position_constraints : ('b, 'f, 'j) pre_contact_solver * int * int ->
-                                       ('b, 'f, 'j) pre_contact_solver
+  val solve_toi_position_constraints : ('b, 'f, 'j) pre_contact_solver * int * int -> bool
 
   val initialize_velocity_constraints : ('b, 'f, 'j) pre_contact_solver ->
                                         ('b, 'f, 'j) contact_solver
