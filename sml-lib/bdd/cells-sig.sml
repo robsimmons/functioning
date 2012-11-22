@@ -143,6 +143,9 @@ sig
     val get_manifold : ('b, 'f, 'j) contact -> (BDDTypes.manifold)
     val get_toi_count : ('b, 'f, 'j) contact -> (int)
     val get_toi : ('b, 'f, 'j) contact -> (real)
+    val get_friction : ('b, 'f, 'j) contact -> (real)
+    val get_restitution : ('b, 'f, 'j) contact -> (real)
+    val get_tangent_speed : ('b, 'f, 'j) contact -> (real)
 
     val set_flags : ('b, 'f, 'j) contact * (Word32.word) -> unit
     val set_prev : ('b, 'f, 'j) contact * (('b, 'f, 'j) contact option) -> unit
@@ -154,6 +157,9 @@ sig
     val set_manifold : ('b, 'f, 'j) contact * (BDDTypes.manifold) -> unit
     val set_toi_count : ('b, 'f, 'j) contact * (int) -> unit
     val set_toi : ('b, 'f, 'j) contact * (real) -> unit
+    val set_friction : ('b, 'f, 'j) contact * (real) -> unit
+    val set_restitution : ('b, 'f, 'j) contact * (real) -> unit
+    val set_tangent_speed : ('b, 'f, 'j) contact * (real) -> unit
 
     val new : {
       flags : Word32.word,
@@ -165,7 +171,10 @@ sig
       fixture_b : ('b, 'f, 'j) fixture,
       manifold : BDDTypes.manifold,
       toi_count : int,
-      toi : real } -> ('b, 'f, 'j) contact
+      toi : real,
+      friction : real,
+      restitution : real,
+      tangent_speed : real } -> ('b, 'f, 'j) contact
     val eq : ('b, 'f, 'j) contact * ('b, 'f, 'j) contact -> bool
   end
 

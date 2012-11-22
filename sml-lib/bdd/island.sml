@@ -131,7 +131,7 @@ struct
           val velocitiesw = Array.tabulate (count, fn ii => #w (Vector.sub(vectors, ii)))
 
           val pre_solver = CS.pre_contact_solver (h, contacts,
-                                                  positionsa, positionsc,
+                                                  positionsc, positionsa,
                                                   velocitiesw, velocitiesw)
 
           val solver = CS.init_velocity_constraints pre_solver

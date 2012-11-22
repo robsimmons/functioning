@@ -50,7 +50,10 @@ struct
     fixture_b : (('b, 'f, 'j) fixturecell) ref,
     manifold : (BDDTypes.manifold) ref,
     toi_count : (int) ref,
-    toi : (real) ref }
+    toi : (real) ref,
+    friction : (real) ref,
+    restitution : (real) ref,
+    tangent_speed : (real) ref }
 
   and ('b, 'f, 'j) contactedgecell = E of {
     other : (('b, 'f, 'j) bodycell option) ref,
@@ -217,6 +220,9 @@ struct
     fun get_manifold (C { manifold, ... }) = !manifold
     fun get_toi_count (C { toi_count, ... }) = !toi_count
     fun get_toi (C { toi, ... }) = !toi
+    fun get_friction (C { friction, ... }) = !friction
+    fun get_restitution (C { restitution, ... }) = !restitution
+    fun get_tangent_speed (C { tangent_speed, ... }) = !tangent_speed
     fun set_flags (C { flags, ... }, v) = flags := v
     fun set_prev (C { prev, ... }, v) = prev := v
     fun set_next (C { next, ... }, v) = next := v
@@ -227,12 +233,16 @@ struct
     fun set_manifold (C { manifold, ... }, v) = manifold := v
     fun set_toi_count (C { toi_count, ... }, v) = toi_count := v
     fun set_toi (C { toi, ... }, v) = toi := v
+    fun set_friction (C { friction, ... }, v) = friction := v
+    fun set_restitution (C { restitution, ... }, v) = restitution := v
+    fun set_tangent_speed (C { tangent_speed, ... }, v) = tangent_speed := v
     fun new ({ flags, prev, next, node_a, node_b, fixture_a, fixture_b,
-    manifold, toi_count, toi }) = 
+    manifold, toi_count, toi, friction, restitution, tangent_speed }) = 
       C { flags = ref flags, prev = ref prev, next = ref next, node_a = ref
       node_a, node_b = ref node_b, fixture_a = ref fixture_a, fixture_b = ref
       fixture_b, manifold = ref manifold, toi_count = ref toi_count, toi = ref
-      toi }
+      toi, friction = ref friction, restitution = ref restitution,
+      tangent_speed = ref tangent_speed }
     fun eq (C { flags, ... }, C { flags = r___, ... }) =
         flags = r___
   end

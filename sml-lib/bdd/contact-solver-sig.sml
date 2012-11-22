@@ -18,10 +18,10 @@ sig
   (* contact_solver (contacts, impulse_ratio) *)
   val pre_contact_solver : BDDDynamicsTypes.time_step *
                            ('b, 'f, 'j) BDDDynamics.contact Vector.vector *
-                           real Array.array *
                            BDDMath.vec2 Array.array *
                            real Array.array *
-                           BDDMath.vec2 Array.array ->
+                           BDDMath.vec2 Array.array *
+                           real Array.array ->
                            ('b, 'f, 'j) pre_contact_solver
 
 

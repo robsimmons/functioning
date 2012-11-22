@@ -484,12 +484,12 @@ struct
                 (* BDDCollision.collide_polygon_and_circle (pb, xfb, ca, xfa) *)
 
     fun new (fixture_a : ('b, 'f, 'j) fixture, fixture_b) =
-        let 
+        let
             (* Port note: Normalize so that circle always comes before polygon.
                Not clear that the code requires this (except see above), but
                this makes it easier to compare to Box2D's behavior directly,
                since it swaps as a result of its handmade vtable. *)
-            val (fixture_a, fixture_b) = 
+            val (fixture_a, fixture_b) =
                 case (F.get_shape fixture_a, F.get_shape fixture_b) of
                     (BDDShape.Circle _, BDDShape.Polygon _) => (fixture_b, fixture_a)
                   | _ => (fixture_a, fixture_b)
@@ -508,7 +508,12 @@ struct
                            node_a = E.new (),
                            node_b = E.new (),
                            toi_count = 0,
-                           toi = 0.0}
+                           toi = 0.0,
+                           friction = mix_friction (F.get_friction fixture_a,
+                                                    F.get_friction fixture_b),
+                           restitution = mix_restitution (F.get_restitution fixture_a,
+                                                          F.get_restitution fixture_b),
+                           tangent_speed = 0.0 }
         end
   end
 

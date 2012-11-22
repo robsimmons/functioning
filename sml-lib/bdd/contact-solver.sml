@@ -81,7 +81,7 @@ struct
        positionsc : BDDMath.vec2 Array.array,
        positionsa : real Array.array,
        velocitiesv : BDDMath.vec2 Array.array,
-       velocitiesw : real Array.array) : ('b, 'f, 'j) contact_solver =
+       velocitiesw : real Array.array) : ('b, 'f, 'j) pre_contact_solver =
     let
         (* Initialize position independent portions of the constraints. *)
         fun onecontact (ii : int, contact : ('b, 'f, 'j) BDDDynamics.contact) =
@@ -99,7 +99,7 @@ struct
             val point_count = #point_count manifold
             val () = assert (point_count > 0)
 
-            fun one_pc_local_point jj = #local_point (Array.sub (#points, manifold, jj))
+            fun one_pc_local_point jj = #local_point (Array.sub (#points manifold, jj))
 
             val pc = { index_a = D.B.get_island_index body_a,
                        index_b = D.B.get_island_index body_b,
@@ -154,27 +154,27 @@ fun initialize_velocity_constraints { step,
                 val manifold = D.C.get_manifold contact
                 val point_count = #point_count manifold
 
-                val index_a = D.B.get_island_index body_a,
-                val index_b = D.B.get_island_index body_b,
+                val index_a = D.B.get_island_index body_a
+                val index_b = D.B.get_island_index body_b
 
                 val m_a = D.B.get_inv_mass body_a
                 val m_b = D.B.get_inv_mass body_b
                 val i_a = D.B.get_inv_i body_a
                 val i_b = D.B.get_inv_i body_b
-                val friction = D.B.get_friction contact
-                val restitution = D.B.get_restitution contact
+                val friction = D.C.get_friction contact
+                val restitution = D.C.get_restitution contact
                 val local_center_a = #local_center_a pc
                 val local_center_b = #local_center_b pc
 
-                val c_a = Array.sub(index_a, positionsc)
-                val a_a = Array.sub(index_a, positionsa)
-                val v_a = Array.sub(index_a, velocitiesv)
-                val w_a = Array.sub(index_a, velocitiesw)
+                val c_a = Array.sub(positionsc, index_a)
+                val a_a = Array.sub(positionsa, index_a)
+                val v_a = Array.sub(velocitiesv, index_a)
+                val w_a = Array.sub(velocitiesw, index_a)
 
-                val c_b = Array.sub(index_b, positionsc)
-                val a_b = Array.sub(index_b, positionsa)
-                val v_b = Array.sub(index_b, velocitiesv)
-                val w_b = Array.sub(index_b, velocitiesw)
+                val c_b = Array.sub(positionsc, index_b)
+                val a_b = Array.sub(positionsa, index_b)
+                val v_b = Array.sub(velocitiesv, index_b)
+                val w_b = Array.sub(velocitiesw, index_b)
 
                 val () = assert (#point_count manifold > 0)
 
@@ -194,23 +194,23 @@ fun initialize_velocity_constraints { step,
                     let
                         val cp = Array.sub(#points manifold, jj)
                         val (normal_impulse, tangent_impulse) =
-                            if #warm_starting time_step
-                            then ((#dt_ratio time_step) * (#normal_impulse cp),
-                                  (#dt_ratio time_step) * (#tangent_impulse cp))
+                            if #warm_starting step
+                            then ((#dt_ratio step) * (#normal_impulse cp),
+                                  (#dt_ratio step) * (#tangent_impulse cp))
                             else (0.0, 0.0)
 
                         val r_a = Array.sub(#points world_manifold, jj) - c_a
                         val r_b = Array.sub(#points world_manifold, jj) - c_b
                         val rn_a = cross2vv(r_a, normal)
                         val rn_b = cross2vv(r_b, normal)
-                        val k_normal = m_a + m_b + i_a * rn_a * rn_A + i_b * rn_b * rn_b
+                        val k_normal = m_a + m_b + i_a * rn_a * rn_a + i_b * rn_b * rn_b
                         val normal_mass =
                             if k_normal > 0.0 then 1.0 / k_normal else 0.0
 
                         val tangent = cross2vs(normal, 1.0)
                         val rt_a = cross2vv(r_a, tangent)
                         val rt_b = cross2vv(r_b, tangent)
-                        val k_tangent = m_a + m_b + i_a * rt_a * rt_A + i_b * rt_b * rt_b
+                        val k_tangent = m_a + m_b + i_a * rt_a * rt_a + i_b * rt_b * rt_b
                         val tangent_mass =
                             if k_tangent > 0.0 then 1.0 / k_tangent else 0.0
 
@@ -298,7 +298,7 @@ fun initialize_velocity_constraints { step,
             Array.tabulate (Vector.length contacts,
                          fn ii => onecontact (ii, Vector.sub(contacts, ii)))
     in
-        { step = time_step,
+        { step = step,
           positionsc = positionsc,
           positionsa = positionsa,
           velocitiesv = velocitiesv,
@@ -332,9 +332,9 @@ fun warm_start { step,
                 val p : vec2 =
                     !normal_impulse *: normal :+: !tangent_impulse *: tangent
                 val v_a = Array.sub(velocitiesv, index_a)
-                val w_a = Array.sub(velocitesw, index_a)
+                val w_a = Array.sub(velocitiesw, index_a)
                 val v_b = Array.sub(velocitiesv, index_b)
-                val w_b = Array.sub(velocitesw, index_b)
+                val w_b = Array.sub(velocitiesw, index_b)
 
               in
                   Array.update (velocitiesw, index_a,
@@ -364,8 +364,8 @@ fun warm_start { step,
                   normal : vec2,
                   v_a, inv_mass_a, w_a, inv_i_a,
                   v_b, inv_mass_b, w_b, inv_i_b,
-                  cp1 : constraint_point,
-                  cp2 : constraint_point) : unit =
+                  cp1 : velocity_constraint_point,
+                  cp2 : velocity_constraint_point) : unit =
   let
     (* Only used in assertions. *)
     val ERROR_TOL : real = 1e~3
@@ -375,7 +375,7 @@ fun warm_start { step,
        Solve for x':
        x' = - inv(A) * b'
     *)
-    val x : vec2 = vec2neg (#normal_mass c +*: b)
+    val x : vec2 = vec2neg (#normal_mass vc +*: b)
 
     (* Port note: The body of each case is the same, and
        only depends on x. *)
@@ -429,7 +429,7 @@ fun warm_start { step,
         *)
         val x = vec2 (~ (#normal_mass cp1) * vec2x b, 0.0)
         val vn1 = 0.0
-        val vn2 = vec2y (mat22col1 (#k c)) * vec2x x + vec2y b
+        val vn2 = vec2y (mat22col1 (#k vc)) * vec2x x + vec2y b
     in
         if vec2x x >= 0.0 andalso vn2 >= 0.0
         then
@@ -457,7 +457,7 @@ fun warm_start { step,
                  0 = a21 * 0 + a22 * x2' + b2'
             *)
             val x : vec2 = vec2 (0.0, ~ (#normal_mass cp2) * vec2y b)
-            val vn1 = vec2x(mat22col2(#k c)) * vec2y x + vec2x b
+            val vn1 = vec2x(mat22col2(#k vc)) * vec2y x + vec2x b
             val vn2 = 0.0
         in
             if vec2y x >= 0.0 andalso vn1 >= 0.0
@@ -498,7 +498,7 @@ fun warm_start { step,
   end
 
   (* Port note: Body of loop in SolveVelocityConstraints. *)
-  fun solve_one_velocity_constraint velocitiesv velocitesw
+  fun solve_one_velocity_constraint velocitiesv velocitiesw
       (ii, vc as { index_a, index_b, normal, friction, point_count,
                    inv_mass_a, inv_mass_b, inv_i_a, inv_i_b, ... }) : unit =
   let
@@ -625,7 +625,7 @@ fun warm_start { step,
 
             val b : vec2 = vec2(vn1 - #velocity_bias cp1,
                                 vn2 - #velocity_bias cp2)
-            val b : vec2 = b :-: (#k c +*: a)
+            val b : vec2 = b :-: (#k vc +*: a)
           in
             solve_loop (b, vc, a, normal,
                         v_a, inv_mass_a, w_a, inv_i_a,
@@ -667,8 +667,8 @@ fun warm_start { step,
                                         !(#normal_impulse (Array.sub (points, j))),
                                         tangent_impulse =
                                         !(#tangent_impulse (Array.sub (points, j))) })
-                    end
-        end )) (#velocity_constraints solver)
+                    end)
+        end ) (#velocity_constraints solver)
 
   (* Port note: A class in Box2D; it's just a function that
      returns multiple values.
