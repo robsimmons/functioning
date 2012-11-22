@@ -24,7 +24,7 @@ struct
       end
 
   fun partition_contacts_to_vector l =
-      let 
+      let
           fun is_nonstatic c =
               let val ba = D.F.get_body (D.C.get_fixture_a c)
                   val bb = D.F.get_body (D.C.get_fixture_b c)
@@ -74,68 +74,70 @@ struct
           val bodies = Vector.fromList bodies
           val joints = Vector.fromList joints
 
-          val () = dprint (fn () => "Solve island with " ^ 
+          val () = dprint (fn () => "Solve island with " ^
                            Int.toString (Vector.length bodies) ^ " bodies and " ^
                            Int.toString (length contacts) ^ " contacts\n")
           (* Contacts are partitioned so that constraints with
              static bodies are solved last. *)
-          val contacts = partition_contacts_to_vector contacts
+(*           val contacts = partition_contacts_to_vector contacts *)
+
+          val h = #dt step
 
           (* Integrate velocities and apply damping. *)
-          val () = Vector.app 
-              (fn body =>
-               case D.B.get_typ body of
-                   T.Dynamic =>
-                     let
-                     in
-                         D.B.set_linear_velocity 
-                         (body,
-                          D.B.get_linear_velocity body :+:
-                          #dt step *: (gravity :+:
-                                       D.B.get_inv_mass body *:
-                                       D.B.get_force body));
-                         D.B.set_angular_velocity
-                         (body,
-                          D.B.get_angular_velocity body +
-                          #dt step *
-                          D.B.get_inv_i body * 
-                          D.B.get_torque body);
+          fun onebody (ii, b) =
+              let
+                  val () = D.B.set_island_index (b, ii)
+                  val sweep = D.B.get_sweep b
+                  val c = sweepc sweep
+                  val a = sweepa sweep
+                  val v = ref (D.B.get_linear_velocity b)
+                  val w = ref (D.B.get_angular_velocity b)
+              in
+                  (* Store positions for continuous collision. *)
+                  sweep_set_c0 (sweep, c);
+                  sweep_set_a0 (sweep, a);
+                  (case D.B.get_typ body of
+                       T.Dynamic =>
+                       let
+                       in
+                           (* Integrate velocities. *)
+                           v := (!v) :+: h *: (gravity (* TODO gravity_scale *) :+:
+                                               D.B.get_inv_mass b *:
+                                               D.B.get_force b);
+                           w := (!w) + h * (D.B.get_inv_i b * D.B.get_torque b);
 
-                         (* Apply damping.
-                            
-                            ODE: dv/dt + c * v = 0
-                            Solution: v(t) = v0 * exp(-c * t)
-                            Time step: v(t + dt) = 
-                              v0 * exp(-c * (t + dt)) = 
-                              v0 * exp(-c * t) * exp(-c * dt) = 
+                           (* Apply damping.
+                              ODE: dv/dt + c * v = 0
+                              Solution: v(t) = v0 * exp(-c * t)
+                              Time step: v(t + dt) =
+                              v0 * exp(-c * (t + dt)) =
+                              v0 * exp(-c * t) * exp(-c * dt) =
                               v * exp(-c * dt)
-                            v2 = exp(-c * dt) * v1
-                            Taylor expansion:
-                            v2 = (1.0f - c * dt) * v1 *)
-                         D.B.set_linear_velocity
-                         (body,
-                          clampr (1.0 - 
-                                  #dt step * D.B.get_linear_damping body,
-                                  0.0, 1.0) *:
-                          D.B.get_linear_velocity body);
+                              v2 = exp(-c * dt) * v1
+                              Taylor expansion:
+                              v2 = (1.0f - c * dt) * v1 *)
+                           v := clampr (1.0 - h * D.B.get_linear_damping b, 0.0, 1.0) *: (!v);
+                           w := (!w) * (clampr (1.0 - h * D.B.get_angular_damping b, 0.0, 1.0)
+                       end
+                     | _ => ());
+                  {c = c, a = a, v = !v, w = !w}
+              end
 
-                         D.B.set_angular_velocity
-                         (body,
-                          D.B.get_angular_velocity body *
-                          clampr (1.0 - 
-                                  #dt step * D.B.get_angular_damping body,
-                                  0.0, 1.0));
+          val vectors = Vector.appi onebody bodies
+          val count = Vector.length vectors
+          val positionsc = Array.tabulate (count, fn ii => #c (Vector.sub(vectors, ii)))
+          val positionsa = Array.tabulate (count, fn ii => #a (Vector.sub(vectors, ii)))
+          val velocitiesv = Array.tabulate (count, fn ii => #v (Vector.sub(vectors, ii)))
+          val velocitiesw = Array.tabulate (count, fn ii => #w (Vector.sub(vectors, ii)))
 
-                         dprint (fn () => "  vel: " ^ vtos (D.B.get_linear_velocity body) ^ 
-                                 " " ^ rtos (D.B.get_angular_velocity body) ^ "\n" ^
-                                 "  xf: " ^ xftos (D.B.get_xf body) ^ "\n" ^
-                                 "  sweep: " ^ sweeptos (D.B.get_sweep body) ^ "\n")
-                     end
-                 | _ => ()) bodies
+          val pre_solver = CS.pre_contact_solver (h, contacts,
+                                                  positionsa, positionsc,
+                                                  velocitiesw, velocitiesw)
 
-          val solver = CS.contact_solver (contacts, #dt_ratio step)
-          (* Port note: this also does the warm start. *)
-          
+          val solver = CS.init_velocity_constraints pre_solver
+          val () = if #warm_starting step
+                   then CS.warm_start solver
+
           (* Initialize velocity constraints. *)
           val () = Vector.app (fn j =>
                                D.J.init_velocity_constraints (j, step))
@@ -145,7 +147,7 @@ struct
           val () = for 0 (#velocity_iterations step - 1)
               (fn i =>
                let in
-                   Vector.app (fn j => 
+                   Vector.app (fn j =>
                                D.J.solve_velocity_constraints (j, step))
                               joints;
                    dprint (fn () => "* Vel iter " ^ Int.toString i ^ "\n");
@@ -156,79 +158,52 @@ struct
           val () = CS.store_impulses solver
 
           (* Integrate positions. *)
-          fun integrate_onebody b =
+          fun integrate_onebody ii =
             case D.B.get_typ b of
                T.Static => ()
              | _ =>
-               let 
+               let
+                 val c = ref (Array.sub(positionsc, ii))
+                 val a = ref (Array.sub(positionsa, ii))
+                 val v = ref (Array.sub(velocitiesv, ii))
+                 val w = ref (Array.sub(velocitiesw, ii))
+
                  (* Check for large velocities. *)
-                 val translation : vec2 = 
-                     #dt step *: D.B.get_linear_velocity b
-                 val () = if dot2 (translation, translation) > 
+                 val translation : vec2 = h *: (!v)
+                 val () = if dot2 (translation, translation) >
                              max_translation_squared
                           then
-                              D.B.set_linear_velocity 
-                              (b,
-                               (max_translation / vec2length translation) *:
-                               D.B.get_linear_velocity b)
+                              v := (max_translation / vec2length translation) *: (!v)
                           else ()
-                 val rotation : real = 
-                     #dt step * D.B.get_angular_velocity b
+                 val rotation = h * (!w)
                  val () = if rotation * rotation > max_rotation_squared
                           then
-                              D.B.set_angular_velocity
-                              (b,
-                               D.B.get_angular_velocity b *
-                               (max_rotation / Real.abs rotation))
+                              w := (!w) * (max_rotation / Real.abs rotation)
                           else ()
 
-                 val () =
-                     dprint (fn () => "  new vel: " ^ vtos (D.B.get_linear_velocity b) ^ 
-                             " " ^ rtos (D.B.get_angular_velocity b) ^ "\n")
-
-
-                 val sweep = D.B.get_sweep b
-
+                 (* Integrate *)
+                 val () = c := !c :+: h *: !v
+                 val () = a := !a + h * !w
                in
-                 dprint (fn () => "  dt: " ^ rtos (#dt step) ^ "\n");
-                 dprint (fn () => "  orig sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
-
-                 (* Store positions for continuous collision. *)
-                 sweep_set_c0 (sweep, sweepc sweep);
-                 sweep_set_a0 (sweep, sweepa sweep);
-
-                 (* Integrate. *)
-                 sweep_set_c (sweep, sweepc sweep :+:
-                              #dt step *: D.B.get_linear_velocity b);
-                 sweep_set_a (sweep, sweepa sweep +
-                              #dt step * D.B.get_angular_velocity b);
-
-                 dprint (fn () => "  uync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
-                 dprint (fn () => "  uync xf: " ^ xftos (D.B.get_xf b) ^ "\n");
-
-                 (* Compute new transform. *)
-                 D.B.synchronize_transform b;
-
-                 dprint (fn () => "  sync sw: " ^ sweeptos (D.B.get_sweep b) ^ "\n");
-
-                 dprint (fn () => "  sync xf: " ^ xftos (D.B.get_xf b) ^ "\n")
-
-                 (* Note: shapes are synchronized later. *)
+                   Array.update (positionsc, ii, !c);
+                   Array.update (positionsa, ii, !a);
+                   Array.update (velocitiesv, ii, !v);
+                   Array.update (velocitiesw, ii, !w)
                end
-          val () = Vector.app integrate_onebody bodies
+          val () = for 0 (count - 1) integrate_onebody
 
           (* Iterate over constraints. *)
-          fun iterate n = 
+          fun iterate n =
             if n = #position_iterations step
             then ()
             else
-            let val contacts_okay = 
-                  CS.solve_position_constraints (solver, contact_baumgarte)
+            let val contacts_okay =
+                  CS.solve_position_constraints solver
                 val joints_okay = ref true
-                val () = Vector.app 
+                val () = Vector.app
                     (fn j =>
                      let val joint_okay =
-                           D.J.solve_position_constraints 
+                           D.J.solve_position_constraints
                            (j, contact_baumgarte)
                      in
                          joints_okay := (!joints_okay andalso joint_okay)
@@ -240,7 +215,21 @@ struct
               else iterate (n + 1)
             end
           val () = iterate 0
-        
+
+
+          (* Copy state buffers back to the bodies *)
+          fun copy_back_one ii =
+              let
+                  val body = Vector.sub (bodies, ii)
+                  val sweep = D.B.get_sweep body
+              in
+                  sweep_set_a (sweep, Array.sub(positionsa, ii));
+                  sweep_set_c (sweep, Array.sub(positionsc, ii));
+                  D.B.set_linear_velocity (body, Array.sub(velocitiesv, ii));
+                  D.B.set_angular_velocity (body, Array.sub(velocitiesw, ii));
+                  D.B.synchronize_transform body
+              end
+
           val () = report (world, solver)
 
       in
@@ -249,7 +238,7 @@ struct
           let val min_sleep_time = ref BDDSettings.max_float
               val lin_tol_sqr = BDDSettings.linear_sleep_tolerance *
                   BDDSettings.linear_sleep_tolerance
-              val ang_tol_sqr = BDDSettings.angular_sleep_tolerance * 
+              val ang_tol_sqr = BDDSettings.angular_sleep_tolerance *
                   BDDSettings.angular_sleep_tolerance
 
               fun sleep_one_body (b : ('b, 'f, 'j) D.body) : unit =
@@ -263,12 +252,12 @@ struct
                           D.B.get_angular_velocity b > ang_tol_sqr) orelse
                          dot2(D.B.get_linear_velocity b,
                               D.B.get_linear_velocity b) > lin_tol_sqr
-                      then 
+                      then
                           let in
                               D.B.set_sleep_time (b, 0.0);
                               min_sleep_time := 0.0
                           end
-                      else 
+                      else
                           let in
                               D.B.set_sleep_time (b,
                                                   D.B.get_sleep_time b +

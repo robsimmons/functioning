@@ -45,9 +45,9 @@ sig
      all of the contact constraints of the solver. This
      function is used to implement the loop without
      exposing the internal types. *)
-  val app_contacts : 
+  val app_contacts :
       ('b, 'f, 'j) contact_solver *
-      (('b, 'f, 'j) BDDDynamics.contact * 
+      (('b, 'f, 'j) BDDDynamics.contact *
        { normal_impulses : real array,
          tangent_impulses : real array } -> unit) -> unit
 
