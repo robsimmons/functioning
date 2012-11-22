@@ -729,24 +729,41 @@ fun warm_start { step,
      if you change something here, it probably should be changed there
      too. The duplication comes from Box2D. Obviously it would be
      better to factor out this common routine. *)
-  fun solve_position_constraints { position_constraints,
-                                   velocitiesv,
-                                   velocitiesw,
-                                   positionsc,
-                                   positionsa, ... }
-                                  : bool =
+  fun solve_position_common { position_constraints,
+                              velocitiesv,
+                              velocitiesw,
+                              positionsc,
+                              positionsa, ... }
+                            baumgarte
+                            slop_factor
+                            mbe_toi_indices
+                            : bool =
     let
       val min_separation = ref 0.0
       fun oneconstraint (pc : position_constraint) =
         let
             val index_a = #index_a pc
             val index_b = #index_b pc
-            val m_a = #inv_mass_a pc
-            val i_a = #inv_i_a pc
             val local_center_a = #local_center_a pc
-            val m_b = #inv_mass_b pc
-            val i_b = #inv_i_b pc
             val local_center_b = #local_center_b pc
+
+            val (m_a, i_a) =
+                case mbe_toi_indices of
+                    NONE => (#inv_mass_a pc, #inv_i_a pc)
+                  | SOME (toi_index_a, toi_index_b) =>
+                    if index_a = toi_index_a orelse
+                       index_a = toi_index_b
+                    then (#inv_mass_a pc, #inv_i_a pc)
+                    else (0.0, 0.0)
+
+            val (m_b, i_b) =
+                case mbe_toi_indices of
+                    NONE => (#inv_mass_b pc, #inv_i_b pc)
+                  | SOME (toi_index_a, toi_index_b) =>
+                    if index_b = toi_index_a orelse
+                       index_b = toi_index_b
+                    then (#inv_mass_b pc, #inv_i_b pc)
+                    else (0.0, 0.0)
 
             val c_a = ref (Array.sub(positionsc, index_a))
             val a_a = ref (Array.sub(positionsa, index_a))
@@ -781,7 +798,7 @@ fun warm_start { step,
 
                  (* Prevent large corrections and allow slop. *)
                  val capital_c : real =
-                     clampr (contact_baumgarte * (separation + linear_slop),
+                     clampr (baumgarte * (separation + linear_slop),
                              ~max_linear_correction,
                              0.0)
 
@@ -809,9 +826,14 @@ fun warm_start { step,
       dprint (fn () => "  minsep: " ^ rtos (!min_separation) ^ "\n");
       (* We can't expect minSeparation >= -b2_linearSlop because we don't
          push the separation above -b2_linearSlop. *)
-      !min_separation >= ~1.5 * linear_slop
+      !min_separation >= ~ slop_factor * linear_slop
     end
 
+  fun solve_position_constraints solver =
+      solve_position_common solver contact_baumgarte 3.0 NONE
+
+  fun solve_toi_position_constraints (presolver, toi_index_a, toi_index_b) =
+      solve_position_common presolver toi_baumgarte 1.5 (SOME (toi_index_a, toi_index_b))
 
   (* Apply the function to every contact, paired with all of its
      impulses. *)

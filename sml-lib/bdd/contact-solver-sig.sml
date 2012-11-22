@@ -39,7 +39,6 @@ sig
   val solve_position_constraints : ('b, 'f, 'j) contact_solver -> bool
 
 
-
   (* Apply the function to every contact, paired with all of its
      impulses. *)
   (* Port note: In Box2D, the Report function loops over

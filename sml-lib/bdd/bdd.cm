@@ -63,9 +63,6 @@ group is
   revolute-joint.sml
   prismatic-joint.sml
 
-  toi-solver-sig.sml
-  toi-solver.sml
-
   contact-solver-sig.sml
   contact-solver.sml
 
