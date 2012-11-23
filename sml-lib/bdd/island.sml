@@ -310,7 +310,7 @@ struct
       let
           (* *)
           val toi_index_a = 0
-          val toi_index_b = 0
+          val toi_index_b = 1
 
           val bodies = Vector.fromList (rev bodies)
           val count = Vector.length bodies
@@ -371,7 +371,7 @@ struct
           (* Integrate positions. *)
           val () = integrate_positions (positionsc, positionsa,
                                         velocitiesv, velocitiesw,
-                                        #dt sub_step, NONE)
+                                        #dt sub_step, SOME bodies)
 
       in
           report (world, solver)
