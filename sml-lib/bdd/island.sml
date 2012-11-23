@@ -49,6 +49,57 @@ struct
          hasn't set a listener, like Box2D does. *)
       CS.app_contacts (solver, D.W.get_post_solve world)
 
+
+  fun integrate_positions (positionsc, positionsa, velocitiesv, velocitiesw, h, mbe_bodies) =
+      let
+          fun integrate_onebody ii =
+               let
+                 val c = ref (Array.sub(positionsc, ii))
+                 val a = ref (Array.sub(positionsa, ii))
+                 val v = ref (Array.sub(velocitiesv, ii))
+                 val w = ref (Array.sub(velocitiesw, ii))
+
+                 (* Check for large velocities. *)
+                 val translation : vec2 = h *: (!v)
+                 val () = if dot2 (translation, translation) >
+                             max_translation_squared
+                          then
+                              v := (max_translation / vec2length translation) *: (!v)
+                          else ()
+                 val rotation = h * (!w)
+                 val () = if rotation * rotation > max_rotation_squared
+                          then
+                              w := (!w) * (max_rotation / Real.abs rotation)
+                          else ()
+
+                 (* Integrate *)
+                 val () = c := !c :+: h *: !v
+                 val () = a := !a + h * !w
+
+                 val () = Array.update (positionsc, ii, !c)
+                 val () = Array.update (positionsa, ii, !a)
+                 val () = Array.update (velocitiesv, ii, !v)
+                 val () = Array.update (velocitiesw, ii, !w)
+               in
+                   case mbe_bodies of
+                       NONE => ()
+                     | SOME bodies =>
+                       (* Sync bodies *)
+                       let
+                           val body = Vector.sub (bodies, ii)
+                           val sweep = D.B.get_sweep body
+                       in
+                           sweep_set_c (sweep, !c);
+                           sweep_set_a (sweep, !a);
+                           D.B.set_linear_velocity (body, !v);
+                           D.B.set_angular_velocity (body, !w)
+                       end
+               end
+          val () = for 0 (Array.length positionsc - 1) integrate_onebody
+      in
+          ()
+      end
+
   (* Port note: Passing world instead of contact listener, as
      the listener is flattened into that object. *)
   (* Port note: The list arguments arrive reversed relative
@@ -160,36 +211,9 @@ struct
           val () = CS.store_impulses solver
 
           (* Integrate positions. *)
-          fun integrate_onebody ii =
-               let
-                 val c = ref (Array.sub(positionsc, ii))
-                 val a = ref (Array.sub(positionsa, ii))
-                 val v = ref (Array.sub(velocitiesv, ii))
-                 val w = ref (Array.sub(velocitiesw, ii))
-
-                 (* Check for large velocities. *)
-                 val translation : vec2 = h *: (!v)
-                 val () = if dot2 (translation, translation) >
-                             max_translation_squared
-                          then
-                              v := (max_translation / vec2length translation) *: (!v)
-                          else ()
-                 val rotation = h * (!w)
-                 val () = if rotation * rotation > max_rotation_squared
-                          then
-                              w := (!w) * (max_rotation / Real.abs rotation)
-                          else ()
-
-                 (* Integrate *)
-                 val () = c := !c :+: h *: !v
-                 val () = a := !a + h * !w
-               in
-                   Array.update (positionsc, ii, !c);
-                   Array.update (positionsa, ii, !a);
-                   Array.update (velocitiesv, ii, !v);
-                   Array.update (velocitiesw, ii, !w)
-               end
-          val () = for 0 (count - 1) integrate_onebody
+          val () = integrate_positions (positionsc, positionsa,
+                                        velocitiesv, velocitiesw,
+                                        h, NONE)
 
           (* Iterate over constraints. *)
           fun iterate n =
@@ -335,10 +359,19 @@ struct
           val solver = CS.initialize_velocity_constraints presolver
 
           (* Solve velocity constraints. *)
-          val () = ()
+          val () = for 0 (#velocity_iterations sub_step - 1)
+                   (fn _ => CS.solve_velocity_constraints solver)
+
+          (* Don't store the TOI contact forces for warm starting
+             because they can be quite large. *)
+
+          (* Integrate positions. *)
+          val () = integrate_positions (positionsc, positionsa,
+                                        velocitiesv, velocitiesw,
+                                        #dt sub_step, NONE)
 
       in
-          raise Fail "unimplemented"
+          report (world, solver)
       end
 
 
