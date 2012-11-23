@@ -1014,11 +1014,12 @@ struct
               (get_body_list world)
           (* XXX end just debug *)
 
-
+(*
           (* Handle TOI events. *)
           val () = if get_continuous_physics world andalso dt > 0.0
                    then solve_toi (world, step)
                    else ()
+*)
 
           (* XXX just debug *)
           val () = oapp D.B.get_next 

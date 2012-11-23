@@ -252,6 +252,7 @@ struct
                   D.B.set_angular_velocity (body, Array.sub(velocitiesw, ii));
                   D.B.synchronize_transform body
               end
+          val () = for 0 (count - 1) copy_back_one
 
           val () = report (world, solver)
 
