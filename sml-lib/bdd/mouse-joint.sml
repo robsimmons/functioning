@@ -20,6 +20,7 @@ fun new { target : vec2,
     let
         val body_b = D.J.get_body_b joint
 
+        val m_index_b = ref 0
         val m_target = ref target
         val m_max_force = ref max_force
         val m_frequency_hz = ref frequency_hz
@@ -33,14 +34,14 @@ fun new { target : vec2,
         val m_C = ref (vec2 (0.0, 0.0))
         val m_mass = ref (mat22with (0.0, 0.0, 0.0, 0.0))
 
-        fun init_velocity_constraints { dt,
-                                        inv_dt,
-                                        dt_ratio,
-                                        velocity_iterations,
-                                        position_iterations,
-                                        warm_starting
-                                      } =
+        fun init_velocity_constraints { step,
+                                        positionsc,
+                                        positionsa,
+                                        velocitiesv,
+                                        velocitiesw } =
             let
+                val () = m_index_b := D.B.get_island_index body_b
+(*
                 val b = body_b
                 val mass = D.B.get_mass b
                 (* Frequency *)
@@ -105,19 +106,17 @@ fun new { target : vec2,
                 val () = D.B.set_angular_velocity
                              (b,
                               D.B.get_angular_velocity b +
-                              inv_i * (cross2vv (r, !m_impulse)))
+                              inv_i * (cross2vv (r, !m_impulse))) *)
             in ()
             end
 
 
-        fun solve_velocity_constraints { dt,
-                                         inv_dt,
-                                         dt_ratio,
-                                         velocity_iterations,
-                                         position_iterations,
-                                         warm_starting
-                                       } =
-            let
+        fun solve_velocity_constraints { step,
+                                         positionsc,
+                                         positionsa,
+                                         velocitiesv,
+                                         velocitiesw } =
+            let (*
                 val b = body_b
                 val r = (transformr (D.B.get_xf b))
                             +*:
@@ -143,11 +142,11 @@ fun new { target : vec2,
                          (b, D.B.get_linear_velocity b :+: (D.B.get_inv_mass b) *: impulse)
                 val () = D.B.set_angular_velocity
                          (b, D.B.get_angular_velocity b + (D.B.get_inv_i b) *
-                                                          (cross2vv (r, impulse)))
+                                                          (cross2vv (r, impulse))) *)
             in ()
             end
 
-        fun solve_position_constraints ts = true
+        fun solve_position_constraints sd = true
 
         fun get_anchor_a () = !m_target
 

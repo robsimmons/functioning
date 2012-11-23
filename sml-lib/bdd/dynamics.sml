@@ -192,18 +192,18 @@ struct
 
     (* Used in island solver *)
     fun init_velocity_constraints (j : ('b, 'f, 'j) joint,
-                                   step : BDDDynamicsTypes.time_step) : unit =
-        (#init_velocity_constraints (!! "init vel constraints" (get_dispatch j))) step
+                                   sd : BDDDynamicsTypes.solver_data) : unit =
+        (#init_velocity_constraints (!! "init vel constraints" (get_dispatch j))) sd
 
     (* Used in island solver *)
     fun solve_velocity_constraints (j : ('b, 'f, 'j) joint,
-                                    step : BDDDynamicsTypes.time_step) : unit =
-        (#solve_velocity_constraints (!! "solve vel constraints" (get_dispatch j))) step
+                                    sd : BDDDynamicsTypes.solver_data) : unit =
+        (#solve_velocity_constraints (!! "solve vel constraints" (get_dispatch j))) sd
 
     (* Used in island solver *)
     fun solve_position_constraints (j : ('b, 'f, 'j) joint,
-                                    baumgarte : real) : bool =
-        (#solve_position_constraints (!! "solve pos constraints" (get_dispatch j))) baumgarte
+                                    sd : BDDDynamicsTypes.solver_data) : bool =
+        (#solve_position_constraints (!! "solve pos constraints" (get_dispatch j))) sd
 
   end
 

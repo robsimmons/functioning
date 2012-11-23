@@ -77,14 +77,12 @@ fun new {local_anchor_a : BDDMath.vec2,
                                                  z)
 
 
-        fun init_velocity_constraints { dt,
-                                        inv_dt,
-                                        dt_ratio,
-                                        velocity_iterations,
-                                        position_iterations,
-                                        warm_starting
-                                      } =
-            let
+        fun init_velocity_constraints { step,
+                                        positionsc,
+                                        positionsa,
+                                        velocitiesv,
+                                        velocitiesw } =
+            let (*
                 val () = m_localCenterA := sweeplocalcenter (D.B.get_sweep bA)
                 val () = m_localCenterB := sweeplocalcenter (D.B.get_sweep bB)
                 val () = m_invMassA := D.B.get_inv_mass bA
@@ -199,22 +197,20 @@ fun new {local_anchor_a : BDDMath.vec2,
                              end
                          else (set_impulse_z 0.0;
                                m_motorImpulse := 0.0)
-
-            in D.B.set_linear_velocity (bA, !vA);
+                 *)
+            in () (* D.B.set_linear_velocity (bA, !vA);
                D.B.set_angular_velocity (bA, !wA);
                D.B.set_linear_velocity (bB, !vB);
-               D.B.set_angular_velocity (bB, !wB)
+               D.B.set_angular_velocity (bB, !wB) *)
             end
 
 
-        fun solve_velocity_constraints { dt,
-                                         inv_dt,
-                                         dt_ratio,
-                                         velocity_iterations,
-                                         position_iterations,
-                                         warm_starting
-                                       } =
-            let
+        fun solve_velocity_constraints { step,
+                                         positionsc,
+                                         positionsa,
+                                         velocitiesv,
+                                         velocitiesw } =
+            let (*
                 val vA = ref (D.B.get_linear_velocity bA)
                 val wA = ref (D.B.get_angular_velocity bA)
                 val vB = ref (D.B.get_linear_velocity bB)
@@ -303,15 +299,19 @@ fun new {local_anchor_a : BDDMath.vec2,
                            wA := !wA - iA * LA;
                            vB := !vB :+: mB *: P;
                            wB := !wB + iB * LB
-                        end
-            in D.B.set_linear_velocity (bA, !vA);
+                        end *)
+            in () (* D.B.set_linear_velocity (bA, !vA);
                D.B.set_angular_velocity (bA, !wA);
                D.B.set_linear_velocity (bB, !vB);
-               D.B.set_angular_velocity (bB, !wB)
+               D.B.set_angular_velocity (bB, !wB) *)
             end
 
-        fun solve_position_constraints baumgarte =
-            let
+        fun solve_position_constraints { step,
+                                         positionsc,
+                                         positionsa,
+                                         velocitiesv,
+                                         velocitiesw } =
+            let (*
                 val cA = ref (sweepc (D.B.get_sweep bA))
                 val aA = ref (sweepa (D.B.get_sweep bA))
                 val cB = ref (sweepc (D.B.get_sweep bB))
@@ -421,8 +421,8 @@ fun new {local_anchor_a : BDDMath.vec2,
                 val LA = ix * s1 + iy + iz * a1
                 val LB = ix * s2 + iy + iz * a2
                 val sweepA = D.B.get_sweep bA
-                val sweepB = D.B.get_sweep bB
-            in
+                val sweepB = D.B.get_sweep bB *)
+            in true (*
                 cA := !cA :-: mA *: P;
                 aA := !aA - iA * LA;
                 cB := !cB :+: mB *: P;
@@ -432,7 +432,7 @@ fun new {local_anchor_a : BDDMath.vec2,
                 sweep_set_c (sweepB, !cB);
                 sweep_set_a (sweepB, !aB);
                 linearError <= BDDSettings.linear_slop andalso
-                angularError <= BDDSettings.angular_slop
+                angularError <= BDDSettings.angular_slop *)
             end
 
         fun get_anchor_a () = D.B.get_world_point (bA, m_localAnchorA)

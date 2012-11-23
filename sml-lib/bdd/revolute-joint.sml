@@ -59,14 +59,13 @@ fun new {local_anchor_a : vec2,
         val m_rA = ref (vec2 (0.0, 0.0))
         val m_rB = ref (vec2 (0.0, 0.0))
 
-        fun init_velocity_constraints { dt,
-                                        inv_dt,
-                                        dt_ratio,
-                                        velocity_iterations,
-                                        position_iterations,
-                                        warm_starting
-                                      } =
+        fun init_velocity_constraints { step,
+                                        positionsc,
+                                        positionsa,
+                                        velocitiesv,
+                                        velocitiesw } =
             let
+(* 
                 val () = if !m_enable_motor orelse !m_enable_limit
 		(* You cannot create a rotation limit between bodies that
 		   both have fixed rotation. *)
@@ -173,19 +172,18 @@ fun new {local_anchor_a : vec2,
                               in () end
                          else (m_impulse := vec3 (0.0, 0.0, 0.0);
                                m_motor_impulse := 0.0)
-
+*)
             in ()
             end
 
 
-        fun solve_velocity_constraints { dt,
-                                         inv_dt,
-                                         dt_ratio,
-                                         velocity_iterations,
-                                         position_iterations,
-                                         warm_starting
-                                       } =
+        fun solve_velocity_constraints { step,
+                                         positionsc,
+                                         positionsa,
+                                         velocitiesv,
+                                         velocitiesw } =
             let
+(*
                 val vA = ref (D.B.get_linear_velocity bA)
                 val wA = ref (D.B.get_angular_velocity bA)
                 val vB = ref (D.B.get_linear_velocity bB)
@@ -281,15 +279,19 @@ fun new {local_anchor_a : vec2,
                                  val () = wB := !wB + iB *
                                                       (cross2vv (!m_rB, impulse))
                              in () end
-
-            in D.B.set_linear_velocity (bA, !vA);
+*)
+            in () (* D.B.set_linear_velocity (bA, !vA);
                D.B.set_angular_velocity (bA, !wA);
                D.B.set_linear_velocity (bB, !vB);
-               D.B.set_angular_velocity (bB, !wB)
+               D.B.set_angular_velocity (bB, !wB) *)
             end
 
-        fun solve_position_constraints baumgarte =
-            let
+        fun solve_position_constraints { step,
+                                         positionsc,
+                                         positionsa,
+                                         velocitiesv,
+                                         velocitiesw } =
+            let (*
                 val aA = ref (sweepa (D.B.get_sweep bA))
                 val cA = ref (sweepc (D.B.get_sweep bA))
                 val aB = ref (sweepa (D.B.get_sweep bB))
@@ -372,9 +374,9 @@ fun new {local_anchor_a : vec2,
                 val () = sweep_set_a (sweepB, !aB)
                 val () = sweep_set_c (sweepA, !cA)
                 val () = sweep_set_c (sweepB, !cB)
-
-            in positionError <= BDDSettings.linear_slop andalso
-               !angularError <= BDDSettings.angular_slop
+                 *)
+            in true (*positionError <= BDDSettings.linear_slop andalso
+               !angularError <= BDDSettings.angular_slop *)
             end
 
         fun get_anchor_a () = D.B.get_world_point (bA, m_local_anchor_a)

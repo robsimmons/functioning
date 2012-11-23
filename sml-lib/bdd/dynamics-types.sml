@@ -85,9 +85,16 @@ struct
     | WeldDef
     | FrictionDef
 
-  type joint_dispatch = { init_velocity_constraints : time_step -> unit,
-                          solve_velocity_constraints : time_step -> unit,
-                          solve_position_constraints : real -> bool,
+  type solver_data = { step : time_step,
+                       positionsc : BDDMath.vec2 Array.array,
+                       positionsa : real Array.array,
+                       velocitiesv : BDDMath.vec2 Array.array,
+                       velocitiesw : real Array.array
+                     }
+
+  type joint_dispatch = { init_velocity_constraints : solver_data -> unit,
+                          solve_velocity_constraints : solver_data -> unit,
+                          solve_position_constraints : solver_data -> bool,
                           get_anchor_a : unit -> BDDMath.vec2,
                           get_anchor_b : unit -> BDDMath.vec2
                         }

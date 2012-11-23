@@ -182,6 +182,13 @@ struct
           val velocitiesv = Array.tabulate (count, fn ii => #v (Vector.sub(vectors, ii)))
           val velocitiesw = Array.tabulate (count, fn ii => #w (Vector.sub(vectors, ii)))
 
+          (* Solver data *)
+          val solver_data = { step = step,
+                              positionsc = positionsc,
+                              positionsa = positionsa,
+                              velocitiesv = velocitiesv,
+                              velocitiesw = velocitiesw }
+
           val pre_solver = CS.pre_contact_solver (step, contacts,
                                                   positionsc, positionsa,
                                                   velocitiesv, velocitiesw)
@@ -193,7 +200,7 @@ struct
 
           (* Initialize velocity constraints. *)
           val () = Vector.app (fn j =>
-                               D.J.init_velocity_constraints (j, step))
+                               D.J.init_velocity_constraints (j, solver_data))
                               joints
 
           (* Solve velocity constraints. *)
@@ -201,7 +208,7 @@ struct
               (fn i =>
                let in
                    Vector.app (fn j =>
-                               D.J.solve_velocity_constraints (j, step))
+                               D.J.solve_velocity_constraints (j, solver_data))
                               joints;
                    dprint (fn () => "* Vel iter " ^ Int.toString i ^ "\n");
                    CS.solve_velocity_constraints solver
@@ -225,9 +232,8 @@ struct
                 val joints_okay = ref true
                 val () = Vector.app
                     (fn j =>
-                     let val joint_okay =
-                           D.J.solve_position_constraints
-                           (j, contact_baumgarte)
+                     let
+                         val joint_okay = D.J.solve_position_constraints (j, solver_data)
                      in
                          joints_okay := (!joints_okay andalso joint_okay)
                      end) joints
