@@ -37,10 +37,16 @@ fun new {local_anchor_a : vec2,
     let
         val bA = D.J.get_body_a joint
         val bB = D.J.get_body_b joint
+        val m_indexA = ref 0
+        val m_indexB = ref 0
         val m_local_anchor_a = local_anchor_a
         val m_local_anchor_b = local_anchor_b
         val m_local_center_a = ref (vec2 (0.0, 0.0))
         val m_local_center_b = ref (vec2 (0.0, 0.0))
+        val m_invMassA = ref 0.0
+        val m_invMassB = ref 0.0
+        val m_invIA = ref 0.0
+        val m_invIB = ref 0.0
         val m_reference_angle = reference_angle
         val m_impulse = ref (vec3 (0.0, 0.0, 0.0))
         val m_motor_impulse = ref 0.0
@@ -59,23 +65,23 @@ fun new {local_anchor_a : vec2,
         val m_rA = ref (vec2 (0.0, 0.0))
         val m_rB = ref (vec2 (0.0, 0.0))
 
-        fun init_velocity_constraints { step,
+        fun init_velocity_constraints { step : BDDDynamicsTypes.time_step,
                                         positionsc,
                                         positionsa,
                                         velocitiesv,
                                         velocitiesw } =
             let
-(* 
-                val () = if !m_enable_motor orelse !m_enable_limit
-		(* You cannot create a rotation limit between bodies that
-		   both have fixed rotation. *)
-                         then assert (D.B.get_inv_i bA > 0.0 orelse
-                                      D.B.get_inv_i bB > 0.0)
-                         else ()
+                val () = m_indexA := D.B.get_island_index bA
+                val () = m_indexB := D.B.get_island_index bB
                 val () = m_local_center_a := sweeplocalcenter (D.B.get_sweep bA)
                 val () = m_local_center_b := sweeplocalcenter (D.B.get_sweep bB)
-                val aA = sweepa (D.B.get_sweep bA)
-                val aB = sweepa (D.B.get_sweep bB)
+                val () = m_invMassA := D.B.get_inv_mass bA
+                val () = m_invMassB := D.B.get_inv_mass bB
+                val () = m_invIA := D.B.get_inv_i bA
+                val () = m_invIB := D.B.get_inv_i bB
+
+                val aA = Array.sub(positionsa, !m_indexA)
+                val aB = Array.sub(positionsa, !m_indexB)
 
                 val qA = mat22angle aA
                 val qB = mat22angle aB
@@ -90,10 +96,10 @@ fun new {local_anchor_a : vec2,
 	     [  -r1y*iA*r1x-r2y*iB*r2x, mA+r1x^2*iA+mB+r2x^2*iB,           r1x*iA+r2x*iB]
 	     [          -r1y*iA-r2y*iB,           r1x*iA+r2x*iB,                   iA+iB] *)
 
-                val mA = D.B.get_inv_mass bA
-                val mB = D.B.get_inv_mass bB
-                val iA = D.B.get_inv_i bA
-                val iB = D.B.get_inv_i bB
+                val mA = !m_invMassA
+                val mB = !m_invMassB
+                val iA = !m_invIA
+                val iB = !m_invIB
 
                 val (rax, ray) = vec2xy (!m_rA)
                 val (rbx, rby) = vec2xy (!m_rB)
@@ -147,32 +153,33 @@ fun new {local_anchor_a : vec2,
                               in () end
                          else m_limit_state := InactiveLimit
 
-                val () = if warm_starting
+
+                val () = if #warm_starting step
                          then let
+                                 val dt_ratio = #dt_ratio step
                                  (* Scale impulses to support a variable time step. *)
                                   val () = m_impulse := dt_ratio *% !m_impulse
                                   val () = m_motor_impulse := !m_motor_impulse * dt_ratio;
                                   val p = vec2 (vec3x (!m_impulse), vec3y (!m_impulse))
-                                  val () = D.B.set_linear_velocity
-                                           (bA,
-                                            D.B.get_linear_velocity bA :-: mA *: p)
-                                  val () = D.B.set_angular_velocity
-                                           (bA,
-                                            D.B.get_angular_velocity bA -
+                                  val () = Array.update
+                                           (velocitiesv, !m_indexA,
+                                            Array.sub(velocitiesv, !m_indexA) :-: mA *: p)
+                                  val () = Array.update
+                                           (velocitiesw, !m_indexA,
+                                            (Array.sub(velocitiesw, !m_indexA)) -
                                             iA * (cross2vv (!m_rA, p) + !m_motor_impulse
                                                    + (vec3z (!m_impulse))))
-                                  val () = D.B.set_linear_velocity
-                                           (bB,
-                                            D.B.get_linear_velocity bB :+: mB *: p)
-                                  val () = D.B.set_angular_velocity
-                                           (bB,
-                                            D.B.get_angular_velocity bB +
+                                  val () = Array.update
+                                           (velocitiesv, !m_indexB,
+                                           Array.sub(velocitiesv, !m_indexB) :+: mB *: p)
+                                  val () = Array.update
+                                           (velocitiesw, !m_indexB,
+                                            Array.sub(velocitiesw, !m_indexB) +
                                             iB * (cross2vv (!m_rB, p) + !m_motor_impulse
                                                    + (vec3z (!m_impulse))))
                               in () end
                          else (m_impulse := vec3 (0.0, 0.0, 0.0);
                                m_motor_impulse := 0.0)
-*)
             in ()
             end
 
