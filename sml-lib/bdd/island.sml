@@ -326,6 +326,8 @@ struct
           val velocitiesw =
               Array.tabulate (count, fn ii => D.B.get_angular_velocity (Vector.sub(bodies, ii)))
 
+          val () = Vector.appi (fn (ii, b) => D.B.set_island_index (b, ii)) bodies
+
           val presolver = CS.pre_contact_solver (sub_step,
                                                  contacts,
                                                  positionsc,
