@@ -38,6 +38,8 @@ fun new {local_anchor_a : BDDMath.vec2,
     let
         val bA = D.J.get_body_a joint
         val bB = D.J.get_body_b joint
+        val m_indexA = ref 0
+        val m_indexB = ref 0
         val m_localAnchorA = local_anchor_a
         val m_localAnchorB = local_anchor_b
         val m_localXAxisA = vec2normalized local_axis_a
@@ -77,12 +79,14 @@ fun new {local_anchor_a : BDDMath.vec2,
                                                  z)
 
 
-        fun init_velocity_constraints { step,
+        fun init_velocity_constraints { step : BDDDynamicsTypes.time_step,
                                         positionsc,
                                         positionsa,
                                         velocitiesv,
                                         velocitiesw } =
-            let (*
+            let
+                val () = m_indexA := D.B.get_island_index bA
+                val () = m_indexB := D.B.get_island_index bB
                 val () = m_localCenterA := sweeplocalcenter (D.B.get_sweep bA)
                 val () = m_localCenterB := sweeplocalcenter (D.B.get_sweep bB)
                 val () = m_invMassA := D.B.get_inv_mass bA
@@ -90,15 +94,15 @@ fun new {local_anchor_a : BDDMath.vec2,
                 val () = m_invIA := D.B.get_inv_i bA
                 val () = m_invIB := D.B.get_inv_i bB
 
-                val cA = sweepc (D.B.get_sweep bA)
-                val aA = sweepa (D.B.get_sweep bA)
-                val vA = ref (D.B.get_linear_velocity bA)
-                val wA = ref (D.B.get_angular_velocity bA)
+                val cA = Array.sub(positionsc, !m_indexA)
+                val aA = Array.sub(positionsa, !m_indexA)
+                val vA = ref (Array.sub(velocitiesv, !m_indexA))
+                val wA = ref (Array.sub(velocitiesw, !m_indexA))
 
-                val cB = sweepc (D.B.get_sweep bB)
-                val aB = sweepa (D.B.get_sweep bB)
-                val vB = ref (D.B.get_linear_velocity bB)
-                val wB = ref (D.B.get_angular_velocity bB)
+                val cB = Array.sub(positionsc, !m_indexB)
+                val aB = Array.sub(positionsa, !m_indexB)
+                val vB = ref (Array.sub(velocitiesv, !m_indexB))
+                val wB = ref (Array.sub(velocitiesw, !m_indexB))
 
                 val qA = mat22angle aA
                 val qB = mat22angle aB
@@ -175,9 +179,10 @@ fun new {local_anchor_a : BDDMath.vec2,
                          then m_motorImpulse := 0.0
                          else ()
 
-                val () = if warm_starting
+                val () = if #warm_starting step
                          then
                              let (* Account for variable time step. *)
+                                 val dt_ratio = #dt_ratio step
                                  val () = m_impulse := dt_ratio *% !m_impulse
                                  val () = m_motorImpulse := !m_motorImpulse * dt_ratio
                                  val (ix, iy, iz) = (vec3x (!m_impulse),
@@ -197,24 +202,23 @@ fun new {local_anchor_a : BDDMath.vec2,
                              end
                          else (set_impulse_z 0.0;
                                m_motorImpulse := 0.0)
-                 *)
-            in () (* D.B.set_linear_velocity (bA, !vA);
-               D.B.set_angular_velocity (bA, !wA);
-               D.B.set_linear_velocity (bB, !vB);
-               D.B.set_angular_velocity (bB, !wB) *)
+            in Array.update(velocitiesv, !m_indexA, !vA);
+               Array.update(velocitiesw, !m_indexA, !wA);
+               Array.update(velocitiesv, !m_indexB, !vB);
+               Array.update(velocitiesw, !m_indexB, !wB)
             end
 
 
-        fun solve_velocity_constraints { step,
+        fun solve_velocity_constraints { step : BDDDynamicsTypes.time_step,
                                          positionsc,
                                          positionsa,
                                          velocitiesv,
                                          velocitiesw } =
-            let (*
-                val vA = ref (D.B.get_linear_velocity bA)
-                val wA = ref (D.B.get_angular_velocity bA)
-                val vB = ref (D.B.get_linear_velocity bB)
-                val wB = ref (D.B.get_angular_velocity bB)
+            let
+                val vA = ref (Array.sub(velocitiesv, !m_indexA))
+                val wA = ref (Array.sub(velocitiesw, !m_indexA))
+                val vB = ref (Array.sub(velocitiesv, !m_indexB))
+                val wB = ref (Array.sub(velocitiesw, !m_indexB))
 
                 val mA = !m_invMassA
                 val mB = !m_invMassB
@@ -229,7 +233,7 @@ fun new {local_anchor_a : BDDMath.vec2,
                                        !m_a2 * !wB - !m_a1 * !wA
                             val impulse = ref (!m_motorMass * (!m_motorSpeed - Cdot))
                             val oldImpulse = !m_motorImpulse
-                            val maxImpulse = dt * m_maxMotorForce
+                            val maxImpulse = (#dt step) * m_maxMotorForce
                             val () = m_motorImpulse :=
                                      clampr (!m_motorImpulse + !impulse,
                                              ~maxImpulse, maxImpulse)
@@ -299,11 +303,11 @@ fun new {local_anchor_a : BDDMath.vec2,
                            wA := !wA - iA * LA;
                            vB := !vB :+: mB *: P;
                            wB := !wB + iB * LB
-                        end *)
-            in () (* D.B.set_linear_velocity (bA, !vA);
-               D.B.set_angular_velocity (bA, !wA);
-               D.B.set_linear_velocity (bB, !vB);
-               D.B.set_angular_velocity (bB, !wB) *)
+                        end
+            in Array.update (velocitiesv, !m_indexA, !vA);
+               Array.update (velocitiesw, !m_indexA, !wA);
+               Array.update (velocitiesv, !m_indexB, !vB);
+               Array.update (velocitiesw, !m_indexB, !wB)
             end
 
         fun solve_position_constraints { step,
@@ -311,11 +315,12 @@ fun new {local_anchor_a : BDDMath.vec2,
                                          positionsa,
                                          velocitiesv,
                                          velocitiesw } =
-            let (*
-                val cA = ref (sweepc (D.B.get_sweep bA))
-                val aA = ref (sweepa (D.B.get_sweep bA))
-                val cB = ref (sweepc (D.B.get_sweep bB))
-                val aB = ref (sweepa (D.B.get_sweep bB))
+            let
+                val aA = ref (Array.sub(positionsa, !m_indexA))
+                val cA = ref (Array.sub(positionsc, !m_indexA))
+                val aB = ref (Array.sub(positionsa, !m_indexB))
+                val cB = ref (Array.sub(positionsc, !m_indexB))
+
                 val qA = mat22angle (!aA)
                 val qB = mat22angle (!aB)
                 val mA = !m_invMassA
@@ -421,18 +426,18 @@ fun new {local_anchor_a : BDDMath.vec2,
                 val LA = ix * s1 + iy + iz * a1
                 val LB = ix * s2 + iy + iz * a2
                 val sweepA = D.B.get_sweep bA
-                val sweepB = D.B.get_sweep bB *)
-            in true (*
+                val sweepB = D.B.get_sweep bB
+            in
                 cA := !cA :-: mA *: P;
                 aA := !aA - iA * LA;
                 cB := !cB :+: mB *: P;
                 aB := !aB + iB * LB;
-                sweep_set_c (sweepA, !cA);
-                sweep_set_a (sweepA, !aA);
-                sweep_set_c (sweepB, !cB);
-                sweep_set_a (sweepB, !aB);
+                Array.update(positionsa, !m_indexA, !aA);
+                Array.update(positionsa, !m_indexB, !aB);
+                Array.update(positionsc, !m_indexA, !cA);
+                Array.update(positionsc, !m_indexB, !cB);
                 linearError <= BDDSettings.linear_slop andalso
-                angularError <= BDDSettings.angular_slop *)
+                angularError <= BDDSettings.angular_slop
             end
 
         fun get_anchor_a () = D.B.get_world_point (bA, m_localAnchorA)
