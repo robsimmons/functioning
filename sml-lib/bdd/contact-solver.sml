@@ -21,7 +21,6 @@ struct
 
   type velocity_constraint =
       { points : velocity_constraint_point Array.array,
-        point_count : int,
         normal : BDDMath.vec2,
         normal_mass : BDDMath.mat22,
         k : BDDMath.mat22,
@@ -50,8 +49,7 @@ struct
          inv_i_b : real,
          typ : BDDTypes.manifold_type,
          radius_a : real,
-         radius_b : real,
-         point_count : int
+         radius_b : real
        }
 
   (* Parameterized by user data, since it uses the internal
@@ -113,7 +111,6 @@ struct
                        local_normal = vec2copy (#local_normal manifold),
                        local_point = vec2copy (#local_point manifold),
                        local_points = Array.tabulate (point_count, one_pc_local_point),
-                       point_count = point_count,
                        radius_a = radius_a,
                        radius_b = radius_b,
                        typ = #typ manifold }
@@ -281,7 +278,6 @@ fun initialize_velocity_constraints ({ step,
 
             in
                 { points = points,
-                  point_count = point_count,
                   normal = normal,
                   normal_mass = normal_mass,
                   k = k,
@@ -502,9 +498,11 @@ fun warm_start ({ step,
 
   (* Port note: Body of loop in SolveVelocityConstraints. *)
   fun solve_one_velocity_constraint velocitiesv velocitiesw
-      (ii, vc as { index_a, index_b, normal, friction, point_count,
+      (ii, vc as { index_a, index_b, normal, friction, points,
                    inv_mass_a, inv_mass_b, inv_i_a, inv_i_b, ... }) : unit =
   let
+      val point_count = Array.length points
+
       val w_a : real ref = ref (Array.sub(velocitiesw, index_a))
       val w_b : real ref = ref (Array.sub(velocitiesw, index_b))
       val v_a : vec2 ref = ref (Array.sub(velocitiesv, index_a))
@@ -655,8 +653,9 @@ fun warm_start ({ step,
 
   fun store_impulses (solver : ('b, 'f, 'j) contact_solver) : unit =
     Array.app
-    (fn ({contact_index, point_count, points, ... } : velocity_constraint) =>
+    (fn ({contact_index, points, ... } : velocity_constraint) =>
         let
+            val point_count = Array.length points
             val manifold = D.C.get_manifold (Vector.sub(#contacts solver, contact_index))
         in
             for 0 (point_count - 1)
@@ -773,7 +772,7 @@ fun warm_start ({ step,
             val a_b = ref (Array.sub(positionsa, index_b))
         in
             (* Solve normal constraints. *)
-            for 0 (#point_count pc - 1)
+            for 0 (Array.length (#local_points pc) - 1)
             (fn j =>
              let
                 val xf_a = transform_pos_angle
