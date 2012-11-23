@@ -184,22 +184,22 @@ fun new {local_anchor_a : vec2,
             end
 
 
-        fun solve_velocity_constraints { step,
+        fun solve_velocity_constraints { step : BDDDynamicsTypes.time_step,
                                          positionsc,
                                          positionsa,
                                          velocitiesv,
                                          velocitiesw } =
             let
-(*
-                val vA = ref (D.B.get_linear_velocity bA)
-                val wA = ref (D.B.get_angular_velocity bA)
-                val vB = ref (D.B.get_linear_velocity bB)
-                val wB = ref (D.B.get_angular_velocity bB)
 
-                val mA = D.B.get_inv_mass bA
-                val mB = D.B.get_inv_mass bB
-                val iA = D.B.get_inv_i bA
-                val iB = D.B.get_inv_i bB
+                val vA = ref (Array.sub(velocitiesv, !m_indexA))
+                val wA = ref (Array.sub(velocitiesw, !m_indexA))
+                val vB = ref (Array.sub(velocitiesv, !m_indexB))
+                val wB = ref (Array.sub(velocitiesw, !m_indexB))
+
+                val mA = !m_invMassA
+                val mB = !m_invMassB
+                val iA = !m_invIA
+                val iB = !m_invIB
 
                 (*bool fixedRotation = (iA + iB == 0.0f); *)
 
@@ -209,7 +209,7 @@ fun new {local_anchor_a : vec2,
                              let val Cdot = !wB - !wA - !m_motor_speed
                                  val impulse = ~(!m_motor_mass) * Cdot
                                  val old_impulse = !m_motor_impulse
-                                 val max_impulse = dt * m_max_motor_torque
+                                 val max_impulse = (#dt step) * m_max_motor_torque
                                  val () = m_motor_impulse :=
                                           clampr (!m_motor_impulse + impulse,
                                                   ~max_impulse,
@@ -286,11 +286,11 @@ fun new {local_anchor_a : vec2,
                                  val () = wB := !wB + iB *
                                                       (cross2vv (!m_rB, impulse))
                              in () end
-*)
-            in () (* D.B.set_linear_velocity (bA, !vA);
-               D.B.set_angular_velocity (bA, !wA);
-               D.B.set_linear_velocity (bB, !vB);
-               D.B.set_angular_velocity (bB, !wB) *)
+
+            in Array.update (velocitiesv, !m_indexA, !vA);
+               Array.update (velocitiesw, !m_indexA, !wA);
+               Array.update (velocitiesv, !m_indexB, !vB);
+               Array.update (velocitiesw, !m_indexB, !wB)
             end
 
         fun solve_position_constraints { step,
@@ -298,14 +298,14 @@ fun new {local_anchor_a : vec2,
                                          positionsa,
                                          velocitiesv,
                                          velocitiesw } =
-            let (*
-                val aA = ref (sweepa (D.B.get_sweep bA))
-                val cA = ref (sweepc (D.B.get_sweep bA))
-                val aB = ref (sweepa (D.B.get_sweep bB))
-                val cB = ref (sweepc (D.B.get_sweep bB))
+            let
+                val aA = ref (Array.sub(positionsa, !m_indexA))
+                val cA = ref (Array.sub(positionsc, !m_indexA))
+                val aB = ref (Array.sub(positionsa, !m_indexB))
+                val cB = ref (Array.sub(positionsc, !m_indexB))
 
-                val iA = D.B.get_inv_i bA
-                val iB = D.B.get_inv_i bB
+                val iA = !m_invIA
+                val iB = !m_invIB
 
                 val angularError = ref 0.0
 
@@ -377,13 +377,12 @@ fun new {local_anchor_a : vec2,
                 val sweepA = D.B.get_sweep bA
                 val sweepB = D.B.get_sweep bB
 
-                val () = sweep_set_a (sweepA, !aA)
-                val () = sweep_set_a (sweepB, !aB)
-                val () = sweep_set_c (sweepA, !cA)
-                val () = sweep_set_c (sweepB, !cB)
-                 *)
-            in true (*positionError <= BDDSettings.linear_slop andalso
-               !angularError <= BDDSettings.angular_slop *)
+                val () = Array.update(positionsa, !m_indexA, !aA)
+                val () = Array.update(positionsa, !m_indexB, !aB)
+                val () = Array.update(positionsc, !m_indexA, !cA)
+                val () = Array.update(positionsc, !m_indexB, !cB)
+            in positionError <= BDDSettings.linear_slop andalso
+               !angularError <= BDDSettings.angular_slop
             end
 
         fun get_anchor_a () = D.B.get_world_point (bA, m_local_anchor_a)
