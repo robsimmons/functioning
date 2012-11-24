@@ -46,7 +46,7 @@ fun init world =
 
         val bar = BDD.World.create_body (world,
                                           {typ = BDD.Body.Dynamic,
-                                           position = BDDMath.vec2 (0.0, 2.2),
+                                           position = BDDMath.vec2 (0.0, 4.0),
                                            angle = 0.0,
                                            linear_velocity = BDDMath.vec2_zero,
                                            angular_velocity = 0.0,
@@ -64,7 +64,6 @@ fun init world =
         val bar_fixture = BDD.Body.create_fixture_default
                           (bar, bar_shape, (), 1.0)
 
-(*        val x = 0.20352793 *)
         val x = 0.1
         val bullet = BDD.World.create_body (world,
                                           {typ = BDD.Body.Dynamic,

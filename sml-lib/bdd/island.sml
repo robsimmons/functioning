@@ -169,7 +169,14 @@ struct
                               Taylor expansion:
                               v2 = (1.0f - c * dt) * v1 *)
                            v := clampr (1.0 - h * D.B.get_linear_damping b, 0.0, 1.0) *: (!v);
-                           w := (!w) * (clampr (1.0 - h * D.B.get_angular_damping b, 0.0, 1.0))
+                           w := (!w) * (clampr (1.0 - h * D.B.get_angular_damping b,
+                                                0.0, 1.0));
+
+                           dprint (fn () => "  v: " ^ vtos (!v) ^ "\n" ^
+                                            "  w: " ^ rtos (!w) ^ "\n" ^
+                                            "  c: " ^ vtos c ^ "\n" ^
+                                            "  a: " ^ rtos a ^ "\n")
+
                        end
                      | _ => ());
                   {c = c, a = a, v = !v, w = !w}
