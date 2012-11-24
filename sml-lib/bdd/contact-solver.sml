@@ -675,10 +675,7 @@ fun warm_start ({ step,
         end ) (#velocity_constraints solver)
 
   (* Port note: A class in Box2D; it's just a function that
-     returns multiple values.
-
-     Note, this is almost the same function as in toi-solver.
-     (Redundancy is present in Box2D too.) *)
+     returns multiple values. *)
   fun position_solver_manifold (pc : position_constraint, xf_a, xf_b, index : int) :
       { normal : vec2, point : vec2, separation : real } =
     case #typ pc of
@@ -724,12 +721,7 @@ fun warm_start ({ step,
                 point = clip_point }
           end
 
-  (* Sequential solver.
-
-     Port note: This is nearly identical to the code in toi-solver, so
-     if you change something here, it probably should be changed there
-     too. The duplication comes from Box2D. Obviously it would be
-     better to factor out this common routine. *)
+  (* Sequential solver. *)
   fun solve_position_common { position_constraints,
                               velocitiesv,
                               velocitiesw,
