@@ -138,7 +138,7 @@ fun new { target : vec2,
                 (* CDot = v + cross(w, r) *)
                 val Cdot = vB :+: cross2sv(wB, !m_rB)
                 val impulse = !m_mass +*:
-                              (vec2neg (Cdot :+: (!m_beta *: !m_C) :+: !m_gamma *: !m_impulse))
+                              (vec2neg (Cdot :+: !m_C :+: !m_gamma *: !m_impulse))
 
                 val old_impulse = !m_impulse
                 val () = m_impulse := (!m_impulse :+: impulse)
