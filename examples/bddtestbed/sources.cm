@@ -6,9 +6,6 @@ Group is
 
 ../../sml-lib/bdd/bdd.cm
 
-../../sml-lib/util/util-sig.sml
-../../sml-lib/util/util.sml
-
 types.sml
 bullet-test.sml
 revolute.sml
