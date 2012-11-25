@@ -52,7 +52,8 @@ struct
     fun collide world =
       let
         (* Update awake contacts. *)
-        fun onecontact c =
+        fun loop NONE = ()
+          | loop (SOME c) =
           let
             val fixture_a = D.C.get_fixture_a c
             val fixture_b = D.C.get_fixture_b c
@@ -70,20 +71,30 @@ struct
               in
                   if not (BDDBroadPhase.test_overlap (proxy_a, proxy_b))
                   (* Clear contacts that cease to overlap in the broad phase. *)
-                  then destroy (world, c)
+                  then let val next = D.C.get_next c
+                       in destroy (world, c);
+                          loop next
+                       end
                   (* It persists. *)
-                  else Contact.update (c, world)
+                  else
+                      let in
+                          Contact.update (c, world);
+                          loop (D.C.get_next c)
+                      end
               end
           in
             if not (Body.get_awake body_a orelse Body.get_awake body_b)
-            then ()
+            then loop (D.C.get_next c)
             else (* Is this contact flagged for filtering? *)
                 if D.C.get_flag (c, D.C.FLAG_FILTER)
                 then (* Should these bodies collide?
                         Port note: Both conditionals folded into one. *)
                     (if not (D.B.should_collide (body_b, body_a)) orelse
                         not (D.W.get_should_collide world (fixture_a, fixture_b))
-                     then destroy (world, c)
+                     then let val next = D.C.get_next c
+                          in destroy (world, c);
+                             loop next
+                          end
                      else (* Clear the filtering flag. *)
                          let in
                              D.C.clear_flag (c, D.C.FLAG_FILTER);
@@ -92,7 +103,7 @@ struct
                 else common_case ()
           end
       in
-        oapp D.C.get_next onecontact (D.W.get_contact_list world)
+        loop (D.W.get_contact_list world)
       end
 
   end (* ContactManager *)
