@@ -651,7 +651,7 @@ struct
                           (* for control flow *)
                           exception Continue
                           (* Is this contact disabled? *)
-                          val () = if (* TODO *) false
+                          val () = if not (D.C.get_enabled c)
                                    then raise Continue
                                    else ()
                           (* Prevent excessive sub-stepping. *)
@@ -767,10 +767,11 @@ struct
                   val () = D.C.set_toi_count (min_contact, 1 + D.C.get_toi_count min_contact)
 
                   (* Is the contact solid? *)
-                  val () = if (* TODO isenabled *) not (Contact.is_touching min_contact)
+                  val () = if (not (D.C.get_enabled min_contact)) orelse
+                              (not (Contact.is_touching min_contact))
                            then
                                (* Restore the sweeps. *)
-                               ( (* TODO set enabled false *)
+                               (D.C.set_enabled (min_contact, false);
                                 D.B.set_sweep (b_a, backup_a);
                                 D.B.set_sweep (b_b, backup_b);
                                 D.B.synchronize_transform b_a;
@@ -831,7 +832,7 @@ struct
                                       val () = Contact.update (contact, world)
 
                                       (* Was the contact disabled by the user? *)
-                                      val () = if (* TODO contact not enabled *) false
+                                      val () = if not (D.C.get_enabled contact)
                                                then (D.B.set_sweep (other, backup);
                                                      D.B.synchronize_transform other;
                                                      raise Continue
