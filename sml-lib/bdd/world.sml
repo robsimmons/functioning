@@ -823,7 +823,7 @@ struct
                                                else ()
 
                                       (* Tentatively advance the body to the TOI. *)
-                                      val backup = D.B.get_sweep other
+                                      val backup = sweepcopy (D.B.get_sweep other)
                                       val () = if not (D.B.get_flag (other, D.B.FLAG_ISLAND))
                                                then D.B.advance (other, min_alpha)
                                                else ()
