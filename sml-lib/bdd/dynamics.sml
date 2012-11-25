@@ -689,6 +689,13 @@ struct
               NONE => ()
             | SOME prev => E.set_prev (prev, SOME node_b)
           val () = B.set_contact_list (body_b, SOME node_b)
+
+          (* Wake up the bodies *)
+          val () = if not (F.get_sensor fixture_a) andalso
+                      not (F.get_sensor fixture_b)
+                   then (B.set_awake (body_a, true);
+                         B.set_awake (body_b, true))
+                   else ()
         in
           set_contact_count (world, get_contact_count world + 1)
         end handle Return => ()
