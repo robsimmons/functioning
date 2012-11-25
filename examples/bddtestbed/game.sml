@@ -89,8 +89,10 @@ struct
           val zoom = 1.0
           val view = View {center = center, zoom = zoom,
                            needs_resize = true}
+          val settings = {draw_contacts = ref false,
+                          paused = ref false}
       in GS { test = test, mouse_joint = NONE, world = world,
-              view = view}
+              view = view, settings = settings}
       end
 
   val initstate = init_test VerticalStack.test
@@ -183,7 +185,7 @@ struct
           glEnd()
       end
 
-  fun render screen (GS {world, mouse_joint, ...}) =
+  fun render screen (GS {world, mouse_joint, settings, ...}) =
   let in
    glClear(GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT);
    glLoadIdentity();
@@ -192,13 +194,22 @@ struct
    oapp BDD.Joint.get_next drawjoint (BDD.World.get_joint_list world);
    drawmousejoint mouse_joint;
 
-   List.map drawcontactpoint (!contact_points);
+   if !(#draw_contacts settings)
+   then List.app drawcontactpoint (!contact_points)
+   else ();
    contact_points := [];
 
    glFlush();
    SDL.glflip();
    ()
   end
+
+  val ticks_per_second = 60.0
+
+  fun dophysics world =
+      let val timestep = 1.0 / ticks_per_second
+          val () = BDD.World.step (world, timestep, 8, 3)
+      in () end
 
   fun mouse_motion (s as GS {world, mouse_joint = NONE, test, ...}) p = SOME s
     | mouse_motion (s as GS {world, mouse_joint = SOME ({set_target, ...}, _),
@@ -210,12 +221,13 @@ struct
       end
 
   fun mouse_up (s as GS {world, mouse_joint = NONE, test, ...}) p = SOME s
-    | mouse_up (s as GS {world, mouse_joint = SOME (mj, j), test, view}) p =
+    | mouse_up (s as GS {world, mouse_joint = SOME (mj, j), test, view, settings}) p =
       let val () = BDD.World.destroy_joint (world, j)
-      in SOME (GS {world = world, mouse_joint = NONE, test = test, view = view})
+      in SOME (GS {world = world, mouse_joint = NONE,
+                   test = test, view = view, settings = settings})
       end
 
-  fun mouse_down (s as GS {world, mouse_joint, test, view}) p =
+  fun mouse_down (s as GS {world, mouse_joint, test, view, settings}) p =
       let val d = BDDMath.vec2 (0.001, 0.001)
           val aabb = { lowerbound = p :-: d,
                        upperbound = p :+: d
@@ -269,11 +281,14 @@ struct
                                SOME (BDD.Joint.Mouse mj) => SOME (mj, j)
                              | _ => raise Fail "expected a mouse joint"
                         end
-      in SOME (GS {world = world, mouse_joint = mbe_new_joint, test = test, view = view})
+      in SOME (GS {world = world, mouse_joint = mbe_new_joint,
+                   test = test, view = view, settings = settings})
       end
 
-  fun update_view (GS {world, mouse_joint, test, view = View {center, zoom, ...}}) v s =
+  fun update_view (GS {world, mouse_joint, test, settings,
+                       view = View {center, zoom, ...}}) v s =
       SOME (GS {world = world, mouse_joint = mouse_joint, test = test,
+                settings = settings,
                 view = View {center = center :+: v,
                              zoom = zoom * s,
                              needs_resize = true}})
@@ -301,10 +316,33 @@ struct
       update_view s (BDDMath.vec2 (0.0, 0.5)) 1.0
     | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_DOWN}) s =
       update_view s (BDDMath.vec2 (0.0, ~0.5)) 1.0
-    | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_z}) s =
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_z}) s =
       update_view s (BDDMath.vec2 (0.0, 0.0)) 1.1
-    | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_x}) s =
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_x}) s =
       update_view s (BDDMath.vec2 (0.0, 0.0)) 0.9
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_c}) (s as GS {settings, ...}) =
+      let
+          val dc = #draw_contacts settings
+      in
+          dc := not (!dc);
+          SOME s
+      end
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_p}) (s as GS {settings, ...}) =
+      let
+          val p = #paused settings
+      in
+          p := not (!p);
+          SOME s
+      end
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_s}) (s as GS {world, settings, ...}) =
+      let
+          val p = #paused settings
+      in
+          if !p
+          then dophysics world
+          else ();
+          SOME s
+      end
 
     | handle_event (SDL.E_MouseDown {button, x, y}) (s as (GS gs)) =
       mouse_down s (screen_to_world (x, y) (#view gs))
@@ -315,18 +353,14 @@ struct
     | handle_event e (s as GS {world, test = Test {handle_event = he, ... }, ...})  =
       (he world e; SOME s)
 
-  val ticks_per_second = 60.0
-
-  fun dophysics world =
-      let val timestep = 1.0 / ticks_per_second
-          val () = BDD.World.step (world, timestep, 8, 3)
-      in () end
-
-  fun tick (s as GS {world, view, test, mouse_joint}) =
-    let val () = dophysics world
+  fun tick (s as GS {world, view, test, mouse_joint, settings}) =
+    let val () = if not (!(#paused settings))
+                 then dophysics world
+                 else ()
         val view' = resize view
     in
-        SOME (GS {world = world, view = view', test = test, mouse_joint = mouse_joint})
+        SOME (GS {world = world, view = view', test = test,
+                  mouse_joint = mouse_joint, settings = settings})
     end
 end
 
