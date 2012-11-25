@@ -747,6 +747,8 @@ struct
                           (* No more TOI events. Done! *)
                           raise Return
 
+                  val () = dprint (fn () => "min_alpha: " ^ rtos min_alpha ^ "\n")
+
                   (* Advance the bodies to the TOI. *)
                   val f_a = D.C.get_fixture_a min_contact
                   val f_b = D.C.get_fixture_b min_contact
@@ -821,7 +823,7 @@ struct
 
                                       (* Tentatively advance the body to the TOI. *)
                                       val backup = D.B.get_sweep other
-                                      val () = if D.B.get_flag (other, D.B.FLAG_ISLAND)
+                                      val () = if not (D.B.get_flag (other, D.B.FLAG_ISLAND))
                                                then D.B.advance (other, min_alpha)
                                                else ()
 

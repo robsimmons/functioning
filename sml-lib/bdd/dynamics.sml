@@ -75,17 +75,17 @@ struct
 
     (* Create a proxy for the fixture in the broad phase, and store it in
        fixture. *)
-    fun create_proxy 
-        (fixture : ('b, 'f, 'j) fixture, 
-         broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase, 
+    fun create_proxy
+        (fixture : ('b, 'f, 'j) fixture,
+         broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase,
          xf : BDDMath.transform) : unit =
         case get_proxy fixture of
             NONE =>
                 (* Create proxy in the broad-phase. *)
-                let 
+                let
                     val aabb = BDDShape.compute_aabb (get_shape fixture, xf)
 
-                    fun pxy v = 
+                    fun pxy v =
                         Real.fmt (StringCvt.FIX (SOME 2)) (vec2x v) ^ " " ^
                         Real.fmt (StringCvt.FIX (SOME 2)) (vec2y v)
                     val () = dprint (fn () => "  fix_aabb: " ^
@@ -94,20 +94,20 @@ struct
                 in
                     set_aabb (fixture, aabb);
                     set_proxy (fixture,
-                               SOME (BDDBroadPhase.create_proxy (broadphase, 
-                                                                 aabb, 
+                               SOME (BDDBroadPhase.create_proxy (broadphase,
+                                                                 aabb,
                                                                  fixture)))
                 end
           | SOME _ =>
                 raise BDDDynamics "fixture already had a proxy in create_proxy"
 
-    fun destroy_proxy 
-        (fixture : ('b, 'f, 'j) fixture, 
+    fun destroy_proxy
+        (fixture : ('b, 'f, 'j) fixture,
          broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase) =
         (* Proxy can be missing if the body is not active. *)
         case get_proxy fixture of
             NONE => ()
-          | SOME p => 
+          | SOME p =>
                 let in
                     BDDBroadPhase.remove_proxy (broadphase, p);
                     set_proxy (fixture, NONE)
@@ -127,7 +127,7 @@ struct
               val aabb2 = BDDShape.compute_aabb (shape, transform2)
               val aabb = BDDCollision.aabb_combine (aabb1, aabb2)
 
-              val displacement : vec2 = 
+              val displacement : vec2 =
                   transformposition transform2 :-:
                   transformposition transform1
           in
@@ -240,17 +240,17 @@ struct
                bullet : bool,
                active : bool,
                data : 'b,
-               inertia_scale : real }, 
+               inertia_scale : real },
              world : ('b, 'f, 'j) world,
              next : ('b, 'f, 'j) body option) : ('b, 'f, 'j) body =
-        let 
+        let
             val xf = transform_pos_angle (position, angle)
             val center = xf @*: vec2 (0.0, 0.0)
             val (mass, inv_mass) =
                 case typ of
                     Dynamic => (1.0, 1.0)
                   | _ => (0.0, 0.0)
-            val b = 
+            val b =
                 BDDCells.B.new
                 { typ = typ,
                   flags = 0w0,
@@ -281,13 +281,13 @@ struct
 
         in
             (* PERF asserts *)
-            if vec2is_valid position then () 
+            if vec2is_valid position then ()
             else raise BDDDynamics "invalid position";
-            if vec2is_valid linear_velocity then () 
+            if vec2is_valid linear_velocity then ()
             else raise BDDDynamics "invalid linear_velocity";
-            if is_valid angle then () 
+            if is_valid angle then ()
             else raise BDDDynamics "invalid angle";
-            if is_valid angular_velocity then () 
+            if is_valid angular_velocity then ()
             else raise BDDDynamics "invalid angular_velocity";
             if is_valid inertia_scale andalso inertia_scale >= 0.0 then ()
             else raise BDDDynamics "invalid inertia_scale";
@@ -308,7 +308,7 @@ struct
     (* This is used to prevent connected bodies from colliding.
        It may lie, depending on the collideConnected flag.
        Port note: Used in ContactManager. *)
-    fun should_collide (body : ('b, 'f, 'j) body, 
+    fun should_collide (body : ('b, 'f, 'j) body,
                         other : ('b, 'f, 'j) body) : bool =
         (* At least one body should be dynamic. *)
         if get_typ body <> Dynamic andalso get_typ other <> Dynamic
@@ -330,7 +330,7 @@ struct
 
    (* Port note: used in TOISolver. *)
    fun synchronize_transform b : unit =
-       let 
+       let
            val sweep : sweep = get_sweep b
            val () = dprint (fn () => "s_t angle: " ^ rtos (sweepa sweep) ^ "\n")
 (* not error
@@ -340,6 +340,7 @@ struct
 *)
            val r : mat22 = mat22angle (sweepa sweep)
            val pos : vec2 = sweepc sweep :-: (r +*: sweeplocalcenter sweep)
+           val () = dprint (fn () => "s_t pos: " ^ vtos pos ^ "\n")
        in
            set_xf (b, transform (pos, r))
        end
@@ -359,13 +360,13 @@ struct
     (* Used in world. *)
     (* Port note: Passing broadphase instead of whole world value,
        to reduce dependencies. *)
-    fun synchronize_fixtures 
+    fun synchronize_fixtures
         (b : ('b, 'f, 'j) body,
          broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase) : unit =
       let
           val sweep : sweep = get_sweep b
           val r = mat22angle (sweepa0 sweep)
-          val xf1 = transform (sweepc0 sweep :-: 
+          val xf1 = transform (sweepc0 sweep :-:
                                (r +*: sweeplocalcenter sweep),
                                r)
       in
@@ -374,10 +375,10 @@ struct
           (get_fixture_list b)
       end
 
-    fun get_world_point (b, p) = 
+    fun get_world_point (b, p) =
         let in
             dprint (fn () => "[getworldpoint lp " ^ vtos p ^
-                   " xf " ^ xftos (get_xf b) ^ 
+                   " xf " ^ xftos (get_xf b) ^
                    " -> " ^ vtos (get_xf b @*: p) ^ "]\n");
 
             get_xf b @*: p
@@ -387,20 +388,20 @@ struct
     fun get_local_vector (b, v) = mul_t22mv (transformr (get_xf b), v)
 
     fun get_linear_velocity_from_world_point (b, world_point : vec2) =
-        get_linear_velocity b :+: 
+        get_linear_velocity b :+:
         cross2sv (get_angular_velocity b,
                   world_point :-: sweepc (get_sweep b))
 
     fun get_linear_velocity_from_local_point (b, local_point : vec2) =
-        get_linear_velocity_from_world_point(b, 
+        get_linear_velocity_from_world_point(b,
                                              get_world_point(b, local_point))
 
-    fun set_awake (b, f) = 
+    fun set_awake (b, f) =
         let in
             set_sleep_time (b, 0.0);
-            if f 
+            if f
             then set_flag (b, FLAG_AWAKE)
-            else 
+            else
                 let in
                     clear_flag (b, FLAG_AWAKE);
                     set_linear_velocity (b, vec2 (0.0, 0.0));
@@ -474,7 +475,7 @@ struct
           (* XXX: Not sure this is right. A consequence of the create
              dispatch above is that a Contact in Box2D is always in
              normalized order (polygon, circle), so the "A" fixture actually
-             changes meaning. 
+             changes meaning.
 
              Some other code actually mentions this fact (but does not
              appear to rely on it). We should probably reproduce the
@@ -542,10 +543,10 @@ struct
 
     structure CM =
     struct
-      (* Regrettably, used by body.sml when setting a body inactive. 
+      (* Regrettably, used by body.sml when setting a body inactive.
          XXX figure out the right place for this. *)
-         
-      fun destroy (world : ('b, 'f, 'j) world, 
+
+      fun destroy (world : ('b, 'f, 'j) world,
                    c : ('b, 'f, 'j) contact) : unit =
         let
           val fixture_a = C.get_fixture_a c
@@ -582,8 +583,8 @@ struct
               NONE => ()
             | SOME next => E.set_prev (next, prev)
           (* Port note: The original code uses pointers to the interior of the
-             contact (&c->m_nodeA == ?); I've made these their own cells. I 
-             think this is right, but if something is going wrong here, this 
+             contact (&c->m_nodeA == ?); I've made these their own cells. I
+             think this is right, but if something is going wrong here, this
              is a good thing to take a look at. *)
           val () = if oeq E.eq (SOME nodea, B.get_contact_list body_a)
                    then B.set_contact_list (body_a, next)
@@ -608,8 +609,8 @@ struct
 
       (* Callback used in find_new_contacts. *)
       exception Return
-      fun add_pair (world : ('b, 'f, 'j) world) 
-          (fixture_a : ('b, 'f, 'j) fixture, 
+      fun add_pair (world : ('b, 'f, 'j) world)
+          (fixture_a : ('b, 'f, 'j) fixture,
            fixture_b : ('b, 'f, 'j) fixture) : unit =
         let
           val body_a = F.get_body fixture_a

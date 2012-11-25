@@ -93,7 +93,7 @@ struct
               view = view}
       end
 
-  val initstate = init_test BulletTest.test
+  val initstate = init_test VerticalStack.test
 
   fun initscreen screen =
       (

@@ -80,12 +80,12 @@ struct
         "(low: " ^ vtos lowerbound ^ " up: " ^ vtos upperbound ^ ")"
 
     fun dprint f = print (f ())
-(*    val dprint = ignore *)
+    val dprint = ignore
 
 
     exception AssertFail
     fun assert b = if b then () else raise AssertFail
-(*    val assert = ignore *)
+    (* val assert = ignore *)
 
   end
 
