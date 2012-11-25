@@ -31,8 +31,8 @@ fun init world =
         val shape = BDDShape.Circle {radius = 1.0,
                                      p = BDDMath.vec2_zero}
     in
-        Util.for 0 6 (fn i =>
-            let 
+        BDDOps.for 0 6 (fn i =>
+            let
                 val pos = BDDMath.vec2 (~10.0 + 3.0 * (Real.fromInt i), 20.0)
                 val body = BDD.World.create_body (world,
                                                   {typ = BDD.Body.Dynamic,
