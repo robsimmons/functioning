@@ -53,8 +53,8 @@ fun init world =
 
         val shape = BDDShape.Polygon (BDDPolygon.box (0.5, 0.5))
     in
-        Util.for 0 (columnCount - 1) (fn j =>
-         Util.for 0 (rowCount - 1) (fn i =>
+        BDDOps.for 0 (columnCount - 1) (fn j =>
+         BDDOps.for 0 (rowCount - 1) (fn i =>
             let val n = j * rowCount + i
                 val pos = BDDMath.vec2 (Array.sub(xs, j),
                                         0.752 + 1.54 * (Real.fromInt i))
