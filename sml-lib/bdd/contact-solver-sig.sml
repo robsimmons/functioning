@@ -13,20 +13,20 @@ sig
      polymorpic types. *)
   type ('b, 'f, 'j) contact_solver
 
+  (* A solver whose velocities have not yet been initialized. *)
   type ('b, 'f, 'j) pre_contact_solver
 
-  (* pre_contact_solver (step, contacts, positionsc, positionsa, velocitiesv, velocitiesw) *)
-  val pre_contact_solver : BDDDynamicsTypes.time_step *
-                           ('b, 'f, 'j) BDDDynamics.contact Vector.vector *
-                           BDDMath.vec2 Array.array *
-                           real Array.array *
-                           BDDMath.vec2 Array.array *
-                           real Array.array ->
+  val pre_contact_solver : BDDDynamicsTypes.solver_data *
+                           ('b, 'f, 'j) BDDDynamics.contact Vector.vector
+                           ->
                            ('b, 'f, 'j) pre_contact_solver
 
 
   val solve_toi_position_constraints : ('b, 'f, 'j) pre_contact_solver * int * int -> bool
 
+  (* Port note: pushed all of the velocity contraint intitialization to
+     here. The original initialized the position-independent portions
+     in the constructor. *)
   val initialize_velocity_constraints : ('b, 'f, 'j) pre_contact_solver ->
                                         ('b, 'f, 'j) contact_solver
 

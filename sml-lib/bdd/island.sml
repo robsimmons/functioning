@@ -196,9 +196,7 @@ struct
                               velocitiesv = velocitiesv,
                               velocitiesw = velocitiesw }
 
-          val pre_solver = CS.pre_contact_solver (step, contacts,
-                                                  positionsc, positionsa,
-                                                  velocitiesv, velocitiesw)
+          val pre_solver = CS.pre_contact_solver (solver_data, contacts)
 
           val solver = CS.initialize_velocity_constraints pre_solver
           val () = if #warm_starting step
@@ -341,12 +339,12 @@ struct
 
           val () = Vector.appi (fn (ii, b) => D.B.set_island_index (b, ii)) bodies
 
-          val presolver = CS.pre_contact_solver (sub_step,
-                                                 contacts,
-                                                 positionsc,
-                                                 positionsa,
-                                                 velocitiesv,
-                                                 velocitiesw)
+          val presolver = CS.pre_contact_solver ({step = sub_step,
+                                                  positionsc = positionsc,
+                                                  positionsa = positionsa,
+                                                  velocitiesv = velocitiesv,
+                                                  velocitiesw = velocitiesw},
+                                                 contacts)
 
           (* Solve position constraints. *)
           fun iterate n =

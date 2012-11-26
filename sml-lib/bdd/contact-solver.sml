@@ -75,12 +75,13 @@ struct
 
 
   fun pre_contact_solver
-      (time_step : BDDDynamicsTypes.time_step,
-       contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector,
-       positionsc : BDDMath.vec2 Array.array,
-       positionsa : real Array.array,
-       velocitiesv : BDDMath.vec2 Array.array,
-       velocitiesw : real Array.array) : ('b, 'f, 'j) pre_contact_solver =
+      ({step = time_step : BDDDynamicsTypes.time_step,
+        positionsc : BDDMath.vec2 Array.array,
+        positionsa : real Array.array,
+        velocitiesv : BDDMath.vec2 Array.array,
+        velocitiesw : real Array.array},
+       contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector)
+      : ('b, 'f, 'j) pre_contact_solver =
     let
         (* Initialize position independent portions of the constraints. *)
         fun onecontact (ii : int, contact : ('b, 'f, 'j) BDDDynamics.contact) =
