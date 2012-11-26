@@ -13,7 +13,7 @@ sig
      polymorpic types. *)
   type ('b, 'f, 'j) contact_solver
 
-  (* A solver whose velocities have not yet been initialized. *)
+  (* A solver whose velocity constraints have not yet been initialized. *)
   type ('b, 'f, 'j) pre_contact_solver
 
   val pre_contact_solver : BDDDynamicsTypes.solver_data *
