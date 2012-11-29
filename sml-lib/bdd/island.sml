@@ -92,7 +92,8 @@ struct
                            sweep_set_c (sweep, !c);
                            sweep_set_a (sweep, !a);
                            D.B.set_linear_velocity (body, !v);
-                           D.B.set_angular_velocity (body, !w)
+                           D.B.set_angular_velocity (body, !w);
+                           D.B.synchronize_transform body
                        end
                end
           val () = for 0 (Array.length positionsc - 1) integrate_onebody

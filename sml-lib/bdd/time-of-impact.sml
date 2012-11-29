@@ -46,7 +46,7 @@ struct
   (* Port note: Original separates construction and initialization. 
      Initialization returns the magnitude of the axis, but it is unused. 
      Removed here. *)
-  fun separation_function (cache, proxya, sweepa, proxyb, sweepb) :
+  fun separation_function (cache, proxya, sweepa, proxyb, sweepb, t1) :
       separation_function =
     let
         val count = !(#count cache)
@@ -56,8 +56,8 @@ struct
             then ()
             else raise BDDTimeOfImpact "assertion failure"
 
-        val xfa : transform = sweep_transform (sweepa, 0.0)
-        val xfb : transform = sweep_transform (sweepb, 0.0)
+        val xfa : transform = sweep_transform (sweepa, t1)
+        val xfb : transform = sweep_transform (sweepb, t1)
     in
         if count = 1
         then 
@@ -340,7 +340,7 @@ struct
             let
                 (* Initialize the separating axis. *)
                 val fcn : separation_function = 
-                    separation_function (cache, proxya, sweepa, proxyb, sweepb)
+                    separation_function (cache, proxya, sweepa, proxyb, sweepb, !t1)
 
                 (* Port note: Removed commented-out debugging code. *)
 
