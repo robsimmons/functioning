@@ -14,31 +14,6 @@ struct
   structure D = BDDDynamics
   structure CS = BDDContactSolver
 
-  fun listutil_sift _ nil = (nil, nil)
-    | listutil_sift f (h :: t) =
-      let val (ts, fs) = listutil_sift f t
-      in
-          if f h
-          then (h :: ts, fs)
-          else (ts, h :: fs)
-      end
-
-  fun partition_contacts_to_vector l =
-      let
-          fun is_nonstatic c =
-              let val ba = D.F.get_body (D.C.get_fixture_a c)
-                  val bb = D.F.get_body (D.C.get_fixture_b c)
-              in case (D.B.get_typ ba, D.B.get_typ bb) of
-                  (T.Static, _) => false
-                | (_, T.Static) => false
-                | _ => true
-              end
-          (* PERF: Too much allocation. *)
-          val (nonstatic, static) = listutil_sift is_nonstatic l
-      in
-          Vector.fromList (nonstatic @ static)
-      end
-
   fun report (world : ('b, 'f, 'j) D.world,
               solver : ('b, 'f, 'j) CS.contact_solver) : unit =
       (* PERF: There's some cost to iterating over the
@@ -129,10 +104,8 @@ struct
           val () = dprint (fn () => "Solve island with " ^
                            Int.toString (Vector.length bodies) ^ " bodies and " ^
                            Int.toString (length contacts) ^ " contacts\n")
-          (* Contacts are partitioned so that constraints with
-             static bodies are solved last. *)
-          (* Is this necessary? *)
-           val contacts = partition_contacts_to_vector contacts
+
+          val contacts = Vector.fromList contacts
 
           val h = #dt step
 
