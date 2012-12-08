@@ -116,7 +116,7 @@ struct
     type contact_impulse = T.contact_impulse
     datatype raycast_action = datatype T.raycast_action
 
-    fun get_milliseconds timer = 1000.0 * (Time.toReal (Time.-(Time.now(), timer)))
+    fun get_elapsed timer = (Time.-(Time.now(), timer))
 
     (* Should probably expose this *)
     fun default_collision_filter (fixture_a : fixture, 
@@ -154,14 +154,14 @@ struct
                    
                   warm_starting = true,
                   continuous_physics = true,
-                  profile = { step = ref 0.0,
-                              collide = ref 0.0,
-                              solve = ref 0.0,
-                              solve_init = ref 0.0,
-                              solve_velocity = ref 0.0,
-                              solve_position = ref 0.0,
-                              broad_phase = ref 0.0,
-                              solve_toi = ref 0.0 },
+                  profile = { step = Time.zeroTime,
+                              collide = Time.zeroTime,
+                              solve = Time.zeroTime,
+                              solve_init = Time.zeroTime,
+                              solve_velocity = Time.zeroTime,
+                              solve_position = Time.zeroTime,
+                              broad_phase = Time.zeroTime,
+                              solve_toi = Time.zeroTime },
                    
                   broad_phase = BDDBroadPhase.broadphase (),
                   contact_list = NONE,
@@ -928,7 +928,7 @@ struct
           (* Update contacts. This is where some contacts are destroyed. *)
           val timer = Time.now()
           val () = ContactManager.collide world
-          val collide_time = get_milliseconds timer
+          val collide_time = get_elapsed timer
 
           (* XXX all debug *)
 (*          fun onecontact2 c =
@@ -964,7 +964,7 @@ struct
           val () = if dt > 0.0
                    then solve (world, step)
                    else ()
-          val solve_time = get_milliseconds timer
+          val solve_time = get_elapsed timer
 
           (* XXX just debug *)
           val () = oapp D.B.get_next 
@@ -983,7 +983,7 @@ struct
           val () = if get_continuous_physics world andalso dt > 0.0
                    then solve_toi world
                    else ()
-          val toi_time = get_milliseconds timer
+          val toi_time = get_elapsed timer
 
           (* XXX just debug *)
 (*          val () = oapp D.B.get_next 
@@ -1007,13 +1007,18 @@ struct
 
           val () = clear_flag (world, FLAG_LOCKED)
 
-          val step_time = get_milliseconds(step_timer)
+          val step_time = get_elapsed step_timer
           val profile = D.W.get_profile world
       in
-          (#step profile) := step_time;
-          (#collide profile) := collide_time;
-          (#solve profile) := solve_time;
-          (#solve_toi profile) := toi_time
+          D.W.set_profile (world,
+                           {step = step_time,
+                            collide = collide_time,
+                            solve = solve_time,
+                            solve_init = Time.zeroTime,
+                            solve_velocity = Time.zeroTime,
+                            solve_position = Time.zeroTime,
+                            broad_phase = Time.zeroTime,
+                            solve_toi = toi_time })
       end
 
   end (* World *)
