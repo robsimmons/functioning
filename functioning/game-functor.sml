@@ -21,11 +21,12 @@ struct
           in
             val new_observed_time = now ()
             val sim_seconds = toReal (new_observed_time - (!last_simulated_time))
+            val ticks_per_second = Real64.fromInt Game.ticks_per_second
             val num_ticks = Int.max(0,
-                                    Real64.round(sim_seconds * Game.ticks_per_second))
+                                    Real64.round(sim_seconds * ticks_per_second))
             val () = last_simulated_time :=
                      (!last_simulated_time) +
-                      fromReal(Real64.fromInt(num_ticks) / Game.ticks_per_second)
+                      fromReal(Real64.fromInt(num_ticks) / ticks_per_second)
           end
       in
           case option_iterate Game.tick s num_ticks of
