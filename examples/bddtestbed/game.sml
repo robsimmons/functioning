@@ -212,6 +212,35 @@ struct
           val () = BDD.World.step (world, timestep, 8, 3)
       in () end
 
+  fun dotick (s as GS {world, view, test, mouse_joint, settings}) =
+    let
+        val Test {tick = test_tick, ...} = test
+        val () = test_tick world
+        val () = dophysics world
+        val view' = resize view
+        val () = if !(#profile settings)
+                 then
+                     let val {step, collide,
+                              solve, solve_toi, ...} = BDD.World.get_profile world
+                     in
+                         print "profile:\n";
+                         print ("step: " ^ Real.toString step ^ "\n");
+                         print ("collide: " ^ Real.toString collide ^ "\n");
+                         print ("solve: " ^ Real.toString solve ^ "\n");
+                         print ("solve_toi: " ^ Real.toString solve_toi ^ "\n");
+                         ()
+                     end
+                 else ()
+    in
+        SOME (GS {world = world, view = view', test = test,
+                  mouse_joint = mouse_joint, settings = settings})
+    end
+
+  fun tick (s as GS {world, view, test, mouse_joint, settings}) =
+      if not (!(#paused settings))
+      then dotick s
+      else SOME s
+
   fun mouse_motion (s as GS {world, mouse_joint = NONE, test, ...}) p = SOME s
     | mouse_motion (s as GS {world, mouse_joint = SOME ({set_target, ...}, _),
                              test, ...}) p =
@@ -308,6 +337,8 @@ struct
       SOME (init_test Prismatic.test)
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_5}) s =
       SOME (init_test Cradle.test)
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_6}) s =
+      SOME (init_test Tumbler.test)
 
     | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_LEFT}) s =
       update_view s (BDDMath.vec2 (~0.5, 0.0)) 1.0
@@ -335,14 +366,20 @@ struct
           p := not (!p);
           SOME s
       end
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_t}) (s as GS {settings, ...}) =
+      let
+          val t = #profile settings
+      in
+          t := not (!t);
+          SOME s
+      end
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_s}) (s as GS {world, settings, ...}) =
       let
           val p = #paused settings
       in
           if !p
-          then dophysics world
-          else ();
-          SOME s
+          then dotick s
+          else SOME s
       end
 
     | handle_event (SDL.E_MouseDown {button, x, y}) (s as (GS gs)) =
@@ -354,28 +391,7 @@ struct
     | handle_event e (s as GS {world, test = Test {handle_event = he, ... }, ...})  =
       (he world e; SOME s)
 
-  fun tick (s as GS {world, view, test, mouse_joint, settings}) =
-    let val () = if not (!(#paused settings))
-                 then dophysics world
-                 else ()
-        val view' = resize view
-        val () = if !(#profile settings)
-                 then
-                     let val {step, collide,
-                              solve, solve_toi, ...} = BDD.World.get_profile world
-                     in
-                         print "profile:\n";
-                         print ("step: " ^ Real.toString step ^ "\n");
-                         print ("collide: " ^ Real.toString collide ^ "\n");
-                         print ("solve: " ^ Real.toString solve ^ "\n");
-                         print ("solve_toi: " ^ Real.toString solve_toi ^ "\n");
-                         ()
-                     end
-                 else ()
-    in
-        SOME (GS {world = world, view = view', test = test,
-                  mouse_joint = mouse_joint, settings = settings})
-    end
+
 end
 
 structure Main =

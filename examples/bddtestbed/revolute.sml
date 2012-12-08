@@ -170,6 +170,7 @@ fun init world =
    | handle_event _ _ = ()
 
  val test = Test {init = init,
-                  handle_event = handle_event}
+                  handle_event = handle_event,
+                  tick = ignore}
 
 end
