@@ -217,7 +217,6 @@ struct
         val Test {tick = test_tick, ...} = test
         val () = test_tick world
         val () = dophysics world
-        val view' = resize view
         val () = if !(#profile settings)
                  then
                      let val {step, collide,
@@ -232,14 +231,18 @@ struct
                      end
                  else ()
     in
-        SOME (GS {world = world, view = view', test = test,
-                  mouse_joint = mouse_joint, settings = settings})
+        SOME s
     end
 
   fun tick (s as GS {world, view, test, mouse_joint, settings}) =
-      if not (!(#paused settings))
-      then dotick s
-      else SOME s
+      let val view' = resize view
+          val s' = GS {world = world, view = view', test = test,
+                       mouse_joint = mouse_joint, settings = settings}
+      in
+          if not (!(#paused settings))
+          then dotick s'
+          else SOME s'
+      end
 
   fun mouse_motion (s as GS {world, mouse_joint = NONE, test, ...}) p = SOME s
     | mouse_motion (s as GS {world, mouse_joint = SOME ({set_target, ...}, _),
