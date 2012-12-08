@@ -223,10 +223,10 @@ struct
                               solve, solve_toi, ...} = BDD.World.get_profile world
                      in
                          print "profile:\n";
-                         print ("step: " ^ Real.toString step ^ " ");
-                         print ("collide: " ^ Real.toString collide ^ " ");
-                         print ("solve: " ^ Real.toString solve ^ " ");
-                         print ("solve_toi: " ^ Real.toString solve_toi ^ "\n");
+                         print ("step: " ^ Real.toString (!step) ^ " ");
+                         print ("collide: " ^ Real.toString (!collide) ^ " ");
+                         print ("solve: " ^ Real.toString (!solve) ^ " ");
+                         print ("solve_toi: " ^ Real.toString (!solve_toi) ^ "\n");
                          ()
                      end
                  else ()

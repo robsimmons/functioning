@@ -115,14 +115,14 @@ struct
                        }
          | Unknown of unit
 
-  type profile = { step : real,
-                   collide : real,
-                   solve : real,
-                   solve_init : real,
-                   solve_velocity : real,
-                   solve_position : real,
-                   broad_phase : real,
-                   solve_toi : real
+  type profile = { step : real ref,
+                   collide : real ref,
+                   solve : real ref,
+                   solve_init : real ref,
+                   solve_velocity : real ref,
+                   solve_position : real ref,
+                   broad_phase : real ref,
+                   solve_toi : real ref
                  }
 
 end
