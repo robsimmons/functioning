@@ -154,14 +154,14 @@ struct
                    
                   warm_starting = true,
                   continuous_physics = true,
-                  profile = { step = 0.0,
-                              collide = 0.0,
-                              solve = 0.0,
-                              solve_init = 0.0,
-                              solve_velocity = 0.0,
-                              solve_position = 0.0,
-                              broad_phase = 0.0,
-                              solve_toi = 0.0 },
+                  profile = { step = ref 0.0,
+                              collide = ref 0.0,
+                              solve = ref 0.0,
+                              solve_init = ref 0.0,
+                              solve_velocity = ref 0.0,
+                              solve_position = ref 0.0,
+                              broad_phase = ref 0.0,
+                              solve_toi = ref 0.0 },
                    
                   broad_phase = BDDBroadPhase.broadphase (),
                   contact_list = NONE,
@@ -1008,16 +1008,12 @@ struct
           val () = clear_flag (world, FLAG_LOCKED)
 
           val step_time = get_milliseconds(step_timer)
-
+          val profile = D.W.get_profile world
       in
-          D.W.set_profile (world, { step = step_time,
-                                    collide = collide_time,
-                                    solve = solve_time,
-                                    solve_init = 0.0,
-                                    solve_velocity = 0.0,
-                                    solve_position = 0.0,
-                                    broad_phase = 0.0,
-                                    solve_toi = toi_time })
+          (#step profile) := step_time;
+          (#collide profile) := collide_time;
+          (#solve profile) := solve_time;
+          (#solve_toi profile) := toi_time
       end
 
   end (* World *)
