@@ -159,6 +159,7 @@ fun world cc = ("W", "World", "world", "WORLD",
               (* For debugging the solver. Why not flags? *)
               ("warm_starting", "bool"),
               ("continuous_physics", "bool"),
+              ("profile", "BDDDynamicsTypes.profile"),
               (* Port Note: Folded the "contact manager" object into the world
                  object. *)
               (* The broad phase uses the userdata to point back to the 

@@ -90,7 +90,8 @@ struct
           val view = View {center = center, zoom = zoom,
                            needs_resize = true}
           val settings = {draw_contacts = ref false,
-                          paused = ref false}
+                          paused = ref false,
+                          profile = ref false}
       in GS { test = test, mouse_joint = NONE, world = world,
               view = view, settings = settings}
       end
@@ -358,6 +359,19 @@ struct
                  then dophysics world
                  else ()
         val view' = resize view
+        val () = if !(#profile settings)
+                 then
+                     let val {step, collide,
+                              solve, solve_toi, ...} = BDD.World.get_profile world
+                     in
+                         print "profile:\n";
+                         print ("step: " ^ Real.toString step ^ "\n");
+                         print ("collide: " ^ Real.toString collide ^ "\n");
+                         print ("solve: " ^ Real.toString solve ^ "\n");
+                         print ("solve_toi: " ^ Real.toString solve_toi ^ "\n");
+                         ()
+                     end
+                 else ()
     in
         SOME (GS {world = world, view = view', test = test,
                   mouse_joint = mouse_joint, settings = settings})

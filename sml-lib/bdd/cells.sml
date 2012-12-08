@@ -95,6 +95,7 @@ struct
     inv_dt0 : (real) ref,
     warm_starting : (bool) ref,
     continuous_physics : (bool) ref,
+    profile : (BDDDynamicsTypes.profile) ref,
     broad_phase : (('b, 'f, 'j) fixturecell BDDBroadPhase.broadphase) ref,
     contact_list : (('b, 'f, 'j) contactcell option) ref,
     contact_count : (int) ref,
@@ -325,6 +326,7 @@ struct
     fun get_inv_dt0 (W { inv_dt0, ... }) = !inv_dt0
     fun get_warm_starting (W { warm_starting, ... }) = !warm_starting
     fun get_continuous_physics (W { continuous_physics, ... }) = !continuous_physics
+    fun get_profile (W { profile, ... }) = !profile
     fun get_broad_phase (W { broad_phase, ... }) = !broad_phase
     fun get_contact_list (W { contact_list, ... }) = !contact_list
     fun get_contact_count (W { contact_count, ... }) = !contact_count
@@ -346,6 +348,7 @@ struct
     fun set_inv_dt0 (W { inv_dt0, ... }, v) = inv_dt0 := v
     fun set_warm_starting (W { warm_starting, ... }, v) = warm_starting := v
     fun set_continuous_physics (W { continuous_physics, ... }, v) = continuous_physics := v
+    fun set_profile (W { profile, ... }, v) = profile := v
     fun set_broad_phase (W { broad_phase, ... }, v) = broad_phase := v
     fun set_contact_list (W { contact_list, ... }, v) = contact_list := v
     fun set_contact_count (W { contact_count, ... }, v) = contact_count := v
@@ -356,19 +359,20 @@ struct
     fun set_post_solve (W { post_solve, ... }, v) = post_solve := v
     fun new ({ flags, body_list, joint_list, body_count, joint_count, gravity,
     allow_sleep, ground_body, goodbye_joint_hook, goodbye_fixture_hook,
-    inv_dt0, warm_starting, continuous_physics, broad_phase, contact_list,
-    contact_count, should_collide, begin_contact, end_contact, pre_solve,
-    post_solve }) = 
+    inv_dt0, warm_starting, continuous_physics, profile, broad_phase,
+    contact_list, contact_count, should_collide, begin_contact, end_contact,
+    pre_solve, post_solve }) = 
       W { flags = ref flags, body_list = ref body_list, joint_list = ref
       joint_list, body_count = ref body_count, joint_count = ref joint_count,
       gravity = ref gravity, allow_sleep = ref allow_sleep, ground_body = ref
       ground_body, goodbye_joint_hook = ref goodbye_joint_hook,
       goodbye_fixture_hook = ref goodbye_fixture_hook, inv_dt0 = ref inv_dt0,
       warm_starting = ref warm_starting, continuous_physics = ref
-      continuous_physics, broad_phase = ref broad_phase, contact_list = ref
-      contact_list, contact_count = ref contact_count, should_collide = ref
-      should_collide, begin_contact = ref begin_contact, end_contact = ref
-      end_contact, pre_solve = ref pre_solve, post_solve = ref post_solve }
+      continuous_physics, profile = ref profile, broad_phase = ref broad_phase,
+      contact_list = ref contact_list, contact_count = ref contact_count,
+      should_collide = ref should_collide, begin_contact = ref begin_contact,
+      end_contact = ref end_contact, pre_solve = ref pre_solve, post_solve =
+      ref post_solve }
     fun eq (W { flags, ... }, W { flags = r___, ... }) =
         flags = r___
   end
