@@ -73,6 +73,8 @@ struct
   fun checktreestructure s (ref { node_count : int, path : Word32.word, root : 'a aabb_proxy }) =
       checkstructure s root
 
+  fun checktreestructure _ _ = ()
+
   fun debugprint pa (tree as ref { node_count, path, root }) =
       let
           fun indent 0 = ()

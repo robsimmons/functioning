@@ -260,7 +260,7 @@ fun initialize_velocity_constraints ({ step,
                                MAX_CONDITION_NUMBER * (k11 * k22 - k12 * k12)
                             then (* K is safe to invert. *)
                                 let
-                                    val k = mat22cols (vec2(k11, k12), vec2(k12, k22))
+                                    val k = mat22with (k11, k12, k12, k22)
                                     val normal_mass = mat22inverse k
                                 in
                                     (k, normal_mass, vc_points)
