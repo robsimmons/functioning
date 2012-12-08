@@ -13,6 +13,7 @@ prismatic.sml
 cradle.sml
 varying-restitution.sml
 vertical-stack.sml
+tumbler.sml
 render.sml
 game.sml
 

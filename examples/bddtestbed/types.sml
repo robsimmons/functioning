@@ -18,7 +18,8 @@ datatype view = View of
 
 datatype test = Test of
          {init : BDD.world -> unit,
-          handle_event : BDD.world -> SDL.event -> unit
+          handle_event : BDD.world -> SDL.event -> unit,
+          tick : BDD.world -> unit
          }
 
 type settings =
