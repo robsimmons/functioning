@@ -5,14 +5,8 @@
 structure GL :> GL =
     struct
 
-
-
-
-
-
         type GLreal = Real32.real
-        type GLdouble = real
-
+        type GLdouble = Real64.real
 
         type GLenum = Word.word
         (* Specify attributes of (part) of a primitive *)
