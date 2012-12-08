@@ -451,6 +451,7 @@ struct
            PERF: Did doing this make some of the counts dead? *)
         val () = dprint (fn () => "SOLVE.\n")
 
+(*
         (* XXX just debug *)
         val () = oapp D.B.get_next
             (fn b =>
@@ -461,6 +462,7 @@ struct
              end)
             (get_body_list world)
         (* XXX end just debug *)
+*)
 
         (* Clear all the island flags. *)
         val () = oapp D.B.get_next
@@ -944,7 +946,7 @@ struct
                    else ()
 
           (* XXX all debug *)
-          fun onecontact c =
+(*          fun onecontact c =
         let
             val { point_count, ... } = Contact.get_manifold c
             val world_manifold = Contact.get_world_manifold c
@@ -966,8 +968,9 @@ struct
              end);
 
             dprint (fn () => "\n")
-        end
+        end 
           val () = oapp Contact.get_next onecontact (D.W.get_contact_list world)
+*)
 
           (* XXX end all debug *)
 
@@ -988,7 +991,7 @@ struct
           val collide_time = get_milliseconds timer
 
           (* XXX all debug *)
-          fun onecontact2 c =
+(*          fun onecontact2 c =
         let
             val { point_count, ... } = Contact.get_manifold c
             val world_manifold = Contact.get_world_manifold c
@@ -1012,6 +1015,7 @@ struct
             dprint (fn () => "\n")
         end
           val () = oapp Contact.get_next onecontact2 (D.W.get_contact_list world)
+*)
 
 
           (* Integrate velocities, solve velocity constraints, and
@@ -1041,14 +1045,14 @@ struct
           val toi_time = get_milliseconds timer
 
           (* XXX just debug *)
-          val () = oapp D.B.get_next
+(*          val () = oapp D.B.get_next
               (fn b =>
                let in
                    dprint (fn () =>
                            "Posttoi sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
                            "           xf: " ^ xftos (D.B.get_xf b) ^ "\n")
                end)
-              (get_body_list world)
+              (get_body_list world) *)
           (* XXX end just debug *)
 
 

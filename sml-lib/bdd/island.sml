@@ -94,18 +94,18 @@ struct
                     allow_sleep : bool) : unit =
       let
           (* XXX PERF should be unnecessary, but makes traces more like box2d. *)
+
           val bodies = rev bodies
           val contacts = rev contacts
           val joints = rev joints
 
           val bodies = Vector.fromList bodies
           val joints = Vector.fromList joints
+          val contacts = Vector.fromList contacts
 
           val () = dprint (fn () => "Solve island with " ^
                            Int.toString (Vector.length bodies) ^ " bodies and " ^
-                           Int.toString (length contacts) ^ " contacts\n")
-
-          val contacts = Vector.fromList contacts
+                           Int.toString (Vector.length contacts) ^ " contacts\n")
 
           val h = #dt step
 
