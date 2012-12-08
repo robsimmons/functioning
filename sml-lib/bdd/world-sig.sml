@@ -245,6 +245,8 @@ sig
     (* Enable/disable continuous physics, for testing. *)
     val set_continuous_physics : world * bool -> unit
 
+    val get_profile : world -> BDDDynamicsTypes.profile
+
     (* Number of broad-phase proxies. *)
     val get_proxy_count : world -> int
 

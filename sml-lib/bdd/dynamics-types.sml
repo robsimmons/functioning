@@ -115,5 +115,14 @@ struct
                        }
          | Unknown of unit
 
+  type profile = { step : real,
+                   collide : real,
+                   solve : real,
+                   solve_init : real,
+                   solve_velocity : real,
+                   solve_position : real,
+                   broad_phase : real,
+                   solve_toi : real
+                 }
 
 end

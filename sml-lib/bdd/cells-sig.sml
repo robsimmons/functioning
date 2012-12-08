@@ -289,6 +289,7 @@ sig
     val get_inv_dt0 : ('b, 'f, 'j) world -> (real)
     val get_warm_starting : ('b, 'f, 'j) world -> (bool)
     val get_continuous_physics : ('b, 'f, 'j) world -> (bool)
+    val get_profile : ('b, 'f, 'j) world -> (BDDDynamicsTypes.profile)
     val get_broad_phase : ('b, 'f, 'j) world -> (('b, 'f, 'j) fixture BDDBroadPhase.broadphase)
     val get_contact_list : ('b, 'f, 'j) world -> (('b, 'f, 'j) contact option)
     val get_contact_count : ('b, 'f, 'j) world -> (int)
@@ -311,6 +312,7 @@ sig
     val set_inv_dt0 : ('b, 'f, 'j) world * (real) -> unit
     val set_warm_starting : ('b, 'f, 'j) world * (bool) -> unit
     val set_continuous_physics : ('b, 'f, 'j) world * (bool) -> unit
+    val set_profile : ('b, 'f, 'j) world * (BDDDynamicsTypes.profile) -> unit
     val set_broad_phase : ('b, 'f, 'j) world * (('b, 'f, 'j) fixture BDDBroadPhase.broadphase) -> unit
     val set_contact_list : ('b, 'f, 'j) world * (('b, 'f, 'j) contact option) -> unit
     val set_contact_count : ('b, 'f, 'j) world * (int) -> unit
@@ -334,6 +336,7 @@ sig
       inv_dt0 : real,
       warm_starting : bool,
       continuous_physics : bool,
+      profile : BDDDynamicsTypes.profile,
       broad_phase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase,
       contact_list : ('b, 'f, 'j) contact option,
       contact_count : int,

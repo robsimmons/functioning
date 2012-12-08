@@ -23,7 +23,8 @@ datatype test = Test of
 
 type settings =
          { draw_contacts : bool ref,
-           paused : bool ref
+           paused : bool ref,
+           profile : bool ref
          }
 
 type mouse_joint = {get_target : unit -> BDDMath.vec2,
