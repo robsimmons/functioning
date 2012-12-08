@@ -224,10 +224,10 @@ struct
     SDL.flip screen
   )
 
-  val ticks_per_second = 60.0
+  val ticks_per_second = 60
 
   fun dophysics () = 
-      let val timestep = 1.0 / ticks_per_second
+      let val timestep = 1.0 / (Real.fromInt ticks_per_second)
           val () = BDD.World.step (world, timestep, 10, 10)
       in () end
       

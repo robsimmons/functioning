@@ -61,7 +61,7 @@ struct
     | handle_event SDL.E_Quit s = NONE
     | handle_event _ s = SOME s
 
-  val ticks_per_second = 60.0
+  val ticks_per_second = 60
 
   fun tick {key = k, things = locs} =
     let
