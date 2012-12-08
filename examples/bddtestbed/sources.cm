@@ -2,7 +2,6 @@ Group is
 
 ../../functioning/sources.cm
 ../../opengl/GL.cm
-../../opengl/GLU.cm
 
 ../../sml-lib/bdd/bdd.cm
 

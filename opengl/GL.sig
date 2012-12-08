@@ -4,13 +4,8 @@
 signature GL =
     sig
 
-
-
-
-
-
         type GLreal = Real32.real
-        type GLdouble = real
+        type GLdouble = Real64.real
 
         type GLenum = Word.word
         datatype realspec = realRGB of GLreal * GLreal * GLreal

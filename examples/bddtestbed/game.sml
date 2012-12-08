@@ -221,12 +221,13 @@ struct
                  then
                      let val {step, collide,
                               solve, solve_toi, ...} = BDD.World.get_profile world
+                         fun toString t = Real64.toString (1000.0 * (Time.toReal t))
                      in
                          print "profile:\n";
-                         print ("step: " ^ Real.toString (!step) ^ " ");
-                         print ("collide: " ^ Real.toString (!collide) ^ " ");
-                         print ("solve: " ^ Real.toString (!solve) ^ " ");
-                         print ("solve_toi: " ^ Real.toString (!solve_toi) ^ "\n");
+                         print ("step: " ^ toString (step) ^ " ");
+                         print ("collide: " ^ toString (collide) ^ " ");
+                         print ("solve: " ^ toString (solve) ^ " ");
+                         print ("solve_toi: " ^ toString (solve_toi) ^ "\n");
                          ()
                      end
                  else ()

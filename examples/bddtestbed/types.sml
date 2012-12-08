@@ -1,7 +1,7 @@
 structure Types =
 struct
 
-datatype spec = RGB of real * real * real;
+datatype spec = RGB of GL.GLdouble * GL.GLdouble * GL.GLdouble;
 
 structure BDD = BDDWorld(
                 struct type fixture_data = unit

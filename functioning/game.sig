@@ -21,5 +21,5 @@ sig
      It is important that calls to tick are cheap enough
      that this rate can be comfortably achieved --- otherwise
      rendering will occur less and less frequently. *)
-  val ticks_per_second : real
+  val ticks_per_second : Real64.real
 end
