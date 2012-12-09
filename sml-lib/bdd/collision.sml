@@ -16,92 +16,71 @@ struct
 
   exception BDDCollision of string
 
-  (* TODO(twm): Replace with the version below, that creates
-     a new manifold? *)
-  fun initialize_manifold (world_manifold : world_manifold,
-                           manifold : manifold,
-                           xfa : transform, radiusa : real,
-                           xfb, radiusb) =
+  fun create_world_manifold (manifold : manifold,
+                             xfa : transform, radiusa : real,
+                             xfb : transform, radiusb : real) : world_manifold =
     if #point_count manifold = 0
-    then ()
+    then { normal = vec2 (0.0, 0.0),
+           points = Array.fromList nil }
     else case #typ manifold of
         E_Circles =>
             let
-                val () = vec2set (#normal world_manifold, 1.0, 0.0)
                 val pointa = multransformv(xfa, #local_point manifold)
                 val pointb = multransformv
                     (xfb,
                      #local_point (Array.sub(#points manifold, 0)))
-                val () =
+                val normal =
                     if distance_squared (pointa, pointb) >
                        epsilon * epsilon
-                    then (vec2setfrom (#normal world_manifold, pointb :-: pointa);
-                          ignore (vec2normalize (#normal world_manifold)))
-                    else ()
+                    then vec2normalized (pointb :-: pointa)
+                    else vec2 (1.0, 0.0)
 
-                val ca = pointa :+: radiusa *: (#normal world_manifold)
-                val cb = pointb :-: radiusb *: (#normal world_manifold)
+                val ca = pointa :+: radiusa *: normal
+                val cb = pointb :-: radiusb *: normal
             in
-                Array.update(#points world_manifold, 0, 0.5 *: (ca :+: cb))
+                { normal = normal,
+                  points = Array.fromList [0.5 *: (ca :+: cb)] }
             end
 
       | E_FaceA =>
             let
-                val () = vec2setfrom (#normal world_manifold,
-                                      transformr xfa +*: #local_normal manifold)
+                val normal = transformr xfa +*: #local_normal manifold
                 val plane_point = xfa @*: #local_point manifold
+                fun one_point i =
+                    let val clip_point = xfb @*: #local_point (Array.sub(#points manifold,
+                                                                         i))
+                        val ca = clip_point :+:
+                                 (radiusa - dot2(clip_point :-: plane_point,
+                                                 normal)) *:
+                                 normal
+                        val cb = clip_point :-: radiusb *: normal
+                    in
+                        0.5 *: (ca :+: cb)
+                    end
             in
-                for 0 (#point_count manifold - 1)
-                (fn i =>
-                 let val clip_point = xfb @*: #local_point (Array.sub(#points manifold,
-                                                                      i))
-                     val ca = clip_point :+:
-                         (radiusa - dot2(clip_point :-:
-                                         plane_point,
-                                         #normal world_manifold)) *:
-                         #normal world_manifold
-                     val cb = clip_point :-: radiusb *: #normal world_manifold
-                 in
-                     Array.update(#points world_manifold, i, 0.5 *: (ca :+: cb))
-                 end)
+                { normal = normal,
+                  points = Array.tabulate(#point_count manifold, one_point) }
             end
 
       | E_FaceB =>
-            let val () = vec2setfrom (#normal world_manifold,
-                                      transformr xfb +*: #local_normal manifold)
+            let val normal = transformr xfb +*: #local_normal manifold
                 val plane_point = xfb @*: #local_point manifold
-            in
-                for 0 (#point_count manifold - 1)
-                (fn i =>
-                 let val clip_point = xfa @*: #local_point (Array.sub(#points manifold,
+                fun one_point i =
+                    let val clip_point = xfa @*: #local_point (Array.sub(#points manifold,
                                                                       i))
-                     val cb = clip_point :+:
-                         (radiusb - dot2(clip_point :-:
-                                         plane_point,
-                                         #normal world_manifold)) *:
-                         #normal world_manifold
-                     val ca = clip_point :-: radiusa *: #normal world_manifold
-                 in
-                     Array.update(#points world_manifold, i, 0.5 *: (ca :+: cb))
-                 end);
+                        val cb = clip_point :+:
+                                  (radiusb - dot2(clip_point :-: plane_point,
+                                                  normal)) *:
+                                  normal
+                        val ca = clip_point :-: radiusa *: normal
+                    in
+                        0.5 *: (ca :+: cb)
+                    end
+            in
                 (* Ensure normal points from A to B. *)
-                vec2setfrom (#normal world_manifold, vec2neg (#normal world_manifold))
+                { normal = vec2neg normal,
+                  points = Array.tabulate(#point_count manifold, one_point) }
             end
-
-  fun create_world_manifold (manifold : manifold,
-                             xfa : transform, radiusa : real,
-                             xfb, radiusb) : world_manifold =
-      let
-          val world_manifold = 
-              { normal = vec2 (0.0, 0.0),
-                points = Array.tabulate(max_manifold_points, 
-                                        fn _ => vec2 (0.0, 0.0)) }
-      in
-          initialize_manifold (world_manifold, manifold, 
-                               xfa, radiusa,
-                               xfb, radiusb);
-          world_manifold
-      end
 
 
   fun get_point_states (manifold1 : manifold, manifold2 : manifold) =
