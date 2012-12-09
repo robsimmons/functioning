@@ -158,10 +158,6 @@ struct
                   profile = { step = Time.zeroTime,
                               collide = Time.zeroTime,
                               solve = Time.zeroTime,
-                              solve_init = Time.zeroTime,
-                              solve_velocity = Time.zeroTime,
-                              solve_position = Time.zeroTime,
-                              broad_phase = Time.zeroTime,
                               solve_toi = Time.zeroTime },
 
                   broad_phase = BDDBroadPhase.broadphase (),
@@ -1073,10 +1069,6 @@ struct
                            {step = step_time,
                             collide = collide_time,
                             solve = solve_time,
-                            solve_init = Time.zeroTime,
-                            solve_velocity = Time.zeroTime,
-                            solve_position = Time.zeroTime,
-                            broad_phase = Time.zeroTime,
                             solve_toi = toi_time })
       end
 

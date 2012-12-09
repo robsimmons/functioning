@@ -91,7 +91,7 @@ struct
                            needs_resize = true}
           val settings = {draw_contacts = ref false,
                           paused = ref false,
-                          profile = ref false}
+                          profile = ref NONE}
       in GS { test = test, mouse_joint = NONE, world = world,
               view = view, settings = settings}
       end
@@ -217,20 +217,49 @@ struct
         val Test {tick = test_tick, ...} = test
         val () = test_tick world
         val () = dophysics world
-        val () = if !(#profile settings)
-                 then
-                     let val {step, collide,
-                              solve, solve_toi, ...} = BDD.World.get_profile world
+        val () = case !(#profile settings) of
+                     SOME {step_count, total, max} =>
+                     let
+                         val step_count' = step_count + 1
+                         val {step, collide,
+                              solve, solve_toi} = BDD.World.get_profile world
+                         val total' = {step = Time.+(step, #step total),
+                                       collide = Time.+(collide, #collide total),
+                                       solve = Time.+(solve, #solve total),
+                                       solve_toi = Time.+(solve_toi, #solve_toi total)}
+                         fun tMax (t1, t2) =
+                             if Time.>(t1, t2) then t1 else t2
+                         val max' = {step = tMax(step, #step max),
+                                     collide = tMax(collide, #collide max),
+                                     solve = tMax(solve, #solve max),
+                                     solve_toi = tMax(solve_toi, #solve_toi max)}
                          fun toString t = Real64.toString (1000.0 * (Time.toReal t))
+                         fun totalString t = Real64.toString
+                                                 (1000.0 * (Time.toReal t) /
+                                                  Real64.fromInt step_count')
                      in
                          print "profile:\n";
-                         print ("step: " ^ toString (step) ^ " ");
-                         print ("collide: " ^ toString (collide) ^ " ");
-                         print ("solve: " ^ toString (solve) ^ " ");
-                         print ("solve_toi: " ^ toString (solve_toi) ^ "\n");
-                         ()
+                         print ("step: " ^ toString (step) ^ " [");
+                         print (totalString (#step total') ^ "] (");
+                         print (toString (#step max') ^ ") ");
+
+                         print ("collide: " ^ toString (collide) ^ " [");
+                         print (totalString (#collide total') ^ "] (");
+                         print (toString (#collide max') ^ ") ");
+
+                         print ("solve: " ^ toString (solve) ^ " [");
+                         print (totalString (#solve total') ^ "] (");
+                         print (toString (#solve max') ^ ") ");
+
+                         print ("solve_toi: " ^ toString (solve_toi) ^ " [");
+                         print (totalString (#solve_toi total') ^ "] (");
+                         print (toString (#solve_toi max') ^ ")\n");
+
+                         (#profile settings) := (SOME {step_count = step_count',
+                                                       total = total',
+                                                       max = max' })
                      end
-                 else ()
+                   | NONE => ()
     in
         SOME s
     end
@@ -373,8 +402,11 @@ struct
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_t}) (s as GS {settings, ...}) =
       let
           val t = #profile settings
+          val t' = case !t of
+                       NONE => SOME (new_profile_data ())
+                     | _ => NONE
       in
-          t := not (!t);
+          t := t';
           SOME s
       end
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_s}) (s as GS {world, settings, ...}) =

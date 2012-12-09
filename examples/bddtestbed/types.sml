@@ -22,10 +22,24 @@ datatype test = Test of
           tick : BDD.world -> unit
          }
 
+type profile_data = { step_count : int,
+                      total : BDDDynamicsTypes.profile,
+                      max : BDDDynamicsTypes.profile
+                    }
+
+fun new_profile_data () =
+    let fun new_profile () = {step = Time.zeroTime,
+                              collide = Time.zeroTime,
+                              solve = Time.zeroTime,
+                              solve_toi = Time.zeroTime}
+    in
+        {step_count = 0, total = new_profile(), max = new_profile()}
+    end
+
 type settings =
          { draw_contacts : bool ref,
            paused : bool ref,
-           profile : bool ref
+           profile : profile_data option ref
          }
 
 type mouse_joint = {get_target : unit -> BDDMath.vec2,
