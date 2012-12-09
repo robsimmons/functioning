@@ -2,6 +2,10 @@
   All files in this directory are Copyright (c) 2006-2011 Tom Murphy VII
   and Erin Catto.
 
+  Modified 2012 by David Renshaw.
+   -- added joints: mouse, revolute, prismatic
+   -- ported the substepping continuous physics from the newer Box2D
+   -- switched to immutable vec2 and vec3 (big performance improvement!)
 
   BoxDiaDia Copyright (c) 2010-2011 Tom Murphy VII http://tom7.org/
 
