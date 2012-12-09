@@ -61,47 +61,16 @@ struct
   type vec2 = { x : real, y : real }
 
   fun vec2 (x, y) = { x = x, y = y }
-(*  fun vec2copy ({x, y} : vec2) = vec2(!x, !y) *)
   fun vec2x ({x, y = _} : vec2) = x
   fun vec2y ({x = _, y} : vec2) = y
   fun vec2xy {x, y} = (x, y)
-(*  fun vec2setzero {x, y} = (x := 0.0; y := 0.0) *)
-(*  fun vec2set ({x, y}, xx, yy) = (x := xx; y := yy) *)
-(*  fun vec2setfrom ({x, y} : vec2, {x = xx, y = yy} : vec2) =
-      (x := !xx; y := !yy) *)
   fun vec2neg ({x, y} : vec2) = { x = (0.0 - x), y = (0.0 - y) }
   fun vec2idx ({x, y = _} : vec2) 0 = x
     | vec2idx {x = _, y} 1 = y
     | vec2idx _ _ = raise Subscript
-(*
-  fun vec2pluseq ({x, y} : vec2, {x = ref xx, y = ref yy} : vec2) =
-      (x := !x + xx; y := !y + yy)
-
-  fun vec2minuseq ({x, y} : vec2, {x = ref xx, y = ref yy} : vec2) =
-      (x := !x - xx; y := !y - yy)
-
-  fun vec2timeseq ({x, y} : vec2, a : real) =
-      (x := !x * a; y := !y * a)
-*)
   fun vec2length {x, y} = sqrt(x * x + y * y)
 
   fun vec2length_squared ({x, y} : vec2) = x * x + y * y
-
-  (* Convert into a unit vector with the same direction.
-     Returns the (old) length. *)
-(*  fun vec2normalize (v as {x, y}) =
-      let val length = vec2length v
-      in
-          if length < BDDSettings.epsilon
-          then 0.0
-          else let val inv = 1.0 / length
-               in
-                   x := !x * inv;
-                   y := !y * inv;
-                   length
-               end
-      end
-*)
 
   fun vec2normalized (v as {x, y}) : vec2 =
       let val length = vec2length v
@@ -117,13 +86,10 @@ struct
 
   type vec3 = { x : real, y : real, z : real }
   fun vec3 (x, y, z) = { x = x, y = y, z = z }
-(*  fun vec3copy ({x, y, z} : vec3) = vec3 (!x, !y, !z) *)
   fun vec3x ({x, y = _, z = _} : vec3) = x
   fun vec3y ({x = _, y, z = _} : vec3) = y
   fun vec3z ({x = _, y = _, z} : vec3) = z
   fun vec3xyz {x, y, z} = (x, y, z)
-(*  fun vec3zero {x : real, y : real, z : real} = (x := 0.0; y := 0.0; z := 0.0) *)
-(*  fun vec3set ({x, y, z}, xx, yy, zz) = (x := xx; y := yy; z := zz) *)
   fun vec3neg ({x, y, z} : vec3) = { x = (0.0 - x),
                                      y = (0.0 - y),
                                      z = (0.0 - z) }
@@ -132,23 +98,11 @@ struct
     | vec3idx {x = _, y = _, z} 2 = z
     | vec3idx _ _ = raise Subscript
 
-(*  fun vec3pluseq ({x, y, z} : vec3, {x = ref xx, y = ref yy, z = ref zz}) =
-      (x := !x + xx; y := !y + yy; z := !z + zz)
-
-  fun vec3minuseq ({x, y, z} : vec3, {x = ref xx, y = ref yy, z = ref zz}) =
-      (x := !x - xx; y := !y - yy; z := !z - zz)
-
-  fun vec3timeseq ({x, y, z} : vec3, a : real) =
-      (x := !x * a; y := !y * a; z := !z * a)
-*)
-
   (* 2x2 matrix; column-major order. *)
   type mat22 = { col1 : vec2, col2 : vec2 }
 
   fun mat22cols (col1, col2) = { col1 = col1,
                                  col2 = col2 }
-
-(*  fun mat22copy { col1, col2 } = mat22cols (col1, col2) *)
 
   fun mat22with (a11, a12,
                  a21, a22) =
@@ -174,34 +128,6 @@ struct
                      s, c)
       end
 
-(*
-  fun mat22set ({ col1, col2 }, c1, c2) =
-      (vec2setfrom (col1, c1);
-       vec2setfrom (col2, c2))
-*)
-
-(*
-  fun mat22setangle ({ col1, col2 } : mat22, angle) =
-      let val c = Math.cos angle
-          val s = Math.sin angle
-      in
-          vec2set(col1, c, 
-                        s);
-                             vec2set(col2, ~s, 
-                                            c)
-      end
-*)
-(*
-  fun mat22setidentity ({ col1, col2 } : mat22) =
-      (vec2set(col1, 1.0, 
-                     0.0);
-                             vec2set(col2, 0.0, 
-                                           1.0))
-*)
-(*
-  fun mat22setzero ({ col1, col2 } : mat22) =
-      (vec2setzero col1; vec2setzero col2)
-*)
   fun mat22getangle ({ col1, col2 = _ } : mat22) =
       atan2 (vec2y col1, vec2x col1)
 
@@ -258,10 +184,6 @@ struct
   fun mat33col2 { col1 = _, col2, col3 = _ } = col2
   fun mat33col3 { col1 = _, col2 = _, col3 } = col3
 
-(*  fun mat33setzero { col1, col2, col3 } =
-      (vec3zero col1; vec3zero col2; vec3zero col3)
-*)
-
   fun dot2(a : vec2, b : vec2) : real =
       vec2x a * vec2x b + vec2y a * vec2y b
   fun dot3(a : vec3, b : vec3) : real =
@@ -313,19 +235,10 @@ struct
         r = mat22angle angle }
   fun transformposition { position, r = _ } = position
   fun transformr ({ position = _, r } : transform) = r
-(*  fun transform_setidentity ({ position, r } : transform) =
-      (vec2setzero position;
-       mat22setidentity r)
-*)
 
   fun identity_transform () = { position = vec2 (0.0, 0.0),
                                 r = mat22with (1.0, 0.0,
                                                0.0, 1.0) }
-(*
-  fun transform_set ({ position, r }, pp, rr : real) =
-      (vec2set(position, vec2x pp, vec2y pp);
-       mat22setangle(r, rr))
-*)
 
   fun transform_getangle { position = _, r } = mat22getangle r
 
