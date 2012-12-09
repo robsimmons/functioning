@@ -111,10 +111,6 @@ struct
   type profile = { step : Time.time,
                    collide : Time.time,
                    solve : Time.time,
-                   solve_init : Time.time,
-                   solve_velocity : Time.time,
-                   solve_position : Time.time,
-                   broad_phase : Time.time,
                    solve_toi : Time.time
                  }
 
