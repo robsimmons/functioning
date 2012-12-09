@@ -22,58 +22,40 @@ sig
      ML and probably performs better. *)
   type vec2
   val vec2 : real * real -> vec2
-  val vec2copy : vec2 -> vec2
   val vec2x : vec2 -> real
   val vec2y : vec2 -> real
   val vec2xy : vec2 -> real * real
-  val vec2setzero : vec2 -> unit
-  val vec2set : vec2 * real * real -> unit
-  val vec2setfrom : vec2 * vec2 -> unit
+
   val vec2neg : vec2 -> vec2
   (* 0 is x, 1 is y *)
   val vec2idx : vec2 -> int -> real
   (* v += v' *)
-  val vec2pluseq : vec2 * vec2 -> unit
-  val vec2minuseq : vec2 * vec2 -> unit
-  val vec2timeseq : vec2 * real -> unit
+
   val vec2length : vec2 -> real
   val vec2length_squared : vec2 -> real
-  (* Convert into a unit vector with the same direction.
-     Returns the (old) length. *)
-  val vec2normalize : vec2 -> real
+
   (* Functional version, preferred. *)
   val vec2normalized : vec2 -> vec2
   val vec2is_valid : vec2 -> bool
 
   type vec3
   val vec3 : real * real * real -> vec3
-  val vec3copy : vec3 -> vec3
   val vec3x : vec3 -> real
   val vec3y : vec3 -> real
   val vec3z : vec3 -> real
   val vec3xyz : vec3 -> real * real * real
-  val vec3zero : vec3 -> unit
-  val vec3set : vec3 * real * real * real -> unit
   val vec3neg : vec3 -> vec3
   val vec3idx : vec3 -> int -> real
-  val vec3pluseq : vec3 * vec3 -> unit
-  val vec3minuseq : vec3 * vec3 -> unit
-  val vec3timeseq : vec3 * real -> unit
 
   (* 2x2 matrix; column-major order. Mutable. *)
   type mat22
   val mat22cols : vec2 * vec2 -> mat22
-  val mat22copy : mat22 -> mat22
-  val mat22with : real * real * 
+  val mat22with : real * real *
                   real * real -> mat22
   (* Construct this matrix using an angle (radians).
      This matrix becomes an orthonormal rotation matrix. *)
   val mat22angle : real -> mat22
   (* Set this matrix's columns. *)
-  val mat22set : mat22 * vec2 * vec2 -> unit
-  val mat22setangle : mat22 * real -> unit
-  val mat22setidentity : mat22 -> unit
-  val mat22setzero : mat22 -> unit
   val mat22getangle : mat22 -> real
   val mat22inverse : mat22 -> mat22
   (* Solve A * x = b, where b is a column vector. This is more efficient
@@ -93,7 +75,6 @@ sig
   val mat33col2 : mat33 -> vec3
   val mat33col3 : mat33 -> vec3
 
-  val mat33setzero : mat33 -> unit
   (* Solve A * x = b, where b is a column vector. This is more efficient
      than computing the inverse in one-shot cases. *)
   val mat33solve33 : mat33 * vec3 -> vec3
@@ -110,8 +91,6 @@ sig
   val transform_pos_angle : vec2 * real -> transform
   val transformposition : transform -> vec2
   val transformr : transform -> mat22
-  val transform_setidentity : transform -> unit
-  val transform_set : transform * vec2 * real -> unit
   val transform_getangle : transform -> real
   val identity_transform : unit -> transform
 
@@ -174,7 +153,7 @@ sig
      not coincide with the center of mass. However, to support dynamics
      we must interpolate the center of mass position. *)
   type sweep
-      
+
   val sweep : { (* local center of mass position *)
                 local_center : vec2,
                 (* center world positions *)
@@ -208,7 +187,6 @@ sig
   (* Get the interpolated transform at a specific time.
      alpha is a factor in [0,1], where 0 indicates t0.
      Modifies the transform. *)
-  val sweep_gettransform : sweep * transform * real -> unit
   val sweep_transform : sweep * real -> transform
   (* Advance the sweep forward, yielding a new initial state.
      t is the new initial time. *)

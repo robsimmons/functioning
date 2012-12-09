@@ -16,7 +16,7 @@ struct
 
   type circle = { radius : real, p : vec2 }
 
-  fun clone { radius, p } = { radius = radius, p = vec2copy p }
+  fun clone { radius, p } = { radius = radius, p = p }
 
   fun get_support ({ radius = _, p = _ }, _) = 0
   fun get_support_vertex ({ radius = _, p }, _) = p
@@ -57,9 +57,8 @@ struct
               let val a = ~(c + sqrt sigma)
               in if 0.0 <= a andalso a <= max_fraction * rr
                  then let val a = a / rr
-                          val normal = s :+: a *: r
-                      in 
-                          ignore (vec2normalize normal : real);
+                          val normal = vec2normalized (s :+: a *: r)
+                      in
                           SOME { fraction = a, normal = normal }
                       end
                  else NONE

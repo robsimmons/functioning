@@ -58,22 +58,22 @@ struct
 *)
 
   (* A 2D column vector. *)
-  type vec2 = { x : real ref, y : real ref }
+  type vec2 = { x : real, y : real }
 
-  fun vec2 (x, y) = { x = ref x, y = ref y }
-  fun vec2copy ({x, y} : vec2) = vec2(!x, !y)
-  fun vec2x ({x, y = _} : vec2) = !x
-  fun vec2y ({x = _, y} : vec2) = !y
-  fun vec2xy {x, y} = (!x, !y)
-  fun vec2setzero {x, y} = (x := 0.0; y := 0.0)
-  fun vec2set ({x, y}, xx, yy) = (x := xx; y := yy)
-  fun vec2setfrom ({x, y} : vec2, {x = xx, y = yy} : vec2) =
-      (x := !xx; y := !yy)
-  fun vec2neg ({x, y} : vec2) = { x = ref (0.0 - !x), y = ref (0.0 - !y) }
-  fun vec2idx ({x, y = _} : vec2) 0 = !x
-    | vec2idx {x = _, y} 1 = !y
+  fun vec2 (x, y) = { x = x, y = y }
+(*  fun vec2copy ({x, y} : vec2) = vec2(!x, !y) *)
+  fun vec2x ({x, y = _} : vec2) = x
+  fun vec2y ({x = _, y} : vec2) = y
+  fun vec2xy {x, y} = (x, y)
+(*  fun vec2setzero {x, y} = (x := 0.0; y := 0.0) *)
+(*  fun vec2set ({x, y}, xx, yy) = (x := xx; y := yy) *)
+(*  fun vec2setfrom ({x, y} : vec2, {x = xx, y = yy} : vec2) =
+      (x := !xx; y := !yy) *)
+  fun vec2neg ({x, y} : vec2) = { x = (0.0 - x), y = (0.0 - y) }
+  fun vec2idx ({x, y = _} : vec2) 0 = x
+    | vec2idx {x = _, y} 1 = y
     | vec2idx _ _ = raise Subscript
-
+(*
   fun vec2pluseq ({x, y} : vec2, {x = ref xx, y = ref yy} : vec2) =
       (x := !x + xx; y := !y + yy)
 
@@ -82,14 +82,14 @@ struct
 
   fun vec2timeseq ({x, y} : vec2, a : real) =
       (x := !x * a; y := !y * a)
+*)
+  fun vec2length {x, y} = sqrt(x * x + y * y)
 
-  fun vec2length {x = ref x, y = ref y} = sqrt(x * x + y * y)
-
-  fun vec2length_squared ({x = ref x, y = ref y} : vec2) = x * x + y * y
+  fun vec2length_squared ({x, y} : vec2) = x * x + y * y
 
   (* Convert into a unit vector with the same direction.
      Returns the (old) length. *)
-  fun vec2normalize (v as {x, y}) =
+(*  fun vec2normalize (v as {x, y}) =
       let val length = vec2length v
       in
           if length < BDDSettings.epsilon
@@ -101,38 +101,38 @@ struct
                    length
                end
       end
+*)
 
   fun vec2normalized (v as {x, y}) : vec2 =
       let val length = vec2length v
       in if length < BDDSettings.epsilon
-         then vec2copy v
+         then v
          else let val inv = 1.0 / length
-              in vec2 (!x * inv, !y * inv)
+              in vec2 (x * inv, y * inv)
               end
       end
 
-  fun vec2is_valid {x = ref x, y = ref y} =
+  fun vec2is_valid {x, y} =
       is_valid x andalso is_valid y
-      
 
-  type vec3 = { x : real ref, y : real ref, z : real ref }
-  fun vec3 (x, y, z) = { x = ref x, y = ref y, z = ref z }
-  fun vec3copy ({x, y, z} : vec3) = vec3 (!x, !y, !z)
-  fun vec3x ({x, y = _, z = _} : vec3) = !x
-  fun vec3y ({x = _, y, z = _} : vec3) = !y
-  fun vec3z ({x = _, y = _, z} : vec3) = !z
-  fun vec3xyz {x, y, z} = (!x, !y, !z)
-  fun vec3zero {x : real ref, y : real ref, z : real ref} = (x := 0.0; y := 0.0; z := 0.0)
-  fun vec3set ({x, y, z}, xx, yy, zz) = (x := xx; y := yy; z := zz)
-  fun vec3neg ({x, y, z} : vec3) = { x = ref (0.0 - !x), 
-                                     y = ref (0.0 - !y), 
-                                     z = ref (0.0 - !z) }
-  fun vec3idx ({x, y = _, z = _} : vec3) 0 = !x
-    | vec3idx {x = _, y, z = _} 1 = !y
-    | vec3idx {x = _, y = _, z} 2 = !z
+  type vec3 = { x : real, y : real, z : real }
+  fun vec3 (x, y, z) = { x = x, y = y, z = z }
+(*  fun vec3copy ({x, y, z} : vec3) = vec3 (!x, !y, !z) *)
+  fun vec3x ({x, y = _, z = _} : vec3) = x
+  fun vec3y ({x = _, y, z = _} : vec3) = y
+  fun vec3z ({x = _, y = _, z} : vec3) = z
+  fun vec3xyz {x, y, z} = (x, y, z)
+(*  fun vec3zero {x : real, y : real, z : real} = (x := 0.0; y := 0.0; z := 0.0) *)
+(*  fun vec3set ({x, y, z}, xx, yy, zz) = (x := xx; y := yy; z := zz) *)
+  fun vec3neg ({x, y, z} : vec3) = { x = (0.0 - x),
+                                     y = (0.0 - y),
+                                     z = (0.0 - z) }
+  fun vec3idx ({x, y = _, z = _} : vec3) 0 = x
+    | vec3idx {x = _, y, z = _} 1 = y
+    | vec3idx {x = _, y = _, z} 2 = z
     | vec3idx _ _ = raise Subscript
 
-  fun vec3pluseq ({x, y, z} : vec3, {x = ref xx, y = ref yy, z = ref zz}) =
+(*  fun vec3pluseq ({x, y, z} : vec3, {x = ref xx, y = ref yy, z = ref zz}) =
       (x := !x + xx; y := !y + yy; z := !z + zz)
 
   fun vec3minuseq ({x, y, z} : vec3, {x = ref xx, y = ref yy, z = ref zz}) =
@@ -140,20 +140,21 @@ struct
 
   fun vec3timeseq ({x, y, z} : vec3, a : real) =
       (x := !x * a; y := !y * a; z := !z * a)
+*)
 
   (* 2x2 matrix; column-major order. *)
   type mat22 = { col1 : vec2, col2 : vec2 }
 
-  fun mat22cols (col1, col2) = { col1 = vec2copy col1,
-                                 col2 = vec2copy col2 }
+  fun mat22cols (col1, col2) = { col1 = col1,
+                                 col2 = col2 }
 
-  fun mat22copy { col1, col2 } = mat22cols (col1, col2)
+(*  fun mat22copy { col1, col2 } = mat22cols (col1, col2) *)
 
-  fun mat22with (a11, a12, 
+  fun mat22with (a11, a12,
                  a21, a22) =
-      { col1 = vec2(a11, 
+      { col1 = vec2(a11,
                     a21),
-                            col2 = vec2(a12, 
+                            col2 = vec2(a12,
                                         a22) }
 
   fun mat22col1 { col1, col2 = _ } = col1
@@ -173,11 +174,13 @@ struct
                      s, c)
       end
 
-
+(*
   fun mat22set ({ col1, col2 }, c1, c2) =
       (vec2setfrom (col1, c1);
        vec2setfrom (col2, c2))
+*)
 
+(*
   fun mat22setangle ({ col1, col2 } : mat22, angle) =
       let val c = Math.cos angle
           val s = Math.sin angle
@@ -187,17 +190,18 @@ struct
                              vec2set(col2, ~s, 
                                             c)
       end
-
-
+*)
+(*
   fun mat22setidentity ({ col1, col2 } : mat22) =
       (vec2set(col1, 1.0, 
                      0.0);
                              vec2set(col2, 0.0, 
                                            1.0))
-
+*)
+(*
   fun mat22setzero ({ col1, col2 } : mat22) =
       (vec2setzero col1; vec2setzero col2)
-
+*)
   fun mat22getangle ({ col1, col2 = _ } : mat22) =
       atan2 (vec2y col1, vec2x col1)
 
@@ -254,8 +258,9 @@ struct
   fun mat33col2 { col1 = _, col2, col3 = _ } = col2
   fun mat33col3 { col1 = _, col2 = _, col3 } = col3
 
-  fun mat33setzero { col1, col2, col3 } =
+(*  fun mat33setzero { col1, col2, col3 } =
       (vec3zero col1; vec3zero col2; vec3zero col3)
+*)
 
   fun dot2(a : vec2, b : vec2) : real =
       vec2x a * vec2x b + vec2y a * vec2y b
@@ -302,23 +307,25 @@ struct
       end
 
   type transform = { position : vec2, r : mat22 }
-  fun transform (pp, rr) = { position = vec2copy pp, r = mat22copy rr }
+  fun transform (pp, rr) = { position = pp, r = rr }
   fun transform_pos_angle (pp, angle : real) =
-      { position = vec2copy pp,
+      { position = pp,
         r = mat22angle angle }
   fun transformposition { position, r = _ } = position
   fun transformr ({ position = _, r } : transform) = r
-  fun transform_setidentity ({ position, r } : transform) =
+(*  fun transform_setidentity ({ position, r } : transform) =
       (vec2setzero position;
        mat22setidentity r)
+*)
 
   fun identity_transform () = { position = vec2 (0.0, 0.0),
                                 r = mat22with (1.0, 0.0,
                                                0.0, 1.0) }
-
+(*
   fun transform_set ({ position, r }, pp, rr : real) =
       (vec2set(position, vec2x pp, vec2y pp);
        mat22setangle(r, rr))
+*)
 
   fun transform_getangle { position = _, r } = mat22getangle r
 
@@ -443,12 +450,12 @@ struct
       w <> 0w0 andalso Word32.andb(w, w - 0w1) = 0w0
 
 
-  type sweep = { 
+  type sweep = {
                  (* local center of mass position *)
-                 local_center : vec2, 
+                 local_center : vec2 ref,
                  (* center world positions *)
-                 c0 : vec2,
-                 c : vec2,
+                 c0 : vec2 ref,
+                 c : vec2 ref,
                  (* world angles *)
                  a0 : real ref,
                  a : real ref,
@@ -466,44 +473,29 @@ struct
       then raise BDDMath ("Angle overflow in sweep ctor: " ^ rtos a)
       else ();
 
-      { local_center = local_center,
-        c0 = vec2copy c0,
-        c = vec2copy c, a0 = ref a0, a = ref a, alpha0 = ref 0.0 }
+      { local_center = ref local_center,
+        c0 = ref c0,
+        c = ref c, a0 = ref a0, a = ref a, alpha0 = ref 0.0 }
       end
   fun sweepcopy { local_center, c0, c, a0, a, alpha0 } : sweep =
-      { local_center = vec2copy local_center,
-        c0 = vec2copy c0,
-        c = vec2copy c,
+      { local_center = ref (!local_center),
+        c0 = ref (!c0),
+        c = ref (!c),
         a0 = ref (!a0),
         a = ref (!a),
         alpha0 = ref (!alpha0) }
-  (* PERF some of the copying is superfluous *)
-  fun sweep_gettransform ({ local_center, c0, c, a0, a, alpha0 },
-                          transform : transform,
-                          alpha : real) =
-      let val angle : real = (1.0 - alpha) * !a0 + alpha * !a
-      in
-          vec2setfrom (transformposition transform,
-                       vec2add(vec2stimes (1.0 - alpha, c0),
-                               vec2stimes (alpha, c)));
-          mat22setangle (transformr transform, angle);
-
-          vec2minuseq (transformposition transform,
-                       mul22v(transformr transform,
-                              local_center))
-      end
 
   fun sweepa ({ a, ... } : sweep) = !a
-  fun sweepc ({ c, ... } : sweep) = vec2copy c
-  fun sweeplocalcenter ({ local_center, ... } : sweep) = local_center
+  fun sweepc ({ c, ... } : sweep) = !c
+  fun sweeplocalcenter ({ local_center, ... } : sweep) = !local_center
 
   fun sweepa0 ({ a0, ... } : sweep) = !a0
-  fun sweepc0 ({ c0, ... } : sweep) = vec2copy c0
+  fun sweepc0 ({ c0, ... } : sweep) = !c0
   fun sweepalpha0 ({ alpha0, ...} : sweep) = !alpha0
 
   val MAX_ANGLE = BDDSettings.epsilon + 2.0 * BDDSettings.pi
 
-  fun sweep_set_a ({a, ... } : sweep, aa) = 
+  fun sweep_set_a ({a, ... } : sweep, aa) =
       let in
           (* XXX This is not an error. Just trying to track down a difference
              between bdd and box2d. *)
@@ -514,22 +506,26 @@ struct
 *)
           a := aa
       end
-  fun sweep_set_c ({c, ... } : sweep, cc) = vec2setfrom (c, cc)
+  fun sweep_set_c ({c, ... } : sweep, cc) = c := cc
 
   fun sweep_set_a0 ({a0, ... } : sweep, aa0) = a0 := aa0
-  fun sweep_set_c0 ({c0, ... } : sweep, cc0) = vec2setfrom (c0, cc0)
+  fun sweep_set_c0 ({c0, ... } : sweep, cc0) = c0 := cc0
   fun sweep_set_alpha0 ({alpha0, ...} : sweep, aalpha0) = alpha0 := aalpha0
 
   fun sweep_set_localcenter ({ local_center, ... } : sweep, lc) =
-      vec2setfrom (local_center, lc)
+      local_center := lc
 
-
-  (* PERF *)
-  fun sweep_transform (arg, alpha : real) =
-      let val transform = identity_transform ()
+  fun sweep_transform ({ local_center, c0, c, a0, a, alpha0 },
+                         alpha : real) =
+      let val angle : real = (1.0 - alpha) * !a0 + alpha * !a
+          val q = mat22angle angle
+          val p = vec2add(vec2stimes (1.0 - alpha, !c0),
+                          vec2stimes (alpha, !c))
+          val p' = vec2sub (p,
+                            mul22v(q,
+                                   !local_center))
       in
-          sweep_gettransform (arg, transform, alpha);
-          transform
+          transform (p', q)
       end
 
   fun sweep_advance({c0, c, a0, a, alpha0, ...} : sweep, alpha : real) =
@@ -539,8 +535,8 @@ struct
                    else ()
           val beta = (alpha - !alpha0) / (1.0 - !alpha0)
       in
-          vec2setfrom(c0, vec2add(vec2stimes(1.0 - beta, c0),
-                                  vec2stimes(beta, c)));
+          c0 := vec2add(vec2stimes(1.0 - beta, !c0),
+                        vec2stimes(beta, !c));
           a0 := (1.0 - beta) * !a0 + beta * !a;
           alpha0 := alpha
       end
@@ -548,7 +544,7 @@ struct
   (* Normalize the sweep's angle (in radians) to be between -pi and pi *)
   (* XXX twm: This doesn't keep it between ~pi and pi. Maybe ~2pi and 2pi? *)
   fun sweep_normalize ({ a0, a, ... } : sweep) =
-      let 
+      let
           val twopi = 2.0 * BDDSettings.pi
           val d = twopi * real (Real.floor(!a0 / twopi))
 (*

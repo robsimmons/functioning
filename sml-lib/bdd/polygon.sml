@@ -26,7 +26,7 @@ struct
                    normals : vec2 Array.array }
 
   fun clone { centroid, vertices, normals } =
-      { centroid = vec2copy centroid,
+      { centroid = centroid,
         vertices = copy_array vertices,
         normals = copy_array normals }
 
@@ -85,15 +85,14 @@ struct
       in
           { vertices = Array.fromList vertices,
             normals = Array.fromList normals,
-            centroid = vec2copy center }
+            centroid = center }
       end
 
   fun edge (v1, v2) : polygon =
       { centroid = 0.5 *: (v1 :+: v2),
         vertices = Array.fromList [v1, v2],
-        normals = let val n = cross2vs(v2 :-: v1, 1.0)
+        normals = let val n = vec2normalized (cross2vs(v2 :-: v1, 1.0))
                   in
-                      ignore (vec2normalize n : real);
                       Array.fromList [n, vec2neg n]
                   end }
 
@@ -141,7 +140,7 @@ struct
         val () = if num < 2 orelse num > max_polygon_vertices
                  then raise BDDPolygon "not enough vertices, or too many"
                  else ()
-        val vertices = Array.fromList (map vec2copy vecs)
+        val vertices = Array.fromList vecs
         (* Compute normals. Ensure the edges have non-zero length. *)
         val normals = Array.tabulate
             (num,
@@ -154,9 +153,8 @@ struct
                   val () = if vec2length_squared edge > epsilon * epsilon
                            then ()
                            else raise BDDPolygon "nearly zero-length edge"
-                  val normal = cross2vs (edge, 1.0)
+                  val normal = vec2normalized (cross2vs (edge, 1.0))
               in
-                  ignore (vec2normalize normal : real);
                   normal
               end))
       (* Port note: Original has commented-out code that checks

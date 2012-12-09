@@ -214,7 +214,7 @@ struct
                            #a v1 *: #wb v1 :+: #a v2 *: #wb v2)
         | Three (v1, v2, v3) => 
               let val p = #a v1 *: #wa v1 :+: #a v2 *: #wa v2 :+: #a v3 *: #wa v3
-              in (p, vec2copy p)
+              in (p, p)
               end
         | _ => raise BDDDistance
 
@@ -493,9 +493,8 @@ struct
                   then
                       (* Shapes are still not overlapped.
                          Move the witness points to the outer surface. *)
-                      let val normal : vec2 = pointb :-: pointa
-                      in 
-                          ignore (vec2normalize normal : real);
+                      let val normal : vec2 = vec2normalized (pointb :-: pointa)
+                      in
                           { distance = distance - (ra + rb),
                             pointa = pointa :+: (ra *: normal),
                             pointb = pointb :-: (rb *: normal),
