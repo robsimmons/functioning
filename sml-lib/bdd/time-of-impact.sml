@@ -66,9 +66,7 @@ struct
                 val local_point_b = #vertex proxyb (Array.sub(#indexb cache, 0))
                 val point_a = xfa @*: local_point_a
                 val point_b = xfb @*: local_point_b
-                val axis = point_b :-: point_a
-                (* nb. mag unused *)
-                val _ : real = vec2normalize axis
+                val axis = vec2normalized (point_b :-: point_a)
             in
                 { typ = TPoints,
                   proxya = proxya,
@@ -87,8 +85,8 @@ struct
                 val local_point_b1 : vec2 = #vertex proxyb (Array.sub(#indexb cache, 0))
                 val local_point_b2 : vec2 = #vertex proxyb (Array.sub(#indexb cache, 1))
 
-                val axis = cross2vs(local_point_b2 :-: local_point_b1, 1.0)
-                val _ : real = vec2normalize axis
+                val axis = vec2normalized
+                               (cross2vs(local_point_b2 :-: local_point_b1, 1.0))
                 val normal : vec2 = mul22v (transformr xfb, axis)
 
                 val local_point = 0.5 *: (local_point_b1 :+: local_point_b2)
@@ -115,8 +113,8 @@ struct
                  val local_point_a1 : vec2 = #vertex proxya (Array.sub(#indexa cache, 0))
                  val local_point_a2 : vec2 = #vertex proxya (Array.sub(#indexa cache, 1))
                     
-                 val axis = cross2vs(local_point_a2 :-: local_point_a1, 1.0)
-                 val _ : real = vec2normalize axis
+                 val axis = vec2normalized
+                                (cross2vs(local_point_a2 :-: local_point_a1, 1.0))
                  val normal : vec2 = mul22v (transformr xfa, axis)
 
                  val local_point = 0.5 *: (local_point_a1 :+: local_point_a2)

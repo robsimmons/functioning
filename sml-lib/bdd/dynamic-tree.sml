@@ -478,11 +478,11 @@ struct
                 { p1 : BDDMath.vec2, p2 : BDDMath.vec2,
                   max_fraction : real }) : unit =
     let
-      val r : vec2 = p2 :-: p1
-      val () = if vec2length_squared r > 0.0
+      val r0 : vec2 = p2 :-: p1
+      val () = if vec2length_squared r0 > 0.0
                then ()
                else raise BDDDynamicTree "ray must have length"
-      val _ : real = vec2normalize r
+      val r = vec2normalized r0
 
       (* v is perpendicular to the segment. *)
       val v : vec2 = cross2sv(1.0, r)

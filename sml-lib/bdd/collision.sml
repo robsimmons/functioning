@@ -179,9 +179,9 @@ struct
           val absd : vec2 = vec2abs d
 
           (* In original, uninitialized *)
-          val normal = vec2 (0.0, 0.0)
-          fun setnormalx x = vec2set (normal, x, 0.0)
-          fun setnormaly y = vec2set (normal, 0.0, y)
+          val normal = ref (vec2 (0.0, 0.0))
+          fun setnormalx x = normal := vec2 (x, 0.0)
+          fun setnormaly y = normal := vec2 (0.0, y)
 
           (* In original, a loop for i = 0 and 1 *)
           fun loop proj (setnormal : real -> unit) =
@@ -216,7 +216,7 @@ struct
              (* Does the ray start inside the box?
                 Does the ray intersect beyond the max fraction? *)
              not (!tmin < 0.0 orelse max_fraction < !tmin)
-          then SOME { fraction = !tmin, normal = normal }
+          then SOME { fraction = !tmin, normal = !normal }
           else NONE
       end
 
