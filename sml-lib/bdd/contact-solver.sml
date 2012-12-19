@@ -850,27 +850,28 @@ fun warm_start ({ step,
   (* Apply the function to every contact, paired with all of its
      impulses. *)
   fun app_contacts ({ contacts,
-                      position_constraints,
+                      velocity_constraints,
                       ... } : ('b, 'f, 'j) contact_solver,
                     f : ('b, 'f, 'j) BDDDynamics.contact *
                         { normal_impulses : real array,
-                          tangent_impulses : real array } -> unit) : unit = ()
-(*      Vector.appi
+                          tangent_impulses : real array } -> unit) : unit =
+      Vector.appi
       (fn (i, c : ('b, 'f, 'j) BDDDynamics.contact) =>
        let
-           val cc : ('b, 'f, 'j) constraint = Array.sub(constraints, i)
+           val vc : velocity_constraint = Array.sub(velocity_constraints, i)
+           val points = #points vc
            val normal_impulses =
-               Array.tabulate (#point_count cc,
+               Array.tabulate (Array.length points,
                                fn j =>
-                               !(#normal_impulse (Array.sub(#points cc, j))))
+                               !(#normal_impulse (Array.sub(points, j))))
            val tangent_impulses =
-               Array.tabulate (#point_count cc,
+               Array.tabulate (Array.length points,
                                fn j =>
-                               !(#tangent_impulse (Array.sub(#points cc, j))))
+                               !(#tangent_impulse (Array.sub(points, j))))
        in
            f (c, { normal_impulses = normal_impulses,
                    tangent_impulses = tangent_impulses })
        end) contacts
-*)
+
 
 end
