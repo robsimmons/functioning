@@ -22,27 +22,31 @@ struct
      invariants that could be enforced with types, which would make the
      code clearer and would remove some of the awkward re-testing !! stuff.
      It deserves another pass. *)
-  datatype 'a tree_node =
+
+  and datatype 'a tree_node =
       Node of { (* Fattened aabb *)
                 aabb : aabb,
-                (* Set for leaves; NONE for internal nodes. *)
-                data : 'a option,
-                (* XXX: overflow possibility. *)
-                stamp : int,
                 (* Port note: Box2D has a possibility for
                    a 'next' pointer here, but it's just
                    so that the structure can be stored 
                    in freelists for its custom allocator. *)
-                parent : 'a tree_node ref,
+                parent : 'a tree_node option ref,
                 left : 'a tree_node ref,
                 right : 'a tree_node ref }
-    | Empty
+    | Leaf of  {
+      (* Fattened aabb *)
+      aabb : aabb,
+      stamp : int,
+      data : 'a,
+      parent : 'a tree_node option ref
+      }
+
   type 'a aabb_proxy = 'a tree_node ref
 
   (* Port note: The representation is that leaf nodes are the
      "real" nodes (and have user data) whereas internal nodes just
      union up leaves to arrange them hierarchically, and are expendable.
-     It is probably worth having both Interior and Leaf arms rather 
+     It is probably worth having both Interior and Leaf arms rather
      than Node and Empty. *)
   (* Represent the whole thing as a ref so that we don't confuse the
      updateable root pointer with the identity of the node contained
@@ -50,28 +54,37 @@ struct
   type 'a dynamic_tree =
       { node_count : int,
         path : Word32.word,
-        root : 'a aabb_proxy } ref
+        root : 'a tree_node option } ref
 
   (* PERF just for debugging. *)
-  fun checkstructure s (r as ref (Node { left, right, ... })) =
+  fun checkstructure s (r as ref (Leaf _ )) = ()
+    | checkstructure s (r as ref (Node { left, right, ... })) =
       let
-          fun checkpar _ Empty = ()
-            | checkpar which (Node { parent, ... }) =
-              if parent = r
+          fun checkeq NONE r =
+              raise BDDDynamicTree
+                        ("checkstructure " ^ s ^ ": node's " ^
+                         which ^ " child's parent is NONE")
+            | checkeq (SOME p) r =
+              if p = r
               then ()
-              else raise BDDDynamicTree 
-                  ("checkstructure " ^ s ^ ": node's " ^ 
+              else raise BDDDynamicTree
+                  ("checkstructure " ^ s ^ ": node's " ^
                    which ^ " child's parent isn't node")
+          fun checkpar which (Leaf { parent, ... }) = checkeq parent r
+            | checkpar which (Node { parent, ... }) = checkeq parent r
+
       in
           checkpar "left" (!left);
           checkpar "right" (!right);
           checkstructure s left;
           checkstructure s right
       end
-    | checkstructure _ (ref Empty) = ()
 
-  fun checktreestructure s (ref { node_count : int, path : Word32.word, root : 'a aabb_proxy }) =
-      checkstructure s root
+  fun checktreestructure s (ref { node_count : int, path : Word32.word,
+                                  root : 'a aabb_proxy option }) =
+      case root of
+          NONE => ()
+        | SOME pxy => checkstructure s pxy
 
   fun checktreestructure _ _ = ()
 
@@ -79,30 +92,19 @@ struct
       let
           fun indent 0 = ()
             | indent n = (dprint (fn () => " "); indent (n - 1))
-          fun pr (depth, Empty) = 
+          fun pr (depth, Empty) =
               let in
                   indent depth;
                   dprint (fn () => "Empty\n")
               end
-            | pr (depth, Node { data = SOME _, left = ref (Node _), ... }) =
-              raise BDDDynamicTree "node has data and a left child"
-            | pr (depth, Node { data = SOME _, right = ref (Node _), ... }) =
-              raise BDDDynamicTree "node has data and a right child"
-            | pr (depth, Node { data = NONE, left = ref Empty, ... }) =
-              raise BDDDynamicTree "node without data and without child"
-            | pr (depth, Node { data = NONE, right = ref Empty, ... }) =
-              raise BDDDynamicTree "node without data and without child"
-            | pr (depth, Node { data = SOME dat, left, right, aabb, ... }) =
+            | pr (depth, Leaf { data = dat, aabb, ... }) =
               let in
                   indent depth;
                   dprint (fn () => "Leaf: " ^ aabbtos aabb ^ "\n");
                   indent depth;
                   dprint (fn () => " dat: " ^ pa dat ^ "\n");
-                  (* Should be empty *)
-                  pr (depth + 2, !left);
-                  pr (depth + 2, !right)
               end
-            | pr (depth, Node { data = NONE, left, right, aabb, ... }) =
+            | pr (depth, Node { left, right, aabb, ... }) =
               let in
                   indent depth;
                   dprint (fn () => "Node: " ^ aabbtos aabb ^ "\n");
@@ -116,13 +118,13 @@ struct
           checktreestructure "dp" tree
       end
 
-  fun cmp_proxy (ref (Node { stamp = a, ... }),
-                 ref (Node { stamp = b, ... })) = Int.compare (a, b)
+  fun cmp_proxy (ref (Leaf { stamp = a, ... }),
+                 ref (Leaf { stamp = b, ... })) = Int.compare (a, b)
     | cmp_proxy _ = raise BDDDynamicTree "can only compare leaves."
 
   fun eq_proxy p = EQUAL = cmp_proxy p
 
-  local 
+  local
       val next_stamp_ = ref 0
   in
       fun next_stamp () = (next_stamp_ := !next_stamp_ + 1;
@@ -143,67 +145,56 @@ struct
   fun set_path (r as ref { node_count, root, path = _ }, path) =
       r := { node_count = node_count, root = root, path = path }
 
-  fun set_parent (r as ref (Node { aabb, data, parent = _, left, right,
-                                   stamp }),
+  fun set_parent (r as ref (Node { aabb, parent = _, left, right}),
                   parent) =
-      r := Node { aabb = aabb, data = data, parent = parent, 
-                  left = left, right = right, stamp = stamp }
-    | set_parent _ = raise BDDDynamicTree "expected node; got empty"
+      r := Node { aabb = aabb, parent = parent,
+                  left = left, right = right }
+    | set_parent (r as ref (Leaf {aabb, data, stamp, parent = _}),
+                  parent) =
+      r := Leaf { aabb = aabb, data = data, stamp = stamp, parent = parent }
 
-  fun set_left (r as ref (Node { aabb, data, parent, left = _, right,
-                                 stamp }),
+  fun set_left (r as ref (Node { aabb, parent, left = _, right }),
                 left) =
-      r := Node { aabb = aabb, data = data, parent = parent, 
-                  left = left, right = right,
-                  stamp = stamp }
-    | set_left _ = raise BDDDynamicTree "expected node; got empty"
+      r := Node { aabb = aabb, parent = parent,
+                  left = left, right = right }
+    | set_left _ = raise BDDDynamicTree "expected node; got Leaf"
 
-  fun set_right (r as ref (Node { aabb, data, parent, left, right = _,
-                                  stamp }),
+  fun set_right (r as ref (Node { aabb, parent, left, right = _ }),
                  right) =
-      r := Node { aabb = aabb, data = data, parent = parent, 
-                  left = left, right = right, stamp = stamp }
-    | set_right _ = raise BDDDynamicTree "expected node; got empty"
+      r := Node { aabb = aabb, parent = parent,
+                  left = left, right = right }
+    | set_right _ = raise BDDDynamicTree "expected node; got Leaf"
 
-  fun !! (ref (Node x)) = x
-    | !! _ = raise BDDDynamicTree "expected node; got empty"
+  fun user_data (ref (Leaf {data, ... })) = data
+    | user_data (ref (Node _ )) =
+      raise BDDDynamicTree "data only present for leaves"
 
-  fun user_data n = 
-      case #data (!! n) of
-          NONE => raise BDDDynamicTree "data only present for leaves"
-        | SOME a => a
-  fun fat_aabb n = #aabb (!! n)
-
-  (* There is one empty node. - won't work - value restriction.
-     could make one as part of every tree... *)
-  (* val empty = ref Empty *)
-  (* Assumes there is one empty node *)
-  fun is_leaf n = (* #left (!!n) = empty *)
-      case #left (!!n) of
-          ref Empty => true
-        | _ => false
+  fun fat_aabb (ref (Leaf {aabb, ...})) = aabb
+    | fat_aabb (ref (Node {aabb, ...})) = aabb
 
   fun compute_height (ref { root, ... } : 'a dynamic_tree) =
-      let fun ch Empty = 0
+      let fun ch (Leaf _) = 0
             | ch (Node { left, right, ... }) =
           1 + Int.max(ch (!left), ch (!right))
-      in ch (!root)
+      in case !root of
+             NONE => 0
+           | SOME (ref tn) => ch tn
       end
 
-  fun dynamic_tree () : 'a dynamic_tree = 
-      ref { node_count = 0, root = ref Empty, path = 0w0 }
+  fun dynamic_tree () : 'a dynamic_tree =
+      ref { node_count = 0, root = NONE, path = 0w0 }
 
   (* Derive the AABB for an interior node, based on its children
      (which must have accurate AABBs. Set it and return it. *)
-  fun set_derived_aabb (r as ref (Node { aabb = _, data, parent, 
-                                         left, right, stamp })) =
+  fun set_derived_aabb (r as ref (Node { aabb = _, parent,
+                                         left, right })) =
       let val new_aabb =
           BDDCollision.aabb_combine (#aabb (!!left), #aabb (!!right))
-      in r := Node { aabb = new_aabb, data = data, parent = parent, 
-                     left = left, right = right, stamp = stamp };
+      in r := Node { aabb = new_aabb, parent = parent,
+                     left = left, right = right };
           new_aabb
       end
-    | set_derived_aabb _ = raise BDDDynamicTree "expected node; got empty"
+    | set_derived_aabb _ = raise BDDDynamicTree "expected Node; got Leaf"
 
   (* Climb the tree starting at the given node, expanding the derived
      AABBs if necessary.
@@ -212,36 +203,32 @@ struct
      tests (though they are probably optimized out). *)
   fun adjust_aabbs ancestor =
       case !ancestor of
-          Empty => ()
-        | Node { parent, aabb = old_aabb, ... } => 
+        | Node { parent, aabb = old_aabb, ... } =>
            let val new_aabb = set_derived_aabb ancestor
            in if BDDCollision.aabb_contains (old_aabb, new_aabb)
               then ()
               else adjust_aabbs parent
            end
+        | Leaf _ = raise BDDDynamicTree "expected Node; got Leaf"
 
   fun insert_leaf (tree as ref { root, ... } : 'a dynamic_tree,
-                   leaf as ref (Node { aabb, data = _, parent = _, 
-                                       left = _, right = _, stamp = _ })) =
+                   leaf as Leaf { aabb, data = _, parent = _,
+                                  stamp = _ })) =
       (case !root of
-           Empty => 
+           NONE =>
                let in
                    (* PERF should always be the case already? *)
-                   set_parent (leaf, ref Empty);
+                   set_parent (leaf, ref NONE);
                    set_root (tree, leaf)
                end
-         | _ =>
+         | SOME root =>
             (* Find the best sibling for this leaf. *)
-            let 
+            let
                 val center : vec2 = BDDCollision.aabb_center aabb
-                fun find sibling =
-                  if is_leaf sibling
-                  then sibling
-                  else
+                fun find (sibling as Leaf _) = sibling
+                  | find (sibling as Node {aabb, parent, left, right}) =
                     let
-                      val left = #left (!!sibling)
-                      val right = #right (!!sibling)
-                      val ldelta : vec2 = 
+                      val ldelta : vec2 =
                         vec2abs (BDDCollision.aabb_center (#aabb (!!left)) :-: center)
                       val rdelta : vec2 =
                         vec2abs (BDDCollision.aabb_center (#aabb (!!right)) :-: center)
@@ -255,13 +242,9 @@ struct
                 val sibling = find root
                 val parent = #parent (!!sibling)
                 val new = ref (Node { parent = parent,
-                                      data = NONE,
                                       aabb = BDDCollision.aabb_combine 
                                           (#aabb (!!leaf),
                                            #aabb (!!sibling)),
-                                      (* PERF: Probably don't need stamps for
-                                         interior nodes. *)
-                                      stamp = next_stamp (),
                                       (* Port note: Same in both branches. *)
                                       left = sibling,
                                       right = leaf })
@@ -272,8 +255,7 @@ struct
                 case !parent of
                   Empty => set_root (tree, new)
                 | _ => 
-                  let 
-                      
+                  let
                   in
                       if #left (!!parent) = sibling
                       then set_left (parent, new)
@@ -285,7 +267,7 @@ struct
                       adjust_aabbs parent
                   end
             end)
-    | insert_leaf _ = raise BDDDynamicTree "can't insert empty"
+    | insert_leaf _ = raise BDDDynamicTree "can't insert interior node or empty"
 
   (* Assumes the proxy is a leaf. *)
   fun remove_leaf (tree : 'a dynamic_tree, 
@@ -372,16 +354,15 @@ struct
                           pxy (#lowerbound aabb) ^ " to " ^
                           pxy (#upperbound aabb) ^ "\n")
 
-          
+
           (* Fatten the aabb. *)
           val r : vec2 = vec2(aabb_extension, aabb_extension)
           val fat : aabb = { lowerbound = #lowerbound aabb :-: r,
                              upperbound = #upperbound aabb :+: r }
-          (* XXX: Probably don't need to pass all this junk to
-             insert_node. *)
-          val node = ref (Node { aabb = fat, data = SOME a, parent = ref Empty,
-                                 left = ref Empty, right = ref Empty,
-                                 stamp = next_stamp () })
+
+          val leaf = { aabb = fat, data = a, parent = ref Empty,
+                       stamp = next_stamp () }
+
           fun rebalance_loop try_count =
               if try_count >= 10 orelse compute_height tree <= 64
               then node
@@ -389,7 +370,7 @@ struct
                     rebalance_loop (try_count + 1))
       in
           set_node_count (tree, #node_count (!tree) + 1);
-          insert_leaf (tree, node);
+          insert_leaf (tree, leaf);
           (* Rebalance if necessary. *)
           rebalance_loop 0
       end
