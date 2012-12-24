@@ -43,7 +43,7 @@ struct
       parent : 'a parent ref
       }
   and 'a parent = NoParent
-                | Parent of ('a tree_node) * child_direction
+                | Parent of 'a tree_node * child_direction
 
   type 'a aabb_proxy = 'a tree_node
 
@@ -62,62 +62,79 @@ struct
 
   (* PERF just for debugging. *)
   fun checkstructure s (r as (Leaf _ )) = ()
-    | checkstructure s (r as (Node { left, right, ... })) = ()
-(*      let
-          fun checkeq which NONE r =
+    | checkstructure s (r as (Node { left, right, aabb, ... })) =
+      let
+          fun checkpar' which dir NoParent child_aabb =
               raise BDDDynamicTree
                         ("checkstructure " ^ s ^ ": node's " ^
                          which ^ " child's parent is NONE")
-            | checkeq which (SOME p) r =
-              if p = r
+            | checkpar' which dir (Parent (p, pdir)) child_aabb =
+              if not (BDDCollision.aabb_contains (!aabb, !child_aabb))
+              then
+                  let
+                      val message = ("checkstructure " ^ s ^ ": node's " ^
+                                     which ^ " child's aabb is malformed\n")
+                      val message2 = aabbtos (!aabb) ^ ", " ^ aabbtos (!child_aabb) ^ "\n"
+                  in
+                      print message;
+                      print message2;
+                      raise BDDDynamicTree message
+                  end
+              else if dir = pdir
               then ()
               else raise BDDDynamicTree
                   ("checkstructure " ^ s ^ ": node's " ^
-                   which ^ " child's parent isn't node")
-          fun checkpar which (Leaf { parent, ... }) = checkeq which (!parent) r
-            | checkpar which (Node { parent, ... }) = checkeq which (!parent) r
+                   which ^ " child's parent is in wrong direction")
+
+          fun checkpar which dir (Leaf { parent, aabb, ... }) =
+              checkpar' which dir (!parent) aabb
+            | checkpar which dir (Node { parent, aabb, ... }) =
+              checkpar' which dir (!parent) aabb
 
       in
-          checkpar "left" (!left);
-          checkpar "right" (!right);
-          checkstructure s left;
-          checkstructure s right
+          checkpar "left" Left (!left);
+          checkpar "right" Right (!right);
+          checkstructure s (!left);
+          checkstructure s (!right)
       end
-*)
 
   fun checktreestructure s (ref { node_count : int, path : Word32.word,
                                   root : 'a aabb_proxy option }) =
       case root of
           NONE => ()
-        | SOME pxy => checkstructure s pxy
+        | SOME tn => checkstructure s tn
 
-  fun checktreestructure _ _ = ()
+(*  fun checktreestructure _ _ = () *)
 
-  fun debugprint pa (tree as ref { node_count, path, root }) = ()
-(*      let
+  fun dprint f = print (f ())
+
+  fun debugprint pa (tree as ref { node_count, path, root }) =
+      let
           fun indent 0 = ()
             | indent n = (dprint (fn () => " "); indent (n - 1))
           fun pr (depth, Leaf { data = dat, aabb, ... }) =
               let in
                   indent depth;
-                  dprint (fn () => "Leaf: " ^ aabbtos aabb ^ "\n");
+                  dprint (fn () => "Leaf: " ^ aabbtos (!aabb) ^ "\n");
                   indent depth;
                   dprint (fn () => " dat: " ^ pa dat ^ "\n")
               end
             | pr (depth, Node { left, right, aabb, ... }) =
               let in
                   indent depth;
-                  dprint (fn () => "Node: " ^ aabbtos aabb ^ "\n");
+                  dprint (fn () => "Node: " ^ aabbtos (!aabb) ^ "\n");
                   pr (depth + 2, !left);
                   pr (depth + 2, !right)
               end
       in
           dprint (fn () => "DT: " ^ Int.toString node_count ^ " " ^
                  Word32.toString path ^ ":\n");
-          pr (0, !root);
+          (case root of
+               NONE => ()
+             | SOME tn => pr (0, tn));
           checktreestructure "dp" tree
       end
-*)
+
 
   fun cmp_proxy ((Leaf { stamp = a, ... }),
                  (Leaf { stamp = b, ... })) = Int.compare (a, b)
@@ -200,7 +217,7 @@ struct
           then ()
           else case !parent of
                    NoParent => ()
-                 | Parent (tn, _) => adjust_aabbs tn
+                 | Parent (ptn, _) => adjust_aabbs ptn
       end
     | adjust_aabbs (Leaf _) = raise BDDDynamicTree "expected Node; got Leaf"
 
@@ -250,14 +267,15 @@ struct
                   let
                   in
                       (case dir of
-                          Left => set_left (tn, new)
-                        | Right => set_right (tn, new));
+                          Left => left := new
+                        | Right => right := new );
 
                       (* Port note: This expansion routine is not exactly
                          the same as the one in the code, but I believe
                          it has equivalent effect. *)
                       adjust_aabbs tn
-                  end
+                  end;
+                debugprint (fn _ => "") tree
             end)
     | insert_leaf _ = raise BDDDynamicTree "can't insert interior node"
 
