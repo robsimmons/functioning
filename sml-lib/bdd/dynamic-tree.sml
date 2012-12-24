@@ -16,12 +16,7 @@ struct
   (* Port note: Corresponds to DynamicTreeNode in b2dynamictree.h.
      I decided to use more idiomatic SML instead of the hand-written
      allocator in Box2D, since it's not clear it'd be faster than
-     a good generational gc.
-
-     PERF: As I worked through it I realized there are some representation
-     invariants that could be enforced with types, which would make the
-     code clearer and would remove some of the awkward re-testing !! stuff.
-     It deserves another pass. *)
+     a good generational gc. *)
 
   datatype child_direction = Left | Right
 
@@ -35,13 +30,11 @@ struct
                 parent : 'a parent ref,
                 left : 'a tree_node ref,
                 right : 'a tree_node ref }
-    | Leaf of  {
-      (* Fattened aabb *)
-      aabb : aabb ref,
-      stamp : int,
-      data : 'a,
-      parent : 'a parent ref
-      }
+    | Leaf of  { (* Fattened aabb *)
+                aabb : aabb ref,
+                parent : 'a parent ref,
+                stamp : int,
+                data : 'a }
   and 'a parent = NoParent
                 | Parent of 'a tree_node * child_direction
 
@@ -49,9 +42,7 @@ struct
 
   (* Port note: The representation is that leaf nodes are the
      "real" nodes (and have user data) whereas internal nodes just
-     union up leaves to arrange them hierarchically, and are expendable.
-     It is probably worth having both Interior and Leaf arms rather
-     than Node and Empty. *)
+     union up leaves to arrange them hierarchically, and are expendable. *)
   (* Represent the whole thing as a ref so that we don't confuse the
      updateable root pointer with the identity of the node contained
      there. *)
@@ -70,16 +61,9 @@ struct
                          which ^ " child's parent is NONE")
             | checkpar' which dir (Parent (p, pdir)) child_aabb =
               if not (BDDCollision.aabb_contains (!aabb, !child_aabb))
-              then
-                  let
-                      val message = ("checkstructure " ^ s ^ ": node's " ^
-                                     which ^ " child's aabb is malformed\n")
-                      val message2 = aabbtos (!aabb) ^ ", " ^ aabbtos (!child_aabb) ^ "\n"
-                  in
-                      print message;
-                      print message2;
-                      raise BDDDynamicTree message
-                  end
+              then raise BDDDynamicTree
+                             ("checkstructure " ^ s ^ ": node's " ^
+                              which ^ " child's aabb is malformed")
               else if dir = pdir
               then ()
               else raise BDDDynamicTree
@@ -276,7 +260,6 @@ struct
             end)
     | insert_leaf _ = raise BDDDynamicTree "can't insert interior node"
 
-  (* Assumes the proxy is a leaf. *)
   fun remove_leaf (tree : 'a dynamic_tree, Node _ ) =
       raise BDDDynamicTree "expected Leaf"
     | remove_leaf (tree : 'a dynamic_tree,
