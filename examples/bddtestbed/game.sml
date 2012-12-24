@@ -80,23 +80,35 @@ struct
               needs_resize = false}
        end
 
-  fun init_test (test as Test {init, ...}) =
+  val tests = Array.fromList[VerticalStack.test,
+                             Tumbler.test,
+                             VaryingRestitution.test,
+                             BulletTest.test,
+                             Revolute.test,
+                             Prismatic.test,
+                             Cradle.test]
+
+  fun init_test settings =
       let val gravity = BDDMath.vec2 (0.0, ~10.0)
           val world = BDD.World.world (gravity, true)
           val () = BDD.World.set_pre_solve (world, pre_solve)
+          val test_num = Int.mod(!(#test_num settings), Array.length tests)
+          val test as Test {init, ...} = Array.sub(tests, test_num)
           val () = init world
           val center = BDDMath.vec2 (0.0, 20.0)
           val zoom = 1.0
           val view = View {center = center, zoom = zoom,
                            needs_resize = true}
-          val settings = {draw_contacts = ref false,
-                          paused = ref false,
-                          profile = ref NONE}
       in GS { test = test, mouse_joint = NONE, world = world,
               view = view, settings = settings}
       end
 
-  val initstate = init_test VerticalStack.test
+  val initsettings = {draw_contacts = ref false,
+                      paused = ref false,
+                      profile = ref NONE,
+                      test_num = ref 0}
+
+  val initstate = init_test initsettings
 
   fun initscreen screen =
       (
@@ -356,25 +368,18 @@ struct
                              zoom = zoom * s,
                              needs_resize = true}})
 
+
   fun handle_event (SDL.E_KeyDown {sym = SDL.SDLK_ESCAPE}) s = NONE
     | handle_event SDL.E_Quit s = NONE
-    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_0}) s =
-      SOME (init_test VerticalStack.test)
-    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_1}) s =
-      SOME (init_test VaryingRestitution.test)
-    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_2}) s =
-      SOME (init_test BulletTest.test)
-    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_3}) s =
-      SOME (init_test Revolute.test)
-    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_4}) s =
-      SOME (init_test Prismatic.test)
-    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_5}) s =
-      SOME (init_test Cradle.test)
-    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_6}) s =
-      SOME (init_test Tumbler.test)
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_LEFTBRACKET}) (GS {settings, ...}) =
+      ((#test_num settings) := (!(#test_num settings) - 1);
+       SOME (init_test settings))
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_RIGHTBRACKET}) (GS {settings, ...}) =
+      ((#test_num settings) := (!(#test_num settings) + 1);
+       SOME (init_test settings))
 
-    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_r}) (GS {test, ...}) =
-      SOME (init_test test)
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_r}) (GS {test, settings, ...}) =
+      SOME (init_test settings)
 
     | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_LEFT}) s =
       update_view s (BDDMath.vec2 (~0.5, 0.0)) 1.0
