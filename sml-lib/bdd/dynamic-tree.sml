@@ -23,25 +23,29 @@ struct
      code clearer and would remove some of the awkward re-testing !! stuff.
      It deserves another pass. *)
 
+  datatype child_direction = Left | Right
+
   datatype 'a tree_node =
       Node of { (* Fattened aabb *)
-                aabb : aabb,
+                aabb : aabb ref,
                 (* Port note: Box2D has a possibility for
                    a 'next' pointer here, but it's just
                    so that the structure can be stored
                    in freelists for its custom allocator. *)
-                parent : 'a tree_node option ref,
+                parent : 'a parent ref,
                 left : 'a tree_node ref,
                 right : 'a tree_node ref }
     | Leaf of  {
       (* Fattened aabb *)
-      aabb : aabb,
+      aabb : aabb ref,
       stamp : int,
       data : 'a,
-      parent : 'a tree_node option ref
+      parent : 'a parent ref
       }
+  and 'a parent = NoParent
+                | Parent of ('a tree_node) * child_direction
 
-  type 'a aabb_proxy = 'a tree_node ref
+  type 'a aabb_proxy = 'a tree_node
 
   (* Port note: The representation is that leaf nodes are the
      "real" nodes (and have user data) whereas internal nodes just
@@ -57,8 +61,8 @@ struct
         root : 'a tree_node option } ref
 
   (* PERF just for debugging. *)
-  fun checkstructure s (r as ref (Leaf _ )) = ()
-    | checkstructure s (r as ref (Node { left, right, ... })) = ()
+  fun checkstructure s (r as (Leaf _ )) = ()
+    | checkstructure s (r as (Node { left, right, ... })) = ()
 (*      let
           fun checkeq which NONE r =
               raise BDDDynamicTree
@@ -89,8 +93,8 @@ struct
 
   fun checktreestructure _ _ = ()
 
-  fun debugprint pa (tree as ref { node_count, path, root }) =
-      let
+  fun debugprint pa (tree as ref { node_count, path, root }) = ()
+(*      let
           fun indent 0 = ()
             | indent n = (dprint (fn () => " "); indent (n - 1))
           fun pr (depth, Leaf { data = dat, aabb, ... }) =
@@ -113,9 +117,10 @@ struct
           pr (0, !root);
           checktreestructure "dp" tree
       end
+*)
 
-  fun cmp_proxy (ref (Leaf { stamp = a, ... }),
-                 ref (Leaf { stamp = b, ... })) = Int.compare (a, b)
+  fun cmp_proxy ((Leaf { stamp = a, ... }),
+                 (Leaf { stamp = b, ... })) = Int.compare (a, b)
     | cmp_proxy _ = raise BDDDynamicTree "can only compare leaves."
 
   fun eq_proxy p = EQUAL = cmp_proxy p
@@ -141,38 +146,34 @@ struct
   fun set_path (r as ref { node_count, root, path = _ }, path) =
       r := { node_count = node_count, root = root, path = path }
 
-  fun set_parent (r as ref (Node { aabb, parent = _, left, right}),
-                  parent) =
-      r := Node { aabb = aabb, parent = parent,
-                  left = left, right = right }
-    | set_parent (r as ref (Leaf {aabb, data, stamp, parent = _}),
-                  parent) =
-      r := Leaf { aabb = aabb, data = data, stamp = stamp, parent = parent }
+  fun set_parent (Node {parent, ...}, new_parent) =
+      parent := new_parent
+    | set_parent (Leaf {parent, ...}, new_parent) =
+      parent := new_parent
 
-  fun set_left (r as ref (Node { aabb, parent, left = _, right }),
-                left) =
-      r := Node { aabb = aabb, parent = parent,
-                  left = left, right = right }
+  fun set_left (Node { left, ... }, new_left) =
+      left := new_left
     | set_left _ = raise BDDDynamicTree "expected node; got Leaf"
 
-  fun set_right (r as ref (Node { aabb, parent, left, right = _ }),
-                 right) =
-      r := Node { aabb = aabb, parent = parent,
-                  left = left, right = right }
+  fun set_right (Node { right, ... }, new_right) =
+      right := new_right
     | set_right _ = raise BDDDynamicTree "expected node; got Leaf"
 
-  fun get_aabb (r as ref (Node {aabb, ...})) = aabb
-    | get_aabb (r as ref (Leaf {aabb, ...})) = aabb
+  fun set_aabb (Node {aabb, ...}, new_aabb) = aabb := new_aabb
+    | set_aabb (Leaf {aabb, ...}, new_aabb) = aabb := new_aabb
 
-  fun get_parent (r as ref (Node {parent, ...})) = parent
-    | get_parent (r as ref (Leaf {parent, ...})) = parent
+  fun get_aabb (Node {aabb, ...}) = !aabb
+    | get_aabb (Leaf {aabb, ...}) = !aabb
 
-  fun user_data (ref (Leaf {data, ... })) = data
-    | user_data (ref (Node _ )) =
+  fun get_parent (Node {parent, ...}) = !parent
+    | get_parent (Leaf {parent, ...}) = !parent
+
+  fun user_data (Leaf {data, ... }) = data
+    | user_data (Node _ ) =
       raise BDDDynamicTree "data only present for leaves"
 
-  fun fat_aabb (ref (Leaf {aabb, ...})) = aabb
-    | fat_aabb (ref (Node {aabb, ...})) = aabb
+  fun fat_aabb (Leaf {aabb, ...}) = !aabb
+    | fat_aabb (Node {aabb, ...}) = !aabb
 
   fun compute_height (ref { root, ... } : 'a dynamic_tree) =
       let fun ch (Leaf _) = 0
@@ -189,86 +190,82 @@ struct
   (* Climb the tree starting at the given node, expanding the derived
      AABBs if necessary.
      Port note: In the original, usually inlined as a do..while loop.
-     PERF: Easy to merge this and the above to remove some repeated
-     tests (though they are probably optimized out). *)
-  fun adjust_aabbs ancestor =
-      case !ancestor of
-          NONE => ()
-        | SOME (Node { parent, aabb = old_aabb, left, right, ... }) =>
-           let
-               val new_aabb = BDDCollision.aabb_combine (get_aabb left, get_aabb right)
-           in
-               ancestor := SOME (Node {aabb = new_aabb, parent = parent,
-                                       left = left, right = right});
-               if BDDCollision.aabb_contains (old_aabb, new_aabb)
-               then ()
-               else adjust_aabbs parent
-           end
-        | SOME (Leaf _) => raise BDDDynamicTree "expected Node; got Leaf"
+   *)
+  fun adjust_aabbs (tn as Node { parent, aabb = old_aabb, left, right, ... }) =
+      let
+          val new_aabb = BDDCollision.aabb_combine (get_aabb (!left), get_aabb (!right))
+      in
+          set_aabb (tn, new_aabb);
+          if BDDCollision.aabb_contains (!old_aabb, new_aabb)
+          then ()
+          else case !parent of
+                   NoParent => ()
+                 | Parent (tn, _) => adjust_aabbs tn
+      end
+    | adjust_aabbs (Leaf _) = raise BDDDynamicTree "expected Node; got Leaf"
 
   fun insert_leaf (tree as ref { root, ... } : 'a dynamic_tree,
-                   leaf as ref (Leaf { aabb, ... })) =
+                   leaf as Leaf { aabb, ... }) =
       (case root of
            NONE =>
                let in
                    (* PERF should always be the case already? *)
-                   set_parent (leaf, ref NONE);
-                   set_root (tree, SOME (!leaf))
+                   set_parent (leaf, NoParent);
+                   set_root (tree, SOME leaf)
                end
          | SOME tn =>
             (* Find the best sibling for this leaf. *)
             let
-                val center : vec2 = BDDCollision.aabb_center aabb
-                fun find (sibling as ref (Leaf _)) = sibling
-                  | find (sibling as ref (Node {aabb, parent, left, right})) =
+                val center : vec2 = BDDCollision.aabb_center (!aabb)
+                fun find (sibling as (Leaf _)) = sibling
+                  | find (sibling as (Node {aabb, parent, left, right})) =
                     let
                       val ldelta : vec2 =
-                        vec2abs (BDDCollision.aabb_center (get_aabb left) :-: center)
+                        vec2abs (BDDCollision.aabb_center (get_aabb (!left)) :-: center)
                       val rdelta : vec2 =
-                        vec2abs (BDDCollision.aabb_center (get_aabb right) :-: center)
+                        vec2abs (BDDCollision.aabb_center (get_aabb (!right)) :-: center)
                       val lnorm = vec2x ldelta + vec2y ldelta
                       val rnorm = vec2x rdelta + vec2y rdelta
                     in
                       if lnorm < rnorm
-                      then find left
-                      else find right
+                      then find (!left)
+                      else find (!right)
                     end
                 val sibling = find tn
                 val parent = get_parent sibling
-                val new = Node { parent = parent,
-                                 aabb = BDDCollision.aabb_combine
-                                            (get_aabb leaf, get_aabb sibling),
+                val new = Node { parent = ref parent,
+                                 aabb = ref (BDDCollision.aabb_combine
+                                             (get_aabb leaf, get_aabb sibling)),
                                  (* Port note: Same in both branches. *)
-                                 left = sibling,
-                                 right = leaf }
-                val new_pxy = ref new
+                                 left = ref sibling,
+                                 right = ref leaf }
             in
-                set_parent (sibling, SOME new_pxy);
-                set_parent (leaf, SOME new_pxy);
+                set_parent (sibling, Parent (new, Left));
+                set_parent (leaf, Parent (new, Right));
 
-                case !parent of
-                  NONE => set_root (tree, SOME new)
-                | SOME (Leaf _) => raise BDDDynamicTree "expected Node; got Leaf"
-                | SOME (Node {left, right, ...}) =>
+                case parent of
+                  NoParent => set_root (tree, SOME new)
+                | Parent (Leaf _, _) => raise BDDDynamicTree "expected Node; got Leaf"
+                | Parent (tn as Node {left, right, ...}, dir) =>
                   let
                   in
-                      if left = sibling
-                      then set_left (parent, new_pxy)
-                      else set_right (parent, new_pxy);
+                      (case dir of
+                          Left => set_left (tn, new)
+                        | Right => set_right (tn, new));
 
                       (* Port note: This expansion routine is not exactly
                          the same as the one in the code, but I believe
                          it has equivalent effect. *)
-                      adjust_aabbs parent
+                      adjust_aabbs tn
                   end
             end)
     | insert_leaf _ = raise BDDDynamicTree "can't insert interior node"
 
   (* Assumes the proxy is a leaf. *)
-  fun remove_leaf (tree : 'a dynamic_tree, ref (Node _ )) =
+  fun remove_leaf (tree : 'a dynamic_tree, Node _ ) =
       raise BDDDynamicTree "expected Leaf"
     | remove_leaf (tree : 'a dynamic_tree,
-                   proxy as ref (Leaf {parent, ...})) =
+                   proxy as Leaf {parent, ...}) =
     let
     in
       checktreestructure "remove_leaf before" tree;
@@ -276,38 +273,39 @@ struct
          Port note: Throughout this code, Box2D uses equality
          on proxy IDs (integers); I use ref equality. *)
       (case !parent of
-          NONE => set_root (tree, NONE)
-        | SOME (Leaf _ ) => raise BDDDynamicTree "expected Node"
-        | SOME (Node { left, right, parent = grandparent, ... }) =>
+          NoParent => set_root (tree, NONE)
+        | Parent (Leaf _, _)  => raise BDDDynamicTree "expected Node"
+        | Parent (Node { left, right, parent = grandparent, ... }, dir) =>
             let
                 (* Get the other child of our parent. *)
-                val sibling = if left = proxy
-                              then right
-                              else left
+                val sibling = case dir of
+                                  Left => !right
+                                | Right => !left
             in
               case !grandparent of
                   (* Note: discards parent. *)
-                  NONE => (set_parent (sibling, ref NONE);
-                           set_root (tree, sibling))
-                | SOME (Node { left = g_left, ... }) =>
+                  NoParent => (set_parent (sibling, NoParent);
+                               set_root (tree, SOME sibling))
+                | Parent (tn as Node { left = g_left, ... }, dir) =>
                       let
                       in
                           (* Destroy parent and connect grandparent
                              to sibling. *)
-                          if g_left = parent
-                          then set_left (grandparent, sibling)
-                          else set_right (grandparent, sibling);
-                          set_parent (sibling, grandparent);
+                          (case dir of
+                               Left => set_left (tn, sibling)
+                             | Right => set_right (tn, sibling));
+
+                          set_parent (sibling, Parent (tn, dir));
                           (* Adjust ancestor bounds. *)
-                          adjust_aabbs grandparent
+                          adjust_aabbs tn
                       end
-                | SOME _ => raise BDDDynamicTree "expected Node"
+                | Parent _ => raise BDDDynamicTree "expected Node"
             end);
        checktreestructure "remove_leaf after" tree
     end
 
   fun rebalance (tree : 'a dynamic_tree, iters : int) =
-    case !(#root (!tree)) of
+    case (#root (!tree)) of
       NONE => ()
     | SOME tn =>
       let
@@ -323,23 +321,23 @@ struct
           (fn _ =>
            let fun loop (node, bit) =
                    case node of
-                       ref (Leaf _) =>
+                       Leaf _ =>
                        (path := !path + 0w1;
                         remove_leaf (tree, node);
                         insert_leaf (tree, node))
-                     | ref (Node {left, right, ...} ) =>
+                     | Node {left, right, ...} =>
                        let
                            val node =
                                case Word32.andb(0w1, Word32.>>(!path, bit)) of
-                                   0w0 => left
-                                 | _ => right
+                                   0w0 => !left
+                                 | _ => !right
                            val bit = Word.andb(bit + 0w1, 0w31)
                        in
                            path := !path + 0w1;
                            loop (node, bit)
                        end
            in
-               loop (#root (!tree), 0w0)
+               loop (tn, 0w0)
            end);
            set_path (tree, !path);
            checktreestructure "rebalance after" tree
@@ -360,12 +358,12 @@ struct
           val fat : aabb = { lowerbound = #lowerbound aabb :-: r,
                              upperbound = #upperbound aabb :+: r }
 
-          val leaf = ref (Leaf { aabb = fat, data = a, parent = ref NONE,
-                                 stamp = next_stamp () })
+          val leaf = Leaf { aabb = ref fat, data = a, parent = ref NoParent,
+                            stamp = next_stamp () }
 
           fun rebalance_loop try_count =
               if try_count >= 10 orelse compute_height tree <= 64
-              then node
+              then leaf
               else (rebalance (tree, #node_count (!tree) div 16);
                     rebalance_loop (try_count + 1))
       in
@@ -379,11 +377,11 @@ struct
       remove_leaf (tree, proxy)
 
   fun move_proxy (tree : 'a dynamic_tree,
-                  proxy as ref (Leaf { aabb = proxy_aabb,
-                                       data, stamp, ... }) : 'a aabb_proxy,
+                  proxy as (Leaf { aabb = proxy_aabb,
+                                   data, stamp, ... }) : 'a aabb_proxy,
                   aabb : aabb,
                   displacement : vec2) : bool =
-      if BDDCollision.aabb_contains (proxy_aabb, aabb)
+      if BDDCollision.aabb_contains (!proxy_aabb, aabb)
       then false
       else
         let
@@ -414,8 +412,8 @@ struct
                              pxy (#upperbound b) ^ "\n")
 
         in
-            proxy := Leaf { aabb = b, data = data, parent = ref NONE,
-                            stamp = stamp };
+            set_aabb (proxy, b);
+            set_parent (proxy, NoParent);
             insert_leaf (tree, proxy);
             true
         end
@@ -435,19 +433,20 @@ struct
              f : 'a aabb_proxy -> bool,
              aabb : aabb) : unit =
     let fun q node =
-        case !node of
-            Leaf { aabb = leaf_aabb } =>
-            if BDDCollision.aabb_overlap (leaf_aabb, aabb)
+        case node of
+            Leaf { aabb = leaf_aabb, ... } =>
+            if BDDCollision.aabb_overlap (!leaf_aabb, aabb)
             then if f node
                  then ()
                  else raise Done
             else ()
           | Node { left, right, aabb = node_aabb, ... } =>
-            if BDDCollision.aabb_overlap (node_aabb, aabb)
-            then (q left; q right)
+            if BDDCollision.aabb_overlap (!node_aabb, aabb)
+            then (q (!left); q (!right))
             else ()
-    in
-        q (#root (!tree))
+    in case #root (!tree) of
+           NONE => ()
+         | SOME tn => q tn
     end handle Done => ()
 
   fun ray_cast (tree : 'a dynamic_tree,
@@ -497,7 +496,7 @@ struct
                if separation > 0.0
                then ()
                else
-                   case !node of
+                   case node of
                        Leaf _ =>
                        let
                            val sub_input = { p1 = p1, p2 = p2,
@@ -518,12 +517,14 @@ struct
                                 else ()
                        end
                    | Node {left, right, ...} =>
-                     (loop left; loop right)
+                     (loop (!left); loop (!right))
              end
           end
 
     in
-        loop (#root (!tree))
+        case #root (!tree) of
+            NONE => ()
+          | SOME tn => loop tn
     end handle Done => ()
 
 end
