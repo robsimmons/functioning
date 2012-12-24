@@ -165,6 +165,12 @@ struct
                   left = left, right = right }
     | set_right _ = raise BDDDynamicTree "expected node; got Leaf"
 
+  fun get_aabb (r as ref (Node {aabb, ...})) = aabb
+    | get_aabb (r as ref (Leaf {aabb, ...})) = aabb
+
+  fun get_parent (r as ref (Node {parent, ...})) = parent
+    | get_parent (r as ref (Leaf {parent, ...})) = parent
+
   fun user_data (ref (Leaf {data, ... })) = data
     | user_data (ref (Node _ )) =
       raise BDDDynamicTree "data only present for leaves"
@@ -189,7 +195,7 @@ struct
   fun set_derived_aabb (r as ref (Node { aabb = _, parent,
                                          left, right })) =
       let val new_aabb =
-          BDDCollision.aabb_combine (#aabb (!!left), #aabb (!!right))
+          BDDCollision.aabb_combine (get_aabb left, get_aabb right)
       in r := Node { aabb = new_aabb, parent = parent,
                      left = left, right = right };
           new_aabb
@@ -212,26 +218,25 @@ struct
         | Leaf _ = raise BDDDynamicTree "expected Node; got Leaf"
 
   fun insert_leaf (tree as ref { root, ... } : 'a dynamic_tree,
-                   leaf as Leaf { aabb, data = _, parent = _,
-                                  stamp = _ })) =
-      (case !root of
+                   leaf as ref (Leaf { aabb, ... })) =
+      (case root of
            NONE =>
                let in
                    (* PERF should always be the case already? *)
                    set_parent (leaf, ref NONE);
                    set_root (tree, leaf)
                end
-         | SOME root =>
+         | SOME tn =>
             (* Find the best sibling for this leaf. *)
             let
                 val center : vec2 = BDDCollision.aabb_center aabb
-                fun find (sibling as Leaf _) = sibling
-                  | find (sibling as Node {aabb, parent, left, right}) =
+                fun find (sibling as ref (Leaf _)) = sibling
+                  | find (sibling as ref (Node {aabb, parent, left, right})) =
                     let
                       val ldelta : vec2 =
-                        vec2abs (BDDCollision.aabb_center (#aabb (!!left)) :-: center)
+                        vec2abs (BDDCollision.aabb_center (get_aabb left) :-: center)
                       val rdelta : vec2 =
-                        vec2abs (BDDCollision.aabb_center (#aabb (!!right)) :-: center)
+                        vec2abs (BDDCollision.aabb_center (get_aabb right) :-: center)
                       val lnorm = vec2x ldelta + vec2y ldelta
                       val rnorm = vec2x rdelta + vec2y rdelta
                     in
@@ -239,12 +244,11 @@ struct
                       then find left
                       else find right
                     end
-                val sibling = find root
-                val parent = #parent (!!sibling)
+                val sibling = find tn
+                val parent = get_parent sibling
                 val new = ref (Node { parent = parent,
-                                      aabb = BDDCollision.aabb_combine 
-                                          (#aabb (!!leaf),
-                                           #aabb (!!sibling)),
+                                      aabb = BDDCollision.aabb_combine
+                                          (get_aabb leaf, get_aabb sibling),
                                       (* Port note: Same in both branches. *)
                                       left = sibling,
                                       right = leaf })
@@ -253,21 +257,22 @@ struct
                 set_parent (leaf, new);
 
                 case !parent of
-                  Empty => set_root (tree, new)
-                | _ => 
+                  NONE => set_root (tree, new)
+                | SOME (Leaf _) => raise BDDDynamicTree "expected Node; got Leaf"
+                | SOME (Node {left, right, ....}) =>
                   let
                   in
-                      if #left (!!parent) = sibling
+                      if left = sibling
                       then set_left (parent, new)
                       else set_right (parent, new);
 
-                      (* Port note: This expansion routine is not exactly 
+                      (* Port note: This expansion routine is not exactly
                          the same as the one in the code, but I believe
                          it has equivalent effect. *)
                       adjust_aabbs parent
                   end
             end)
-    | insert_leaf _ = raise BDDDynamicTree "can't insert interior node or empty"
+    | insert_leaf _ = raise BDDDynamicTree "can't insert interior node"
 
   (* Assumes the proxy is a leaf. *)
   fun remove_leaf (tree : 'a dynamic_tree, 
