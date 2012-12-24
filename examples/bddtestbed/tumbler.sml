@@ -129,6 +129,7 @@ fun handle_event world _ = ()
 
 val test = Test {init = init,
                  handle_event = handle_event,
-                 tick = tick}
+                 tick = tick,
+                 render = ignore}
 
 end

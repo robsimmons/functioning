@@ -114,6 +114,7 @@ fun handle_event world (SDL.E_KeyDown {sym = SDL.SDLK_COMMA}) = bullet world
 
 val test = Test {init = init,
                  handle_event = handle_event,
-                 tick = ignore}
+                 tick = ignore,
+                 render = ignore}
 
 end

@@ -82,6 +82,7 @@ struct
 
   val tests = Array.fromList[VerticalStack.test,
                              Tumbler.test,
+                             RayCast.test,
                              VaryingRestitution.test,
                              BulletTest.test,
                              Revolute.test,

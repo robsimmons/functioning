@@ -115,6 +115,7 @@ fun init world =
 
  val test = Test {init = init,
                   handle_event = handle_event,
-                  tick = ignore}
+                  tick = ignore,
+                  render = ignore}
 
 end

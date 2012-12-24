@@ -19,7 +19,8 @@ datatype view = View of
 datatype test = Test of
          {init : BDD.world -> unit,
           handle_event : BDD.world -> SDL.event -> unit,
-          tick : BDD.world -> unit
+          tick : BDD.world -> unit,
+          render : unit -> unit
          }
 
 type profile_data = { step_count : int,
