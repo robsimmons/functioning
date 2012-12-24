@@ -23,12 +23,12 @@ struct
      code clearer and would remove some of the awkward re-testing !! stuff.
      It deserves another pass. *)
 
-  and datatype 'a tree_node =
+  datatype 'a tree_node =
       Node of { (* Fattened aabb *)
                 aabb : aabb,
                 (* Port note: Box2D has a possibility for
                    a 'next' pointer here, but it's just
-                   so that the structure can be stored 
+                   so that the structure can be stored
                    in freelists for its custom allocator. *)
                 parent : 'a tree_node option ref,
                 left : 'a tree_node ref,
@@ -102,7 +102,7 @@ struct
                   indent depth;
                   dprint (fn () => "Leaf: " ^ aabbtos aabb ^ "\n");
                   indent depth;
-                  dprint (fn () => " dat: " ^ pa dat ^ "\n");
+                  dprint (fn () => " dat: " ^ pa dat ^ "\n")
               end
             | pr (depth, Node { left, right, aabb, ... }) =
               let in
@@ -275,29 +275,32 @@ struct
     | insert_leaf _ = raise BDDDynamicTree "can't insert interior node"
 
   (* Assumes the proxy is a leaf. *)
-  fun remove_leaf (tree : 'a dynamic_tree, 
-                   proxy : 'a aabb_proxy) =
-    let val { parent, ... } = !!proxy
+  fun remove_leaf (tree : 'a dynamic_tree, ref (Node _ )) =
+      raise BDDDynamicTree "expected Leaf"
+    | remove_leaf (tree : 'a dynamic_tree,
+                   proxy as ref (Leaf {parent, ...})) =
+    let
     in
       checktreestructure "remove_leaf before" tree;
-      (* If it's the root, we just make the tree empty. 
+      (* If it's the root, we just make the tree empty.
          Port note: Throughout this code, Box2D uses equality
-         on proxy IDs (integers); I ref equality. *)
+         on proxy IDs (integers); I use ref equality. *)
       (case !parent of
-          Empty => set_root (tree, ref Empty)
-        | Node { left, right, parent = grandparent, ... } =>
+          NONE => set_root (tree, NONE)
+        | SOME (Leaf _ ) => raise BDDDynamicTree "expected Node"
+        | SOME (Node { left, right, parent = grandparent, ... }) =>
             let
                 (* Get the other child of our parent. *)
-                val sibling = if left = proxy 
+                val sibling = if left = proxy
                               then right
                               else left
             in
               case !grandparent of
                   (* Note: discards parent. *)
-                  Empty => (set_parent (sibling, ref Empty);
-                            set_root (tree, sibling))
-                | Node { left = g_left, ... } => 
-                      let 
+                  NONE => (set_parent (sibling, ref NONE);
+                           set_root (tree, sibling))
+                | SOME (Node { left = g_left, ... }) =>
+                      let
                       in
                           (* Destroy parent and connect grandparent
                              to sibling. *)
@@ -308,14 +311,15 @@ struct
                           (* Adjust ancestor bounds. *)
                           adjust_aabbs grandparent
                       end
+                | SOME _ => raise BDDDynamicTree "expected Node"
             end);
        checktreestructure "remove_leaf after" tree
     end
 
   fun rebalance (tree : 'a dynamic_tree, iters : int) =
     case !(#root (!tree)) of
-      Empty => ()
-    | _ =>
+      NONE => ()
+    | SOME tn =>
       let
           (* Port note: Rebalancing consists of finding leaves and reinserting
              them. The member variable path is some kinda magic that seems
@@ -328,21 +332,22 @@ struct
           for 1 iters
           (fn _ =>
            let fun loop (node, bit) =
-               if is_leaf node
-               then (path := !path + 0w1; 
-                     remove_leaf (tree, node); 
-                     insert_leaf (tree, node))
-               else
-                let
-                    val node =
-                        case Word32.andb(0w1, Word32.>>(!path, bit)) of
-                            0w0 => #left (!!node)
-                          | _ => #right (!!node)
-                    val bit = Word.andb(bit + 0w1, 0w31)
-                in
-                    path := !path + 0w1;
-                    loop (node, bit)
-                end
+                   case node of
+                       ref (Leaf _) =>
+                       (path := !path + 0w1;
+                        remove_leaf (tree, node);
+                        insert_leaf (tree, node))
+                     | ref (Node {left, right, ...} ) =>
+                       let
+                           val node =
+                               case Word32.andb(0w1, Word32.>>(!path, bit)) of
+                                   0w0 => left
+                                 | _ => right
+                           val bit = Word.andb(bit + 0w1, 0w31)
+                       in
+                           path := !path + 0w1;
+                           loop (node, bit)
+                       end
            in
                loop (#root (!tree), 0w0)
            end);
@@ -352,7 +357,7 @@ struct
 
   fun aabb_proxy (tree : 'a dynamic_tree, aabb : aabb, a : 'a) : 'a aabb_proxy =
       let
-          fun pxy v = 
+          fun pxy v =
               Real.fmt (StringCvt.FIX (SOME 2)) (vec2x v) ^ " " ^
               Real.fmt (StringCvt.FIX (SOME 2)) (vec2y v)
           val () = dprint (fn () => "  inc aabb: " ^
@@ -365,8 +370,8 @@ struct
           val fat : aabb = { lowerbound = #lowerbound aabb :-: r,
                              upperbound = #upperbound aabb :+: r }
 
-          val leaf = { aabb = fat, data = a, parent = ref Empty,
-                       stamp = next_stamp () }
+          val leaf = ref (Leaf { aabb = fat, data = a, parent = ref NONE,
+                                 stamp = next_stamp () })
 
           fun rebalance_loop try_count =
               if try_count >= 10 orelse compute_height tree <= 64
@@ -381,12 +386,10 @@ struct
       end
 
   fun remove_proxy (tree : 'a dynamic_tree, proxy : 'a aabb_proxy) =
-      if is_leaf proxy
-      then remove_leaf (tree, proxy)
-      else raise BDDDynamicTree "can only remove leaves"
+      remove_leaf (tree, proxy)
 
   fun move_proxy (tree : 'a dynamic_tree,
-                  proxy as ref (Node { aabb = proxy_aabb, 
+                  proxy as ref (Leaf { aabb = proxy_aabb,
                                        data, stamp, ... }) : 'a aabb_proxy,
                   aabb : aabb,
                   displacement : vec2) : bool =
@@ -394,9 +397,6 @@ struct
       then false
       else
         let
-            val () = if is_leaf proxy
-                     then ()
-                     else raise BDDDynamicTree "move_proxy on non-leaf"
             val () = remove_leaf (tree, proxy)
 
             (* Predict AABB displacement. *)
@@ -411,12 +411,12 @@ struct
                              else (0.0, vec2y d)
 
             (* Extend AABB *)
-            val b : aabb = { lowerbound = 
+            val b : aabb = { lowerbound =
                                #lowerbound aabb :-: r :+: vec2(blx, bly),
-                             upperbound = 
+                             upperbound =
                                #upperbound aabb :+: r :+: vec2(bux, buy) }
 
-            fun pxy v = 
+            fun pxy v =
                 Real.fmt (StringCvt.FIX (SOME 2)) (vec2x v) ^ " " ^
                 Real.fmt (StringCvt.FIX (SOME 2)) (vec2y v)
             val () = dprint (fn () => "  moved_aabb: " ^
@@ -424,12 +424,12 @@ struct
                              pxy (#upperbound b) ^ "\n")
 
         in
-            proxy := Node { aabb = b, data = data, parent = ref Empty,
-                            left = ref Empty, right = ref Empty, stamp = stamp };
+            proxy := Leaf { aabb = b, data = data, parent = ref NONE,
+                            stamp = stamp };
             insert_leaf (tree, proxy);
             true
         end
-    | move_proxy _ = raise BDDDynamicTree "move_proxy on Empty"
+    | move_proxy _ = raise BDDDynamicTree "move_proxy on Node"
 
   (* Port note: Box2D somewhat strangely uses an explicit stack here
      (might be so that it can abort when the callback returns false
@@ -446,14 +446,15 @@ struct
              aabb : aabb) : unit =
     let fun q node =
         case !node of
-            Empty => ()
+          | Leaf { aabb = leaf_aabb } =>
+            if BDDCollision.aabb_overlap (leaf_aabb, aabb)
+            then if f node
+                 then ()
+                 else raise Done
+            else ()
           | Node { left, right, aabb = node_aabb, ... } =>
             if BDDCollision.aabb_overlap (node_aabb, aabb)
-            then if is_leaf node
-                 then if f node
-                      then ()
-                      else raise Done
-                 else (q left; q right)
+            then (q left; q right)
             else ()
     in
         q (#root (!tree))
@@ -490,9 +491,9 @@ struct
          than 64 in the worst case. Just use the ML stack and
          exceptions for correctness and simplicity. *)
       fun loop node =
-        case !node of
-            Empty => ()
-          | Node { aabb = node_aabb, ... } =>
+          let
+              val node_aabb = get_aabb node
+          in
             if not (BDDCollision.aabb_overlap (node_aabb, !segment_aabb))
             then ()
             else
@@ -506,10 +507,10 @@ struct
                if separation > 0.0
                then ()
                else
-                   if is_leaf node
-                   then
+                   case !node of
+                       Leaf _ =>
                        let
-                           val sub_input = { p1 = p1, p2 = p2, 
+                           val sub_input = { p1 = p1, p2 = p2,
                                              max_fraction = !max_fraction }
                            val value = f (sub_input, node)
                        in
@@ -526,8 +527,10 @@ struct
                                     end
                                 else ()
                        end
-                   else (loop (#left (!!node)); loop (#right (!!node)))
+                   | Node {left, right, ...} =>
+                     (loop left; loop right)
              end
+          end
 
     in
         loop (#root (!tree))
