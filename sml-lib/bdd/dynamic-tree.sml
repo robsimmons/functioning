@@ -104,9 +104,7 @@ struct
           NONE => ()
         | SOME tn => checkstructure s tn
 
-(*  fun checktreestructure _ _ = () *)
-
-  fun dprint f = print (f ())
+  fun checktreestructure _ _ = ()
 
   fun debugprint pa (tree as ref { node_count, path, root }) =
       let
@@ -208,12 +206,12 @@ struct
      AABBs if necessary.
      Port note: In the original, usually inlined as a do..while loop.
    *)
-  fun adjust_aabbs (tn as Node { parent, aabb = old_aabb, left, right, ... }) =
+  fun adjust_aabbs (tn as Node { parent, aabb = ref old_aabb, left, right, ... }) =
       let
           val new_aabb = BDDCollision.aabb_combine (get_aabb (!left), get_aabb (!right))
       in
           set_aabb (tn, new_aabb);
-          if BDDCollision.aabb_contains (!old_aabb, new_aabb)
+          if BDDCollision.aabb_contains (old_aabb, new_aabb)
           then ()
           else case !parent of
                    NoParent => ()
@@ -274,8 +272,7 @@ struct
                          the same as the one in the code, but I believe
                          it has equivalent effect. *)
                       adjust_aabbs tn
-                  end;
-                debugprint (fn _ => "") tree
+                  end
             end)
     | insert_leaf _ = raise BDDDynamicTree "can't insert interior node"
 
