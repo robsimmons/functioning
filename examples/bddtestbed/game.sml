@@ -373,6 +373,9 @@ struct
     | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_6}) s =
       SOME (init_test Tumbler.test)
 
+    | handle_event (SDL.E_KeyDown {sym = SDL.SDLK_r}) (GS {test, ...}) =
+      SOME (init_test test)
+
     | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_LEFT}) s =
       update_view s (BDDMath.vec2 (~0.5, 0.0)) 1.0
     | handle_event (SDL.E_KeyDown {sym = sym as SDL.SDLK_RIGHT}) s =
