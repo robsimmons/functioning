@@ -39,7 +39,8 @@ fun new_profile_data () =
 type settings =
          { draw_contacts : bool ref,
            paused : bool ref,
-           profile : profile_data option ref
+           profile : profile_data option ref,
+           test_num : int ref
          }
 
 type mouse_joint = {get_target : unit -> BDDMath.vec2,
