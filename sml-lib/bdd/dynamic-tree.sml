@@ -33,6 +33,7 @@ struct
     | Leaf of  { (* Fattened aabb *)
                 aabb : aabb ref,
                 parent : 'a parent ref,
+                (* XXX overflow possibility *)
                 stamp : int,
                 data : 'a }
   and 'a parent = NoParent
