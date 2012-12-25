@@ -7,6 +7,13 @@ open BDDOps
 infix 6 :+: :-: %-% %+% +++
 infix 7 *: *% +*: +*+ #*% @*:
 
+(* Random number in range [-1, 1] *)
+fun random_float () =
+    let
+    in
+        0.4
+    end
+
 val maxBodies = 256
 
 local
@@ -72,9 +79,9 @@ fun init world =
          val d = BDDMath.vec2(L * Math.cos(!angle), L * Math.sin(!angle))
          val point2 = point1 :+: d
 
-         val m_hit = ref false
-         val m_point = ref (BDDMath.vec2(0.0, 0.0))
-         val m_normal = ref (BDDMath.vec2(0.0, 0.0))
+         val callback_hit = ref false
+         val callback_point = ref (BDDMath.vec2(0.0, 0.0))
+         val callback_normal = ref (BDDMath.vec2(0.0, 0.0))
          fun callback {fixture, point, normal, fraction} =
              let
                  val body = BDD.Fixture.get_body fixture
@@ -82,15 +89,24 @@ fun init world =
              in
                  case userData of
                      Filtered => BDD.World.IgnoreAndContinue
-                   | _ => (m_hit := true;
-                           m_point := point;
-                           m_normal := normal;
+                   | _ => (callback_hit := true;
+                           callback_point := point;
+                           callback_normal := normal;
                            BDD.World.Clip fraction)
              end
 
          val () = BDD.World.ray_cast (world, callback, point1, point2)
      in
-         ()
+         if !callback_hit
+         then
+             let
+                 val head = (!callback_point) :+: 0.5 *: (!callback_normal)
+             in
+                 Render.draw_point (!callback_point) 5.0 (RGB(0.4, 0.9, 0.4));
+                 Render.draw_segment point1 (!callback_point) (RGB(0.8, 0.8, 0.8));
+                 Render.draw_segment (!callback_point) head (RGB (0.9, 0.9, 0.4))
+             end
+         else Render.draw_segment point1 point2 (RGB(0.8, 0.8, 0.8))
      end
 
  fun handle_event _ _ = ()
