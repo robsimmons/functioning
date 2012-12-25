@@ -2,7 +2,10 @@ structure RayCast =
 struct
 
 open Types
+open BDDOps
 
+infix 6 :+: :-: %-% %+% +++
+infix 7 *: *% +*: +*+ #*% @*:
 
 val maxBodies = 256
 
@@ -30,6 +33,8 @@ val m_polygons = Array.fromList
                  ]
 end
 
+val angle = ref 0.0
+
 fun init world =
     let
         val ground_body = BDD.World.create_body (world,
@@ -52,17 +57,37 @@ fun init world =
         val ground_fixture = BDD.Body.create_fixture_default
                              (ground_body, ground_shape, (), 1.0)
 
-        val shape = BDDShape.Circle {radius = 1.0,
-                                     p = BDDMath.vec2_zero}
-    in ()
+
+    in
+        angle := 0.0
     end
 
+ fun tick world =
+     let
+         val L = 11.0
+         val point1 = BDDMath.vec2(0.0, 10.0)
+         val d = BDDMath.vec2(L * Math.cos(!angle), L * Math.sin(!angle))
+         val point2 = point1 :+: d
+
+         val m_hit = ref false
+         val m_point = ref (BDDMath.vec2(0.0, 0.0))
+         val m_normal = ref (BDDMath.vec2(0.0, 0.0))
+         fun callback {fixture, point, normal, fraction} =
+             let
+                 val body = BDD.Fixture.get_body fixture
+                 val userData = BDD.Body.get_data body
+             in
+                 ()
+             end
+     in
+         ()
+     end
 
  fun handle_event _ _ = ()
 
  val test = Test {init = init,
                   handle_event = handle_event,
-                  tick = ignore,
+                  tick = tick,
                   render = ignore}
 
 end
