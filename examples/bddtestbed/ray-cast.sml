@@ -50,7 +50,7 @@ fun init world =
                                                   fixed_rotation = false,
                                                   bullet = false,
                                                   active = true,
-                                                  data = (),
+                                                  data = Nothing,
                                                   inertia_scale = 1.0
                                                 })
         val ground_shape = BDDShape.Polygon (BDDPolygon.box (40.0, 0.01))
@@ -63,6 +63,9 @@ fun init world =
     end
 
  fun tick world =
+     angle := (!angle) + 0.25 * Math.pi / 180.0
+
+ fun render world =
      let
          val L = 11.0
          val point1 = BDDMath.vec2(0.0, 10.0)
@@ -77,8 +80,15 @@ fun init world =
                  val body = BDD.Fixture.get_body fixture
                  val userData = BDD.Body.get_data body
              in
-                 ()
+                 case userData of
+                     Filtered => BDD.World.IgnoreAndContinue
+                   | _ => (m_hit := true;
+                           m_point := point;
+                           m_normal := normal;
+                           BDD.World.Clip fraction)
              end
+
+         val () = BDD.World.ray_cast (world, callback, point1, point2)
      in
          ()
      end
@@ -88,6 +98,6 @@ fun init world =
  val test = Test {init = init,
                   handle_event = handle_event,
                   tick = tick,
-                  render = ignore}
+                  render = render}
 
 end

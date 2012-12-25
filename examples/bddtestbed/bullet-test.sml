@@ -23,7 +23,7 @@ fun init world =
                                                   fixed_rotation = false,
                                                   bullet = false,
                                                   active = true,
-                                                  data = (),
+                                                  data = Nothing,
                                                   inertia_scale = 1.0
                                                 })
         val ground_shape = BDDShape.Polygon
@@ -57,7 +57,7 @@ fun init world =
                                            fixed_rotation = false,
                                            bullet = false,
                                            active = true,
-                                           data = (),
+                                           data = Nothing,
                                            inertia_scale = 1.0
                                          })
         val bar_shape = BDDShape.Polygon (BDDPolygon.box(2.0, 0.1))
@@ -78,7 +78,7 @@ fun init world =
                                            fixed_rotation = false,
                                            bullet = true,
                                            active = true,
-                                           data = (),
+                                           data = Nothing,
                                            inertia_scale = 1.0
                                          })
         val bullet_shape = BDDShape.Polygon (BDDPolygon.box(0.25, 0.25))

@@ -21,7 +21,7 @@ fun init world =
                                                   fixed_rotation = false,
                                                   bullet = false,
                                                   active = true,
-                                                  data = (),
+                                                  data = Nothing,
                                                   inertia_scale = 1.0
                                                 })
         val ground_shape = BDDShape.Polygon (BDDPolygon.box (40.0, 0.01))
@@ -42,7 +42,7 @@ fun init world =
                                                 fixed_rotation = false,
                                                 bullet = false,
                                                 active = true,
-                                                data = (),
+                                                data = Nothing,
                                                 inertia_scale = 1.0
                                                })
         val ball_shape = BDDShape.Circle {radius = 0.5,
@@ -90,7 +90,7 @@ fun init world =
                                                     fixed_rotation = false,
                                                     bullet = false,
                                                     active = true,
-                                                    data = (),
+                                                    data = Nothing,
                                                     inertia_scale = 1.0
                                                   })
 
@@ -112,7 +112,7 @@ fun init world =
                                                     fixed_rotation = false,
                                                     bullet = true,
                                                     active = true,
-                                                    data = (),
+                                                    data = Nothing,
                                                     inertia_scale = 1.0
                                                   })
         val plank_shape = BDDShape.Polygon

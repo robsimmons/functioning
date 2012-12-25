@@ -23,7 +23,7 @@ fun init world =
                                                   fixed_rotation = false,
                                                   bullet = false,
                                                   active = true,
-                                                  data = (),
+                                                  data = Nothing,
                                                   inertia_scale = 1.0
                                                 })
 
@@ -40,7 +40,7 @@ fun init world =
                                                fixed_rotation = false,
                                                bullet = false,
                                                active = true,
-                                               data = (),
+                                               data = Nothing,
                                                inertia_scale = 1.0
                                              })
 
@@ -111,7 +111,7 @@ fun tick world =
                                                fixed_rotation = false,
                                                bullet = false,
                                                active = true,
-                                               data = (),
+                                               data = Nothing,
                                                inertia_scale = 1.0
                                              })
 
