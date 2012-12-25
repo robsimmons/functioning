@@ -7,11 +7,16 @@ open BDDOps
 infix 6 :+: :-: %-% %+% +++
 infix 7 *: *% +*: +*+ #*% @*:
 
-(* Random number in range [-1, 1] *)
-fun random_float () =
+val RAND_LIMIT = 0w32767
+
+(* Random number in range [lo, hi] *)
+fun random_float (lo, hi) =
     let
+        val r1 = Real.fromInt (Word.toInt (Word.andb(MLton.Random.rand(), RAND_LIMIT)))
+        val r2 = r1 / (Real.fromInt (Word.toInt (RAND_LIMIT)))
+        val r3 = (hi - lo) * r2 + lo
     in
-        0.4
+        r3
     end
 
 val maxBodies = 256
@@ -107,6 +112,18 @@ fun init world =
                  Render.draw_segment (!callback_point) head (RGB (0.9, 0.9, 0.4))
              end
          else Render.draw_segment point1 point2 (RGB(0.8, 0.8, 0.8))
+     end
+
+ fun create world index =
+     let
+         val x = random_float (~10.0, 10.0)
+         val y = random_float (0.0, 20.0)
+         val pos = BDDMath.vec2 (x,y)
+         val angle = random_float (~Math.pi, Math.pi)
+
+         val user_data = if index = 0 then Filtered else Nothing
+     in
+         ()
      end
 
  fun handle_event _ _ = ()
