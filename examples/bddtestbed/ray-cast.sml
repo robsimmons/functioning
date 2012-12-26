@@ -23,8 +23,8 @@ val maxBodies = 256
 
 local
     val w = 1.0
-    val b = 2.0 / (2.0 + Math.sqrt 2.0)
-    val s = Math.sqrt 2.0 * b
+    val b = w / (2.0 + Math.sqrt 2.0)
+    val s = (Math.sqrt 2.0) * b
 in
 val m_polygons = Array.fromList
                  [BDDPolygon.polygon [BDDMath.vec2(~0.5, 0.0),
@@ -122,11 +122,42 @@ fun init world =
          val angle = random_float (~Math.pi, Math.pi)
 
          val user_data = if index = 0 then Filtered else Nothing
+
+         val body = BDD.World.create_body (world,
+                                           {typ = BDD.Body.Static,
+                                            position = pos,
+                                            angle = angle,
+                                            linear_velocity = BDDMath.vec2_zero,
+                                            angular_velocity = 0.0,
+                                            linear_damping = 0.0,
+                                            angular_damping = 0.0,
+                                            allow_sleep = true,
+                                            awake = true,
+                                            fixed_rotation = false,
+                                            bullet = false,
+                                            active = true,
+                                            data = user_data,
+                                            inertia_scale = 1.0
+                                          })
+
+         val shape = if index >= 0 andalso index < 4
+                     then BDDShape.Polygon (Array.sub (m_polygons, index))
+                     else BDDShape.Circle {radius = 0.5, p = BDDMath.vec2(0.0, 0.0)}
+
+         val fixture = BDD.Body.create_fixture_default (body, shape, (), 1.0)
      in
          ()
      end
 
- fun handle_event _ _ = ()
+ fun sym_to_index SDL.SDLK_1 = 0
+   | sym_to_index SDL.SDLK_2 = 1
+   | sym_to_index SDL.SDLK_3 = 2
+   | sym_to_index SDL.SDLK_4 = 3
+   | sym_to_index SDL.SDLK_5 = 4
+   | sym_to_index _ = 5
+
+ fun handle_event world (SDL.E_KeyDown {sym}) = create world (sym_to_index sym)
+   | handle_event _ _ = ()
 
  val test = Test {init = init,
                   handle_event = handle_event,
