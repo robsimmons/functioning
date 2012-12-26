@@ -950,7 +950,7 @@ struct
             val name2 = (* getfixturename (Contact.get_fixture_b c) *) "name2"
             val rtos = Real.fmt (StringCvt.FIX (SOME 2))
         in
-            dprint (fn () => "New " ^ name1 ^ "-" ^ name2 ^ " Contact! ");
+            dprint (fn () => " Contact! ");
             if Contact.is_touching c
             then dprint (fn () => "touching ")
             else ();
@@ -958,15 +958,14 @@ struct
             for 0 (point_count - 1)
             (fn i =>
              let val pt = Array.sub(#points world_manifold, i)
-                 (* val (x, y) = vectoscreen pt *)
              in
                  dprint (fn () => vtos pt ^ ", ")
              end);
 
             dprint (fn () => "\n")
         end 
-          val () = oapp Contact.get_next onecontact (D.W.get_contact_list world)
-*)
+          val () = oapp Contact.get_next onecontact (D.W.get_contact_list world) *)
+
 
           (* XXX end all debug *)
 

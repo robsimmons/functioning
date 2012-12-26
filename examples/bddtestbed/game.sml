@@ -96,18 +96,18 @@ struct
           val test_num = Int.mod(!(#test_num settings), Array.length tests)
           val test as Test {init, ...} = Array.sub(tests, test_num)
           val () = init world
-          val center = BDDMath.vec2 (0.0, 20.0)
-          val zoom = 1.0
-          val view = View {center = center, zoom = zoom,
-                           needs_resize = true}
       in GS { test = test, mouse_joint = NONE, world = world,
-              view = view, settings = settings}
+              settings = settings}
       end
 
   val initsettings = {draw_contacts = ref false,
                       paused = ref false,
                       profile = ref NONE,
-                      test_num = ref 0}
+                      test_num = ref 0,
+                      view = ref (View {center = BDDMath.vec2 (0.0, 20.0),
+                                        zoom = 1.0,
+                                        needs_resize = true})
+                     }
 
   val initstate = init_test initsettings
 
@@ -228,7 +228,7 @@ struct
           val () = BDD.World.step (world, timestep, 8, 3)
       in () end
 
-  fun dotick (s as GS {world, view, test, mouse_joint, settings}) =
+  fun dotick (s as GS {world, test, mouse_joint, settings}) =
     let
         val Test {tick = test_tick, ...} = test
         val () = test_tick world
@@ -280,9 +280,11 @@ struct
         SOME s
     end
 
-  fun tick (s as GS {world, view, test, mouse_joint, settings}) =
-      let val view' = resize view
-          val s' = GS {world = world, view = view', test = test,
+  fun tick (s as GS {world, test, mouse_joint, settings}) =
+      let
+          val view = #view settings
+          val () = view := (resize (!view))
+          val s' = GS {world = world, test = test,
                        mouse_joint = mouse_joint, settings = settings}
       in
           if not (!(#paused settings))
@@ -300,13 +302,13 @@ struct
       end
 
   fun mouse_up (s as GS {world, mouse_joint = NONE, test, ...}) p = SOME s
-    | mouse_up (s as GS {world, mouse_joint = SOME (mj, j), test, view, settings}) p =
+    | mouse_up (s as GS {world, mouse_joint = SOME (mj, j), test, settings}) p =
       let val () = BDD.World.destroy_joint (world, j)
       in SOME (GS {world = world, mouse_joint = NONE,
-                   test = test, view = view, settings = settings})
+                   test = test, settings = settings})
       end
 
-  fun mouse_down (s as GS {world, mouse_joint, test, view, settings}) p =
+  fun mouse_down (s as GS {world, mouse_joint, test, settings}) p =
       let val d = BDDMath.vec2 (0.001, 0.001)
           val aabb = { lowerbound = p :-: d,
                        upperbound = p :+: d
@@ -361,16 +363,19 @@ struct
                              | _ => raise Fail "expected a mouse joint"
                         end
       in SOME (GS {world = world, mouse_joint = mbe_new_joint,
-                   test = test, view = view, settings = settings})
+                   test = test, settings = settings})
       end
 
-  fun update_view (GS {world, mouse_joint, test, settings,
-                       view = View {center, zoom, ...}}) v s =
-      SOME (GS {world = world, mouse_joint = mouse_joint, test = test,
-                settings = settings,
-                view = View {center = center :+: v,
-                             zoom = zoom * s,
-                             needs_resize = true}})
+  fun update_view (gs as GS {world, mouse_joint, test, settings = {view, ...}}) v s =
+      let
+          val View {center, zoom, ...} = !view
+      in
+          view := View {center = center :+: v,
+                        zoom = zoom * s,
+                        needs_resize = true};
+          SOME gs
+      end
+
 
 
   fun handle_event (SDL.E_KeyDown {sym = SDL.SDLK_ESCAPE}) s = NONE
@@ -430,12 +435,16 @@ struct
           else SOME s
       end
 
-    | handle_event (SDL.E_MouseDown {button, x, y}) (s as (GS gs)) =
-      mouse_down s (screen_to_world (x, y) (#view gs))
-    | handle_event (SDL.E_MouseUp {button, x, y}) (s as (GS gs)) =
-      mouse_up s (screen_to_world (x, y) (#view gs))
-    | handle_event (SDL.E_MouseMotion {which, state, x, y, xrel, yrel}) (s as (GS gs)) =
-      mouse_motion s (screen_to_world (x, y) (#view gs))
+    | handle_event (SDL.E_MouseDown {button, x, y}) (s as (GS {settings,...})) =
+      mouse_down s (screen_to_world (x, y) (!(#view settings)))
+
+    | handle_event (SDL.E_MouseUp {button, x, y}) (s as (GS {settings,...})) =
+      mouse_up s (screen_to_world (x, y) (!(#view settings)))
+
+    | handle_event (SDL.E_MouseMotion {which, state, x, y, xrel, yrel})
+                   (s as (GS {settings, ...})) =
+      mouse_motion s (screen_to_world (x, y) (!(#view settings)))
+
     | handle_event e (s as GS {world, test = Test {handle_event = he, ... }, ...})  =
       (he world e; SOME s)
 

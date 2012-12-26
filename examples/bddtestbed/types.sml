@@ -43,7 +43,8 @@ type settings =
          { draw_contacts : bool ref,
            paused : bool ref,
            profile : profile_data option ref,
-           test_num : int ref
+           test_num : int ref,
+           view : view ref
          }
 
 type mouse_joint = {get_target : unit -> BDDMath.vec2,
@@ -53,7 +54,6 @@ type mouse_joint = {get_target : unit -> BDDMath.vec2,
 datatype game_state = GS of {world : BDD.world,
                              mouse_joint : (mouse_joint * BDD.joint) option,
                              test : test,
-                             view : view,
                              settings : settings
                             }
 
