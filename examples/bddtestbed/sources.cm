@@ -6,6 +6,8 @@ Group is
 ../../sml-lib/bdd/bdd.cm
 
 types.sml
+render.sml
+
 bullet-test.sml
 revolute.sml
 prismatic.sml
@@ -13,6 +15,6 @@ cradle.sml
 varying-restitution.sml
 vertical-stack.sml
 tumbler.sml
-render.sml
+ray-cast.sml
 game.sml
 

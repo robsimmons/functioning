@@ -3,9 +3,11 @@ struct
 
 datatype spec = RGB of GL.GLdouble * GL.GLdouble * GL.GLdouble;
 
+datatype body_data = Nothing | Filtered
+
 structure BDD = BDDWorld(
                 struct type fixture_data = unit
-                       type body_data = unit
+                       type body_data = body_data
                        type joint_data = unit
                 end
                 )
@@ -19,7 +21,8 @@ datatype view = View of
 datatype test = Test of
          {init : BDD.world -> unit,
           handle_event : BDD.world -> SDL.event -> unit,
-          tick : BDD.world -> unit
+          tick : BDD.world -> unit,
+          render : BDD.world -> unit
          }
 
 type profile_data = { step_count : int,

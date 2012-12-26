@@ -82,6 +82,7 @@ struct
 
   val tests = Array.fromList[VerticalStack.test,
                              Tumbler.test,
+                             RayCast.test,
                              VaryingRestitution.test,
                              BulletTest.test,
                              Revolute.test,
@@ -198,7 +199,8 @@ struct
           glEnd()
       end
 
-  fun render screen (GS {world, mouse_joint, settings, ...}) =
+  fun render screen (GS {world, mouse_joint, settings,
+                         test as Test {render = test_render, ...}, ...}) =
   let in
    glClear(GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT);
    glLoadIdentity();
@@ -211,6 +213,8 @@ struct
    then List.app drawcontactpoint (!contact_points)
    else ();
    contact_points := [];
+
+   test_render world;
 
    glFlush();
    SDL.glflip();
@@ -334,7 +338,7 @@ struct
                                        fixed_rotation = false,
                                        bullet = false,
                                        active = true,
-                                       data = (),
+                                       data = Nothing,
                                        inertia_scale = 1.0
                                      })
 

@@ -21,7 +21,7 @@ fun init world =
                                                   fixed_rotation = false,
                                                   bullet = false,
                                                   active = true,
-                                                  data = (),
+                                                  data = Nothing,
                                                   inertia_scale = 1.0
                                                 })
         val ground_shape = BDDShape.Polygon (BDDPolygon.box (40.0, 0.01))
@@ -47,7 +47,7 @@ fun init world =
                                                    fixed_rotation = false,
                                                    bullet = false,
                                                    active = true,
-                                                   data = (),
+                                                   data = Nothing,
                                                    inertia_scale = 1.0
                                                   })
                 val fixture = BDD.Body.create_fixture_default
@@ -64,6 +64,7 @@ fun init world =
 
  val test = Test {init = init,
                   handle_event = handle_event,
-                  tick = ignore}
+                  tick = ignore,
+                  render = ignore}
 
 end
