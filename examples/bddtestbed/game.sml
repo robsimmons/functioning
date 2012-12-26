@@ -96,11 +96,7 @@ struct
           val test_num = Int.mod(!(#test_num settings), Array.length tests)
           val test as Test {init, ...} = Array.sub(tests, test_num)
           val () = init world
-          val profile = #profile settings
       in
-          profile := (case !profile of
-                          NONE => NONE
-                        | _ => SOME (new_profile_data ()));
           GS { test = test, mouse_joint = NONE, world = world,
               settings = settings, ticks = 0}
       end
@@ -240,8 +236,9 @@ struct
         val () = dophysics world
         val ticks' = ticks + 1
         val () = case !(#profile settings) of
-                     SOME {total, max} =>
+                     SOME {ticks = profile_ticks, total, max} =>
                      let
+                         val profile_ticks' = profile_ticks + 1
                          val {step, collide,
                               solve, solve_toi} = BDD.World.get_profile world
                          val total' = {step = Time.+(step, #step total),
@@ -257,7 +254,7 @@ struct
                          fun toString t = Real64.toString (1000.0 * (Time.toReal t))
                          fun totalString t = Real64.toString
                                                  (1000.0 * (Time.toReal t) /
-                                                  Real64.fromInt ticks')
+                                                  Real64.fromInt profile_ticks')
                      in
                          print "profile:\n";
                          print ("step: " ^ toString (step) ^ " [");
@@ -276,7 +273,8 @@ struct
                          print (totalString (#solve_toi total') ^ "] (");
                          print (toString (#solve_toi max') ^ ")\n");
 
-                         (#profile settings) := (SOME {total = total',
+                         (#profile settings) := (SOME {ticks = profile_ticks',
+                                                       total = total',
                                                        max = max' })
                      end
                    | NONE => ()

@@ -25,7 +25,8 @@ datatype test = Test of
           render : BDD.world -> unit
          }
 
-type profile_data = { total : BDDDynamicsTypes.profile,
+type profile_data = { ticks : int,
+                      total : BDDDynamicsTypes.profile,
                       max : BDDDynamicsTypes.profile
                     }
 
@@ -35,7 +36,7 @@ fun new_profile_data () =
                               solve = Time.zeroTime,
                               solve_toi = Time.zeroTime}
     in
-        {total = new_profile(), max = new_profile()}
+        {ticks = 0, total = new_profile(), max = new_profile()}
     end
 
 type settings =
