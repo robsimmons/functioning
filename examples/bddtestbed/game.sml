@@ -96,8 +96,13 @@ struct
           val test_num = Int.mod(!(#test_num settings), Array.length tests)
           val test as Test {init, ...} = Array.sub(tests, test_num)
           val () = init world
-      in GS { test = test, mouse_joint = NONE, world = world,
-              settings = settings}
+          val profile = #profile settings
+      in
+          profile := (case !profile of
+                          NONE => NONE
+                        | _ => SOME (new_profile_data ()));
+          GS { test = test, mouse_joint = NONE, world = world,
+              settings = settings, ticks = 0}
       end
 
   val initsettings = {draw_contacts = ref false,
@@ -228,15 +233,15 @@ struct
           val () = BDD.World.step (world, timestep, 8, 3)
       in () end
 
-  fun dotick (s as GS {world, test, mouse_joint, settings}) =
+  fun dotick (s as GS {world, test, mouse_joint, settings, ticks}) =
     let
         val Test {tick = test_tick, ...} = test
         val () = test_tick world
         val () = dophysics world
+        val ticks' = ticks + 1
         val () = case !(#profile settings) of
-                     SOME {step_count, total, max} =>
+                     SOME {total, max} =>
                      let
-                         val step_count' = step_count + 1
                          val {step, collide,
                               solve, solve_toi} = BDD.World.get_profile world
                          val total' = {step = Time.+(step, #step total),
@@ -252,7 +257,7 @@ struct
                          fun toString t = Real64.toString (1000.0 * (Time.toReal t))
                          fun totalString t = Real64.toString
                                                  (1000.0 * (Time.toReal t) /
-                                                  Real64.fromInt step_count')
+                                                  Real64.fromInt ticks')
                      in
                          print "profile:\n";
                          print ("step: " ^ toString (step) ^ " [");
@@ -271,20 +276,20 @@ struct
                          print (totalString (#solve_toi total') ^ "] (");
                          print (toString (#solve_toi max') ^ ")\n");
 
-                         (#profile settings) := (SOME {step_count = step_count',
-                                                       total = total',
+                         (#profile settings) := (SOME {total = total',
                                                        max = max' })
                      end
                    | NONE => ()
     in
-        SOME s
+        SOME (GS {world = world, test = test, ticks = ticks',
+                  mouse_joint = mouse_joint, settings = settings})
     end
 
-  fun tick (s as GS {world, test, mouse_joint, settings}) =
+  fun tick (s as GS {world, test, mouse_joint, settings, ticks}) =
       let
           val view = #view settings
           val () = view := (resize (!view))
-          val s' = GS {world = world, test = test,
+          val s' = GS {world = world, test = test, ticks = ticks,
                        mouse_joint = mouse_joint, settings = settings}
       in
           if not (!(#paused settings))
@@ -302,13 +307,13 @@ struct
       end
 
   fun mouse_up (s as GS {world, mouse_joint = NONE, test, ...}) p = SOME s
-    | mouse_up (s as GS {world, mouse_joint = SOME (mj, j), test, settings}) p =
+    | mouse_up (s as GS {world, mouse_joint = SOME (mj, j), test, settings, ticks}) p =
       let val () = BDD.World.destroy_joint (world, j)
       in SOME (GS {world = world, mouse_joint = NONE,
-                   test = test, settings = settings})
+                   test = test, settings = settings, ticks = ticks})
       end
 
-  fun mouse_down (s as GS {world, mouse_joint, test, settings}) p =
+  fun mouse_down (s as GS {world, mouse_joint, test, settings, ticks}) p =
       let val d = BDDMath.vec2 (0.001, 0.001)
           val aabb = { lowerbound = p :-: d,
                        upperbound = p :+: d
@@ -363,10 +368,10 @@ struct
                              | _ => raise Fail "expected a mouse joint"
                         end
       in SOME (GS {world = world, mouse_joint = mbe_new_joint,
-                   test = test, settings = settings})
+                   test = test, settings = settings, ticks = ticks})
       end
 
-  fun update_view (gs as GS {world, mouse_joint, test, settings = {view, ...}}) v s =
+  fun update_view (gs as GS {settings = {view, ...}, ...}) v s =
       let
           val View {center, zoom, ...} = !view
       in

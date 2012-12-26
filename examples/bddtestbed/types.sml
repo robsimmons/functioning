@@ -25,8 +25,7 @@ datatype test = Test of
           render : BDD.world -> unit
          }
 
-type profile_data = { step_count : int,
-                      total : BDDDynamicsTypes.profile,
+type profile_data = { total : BDDDynamicsTypes.profile,
                       max : BDDDynamicsTypes.profile
                     }
 
@@ -36,7 +35,7 @@ fun new_profile_data () =
                               solve = Time.zeroTime,
                               solve_toi = Time.zeroTime}
     in
-        {step_count = 0, total = new_profile(), max = new_profile()}
+        {total = new_profile(), max = new_profile()}
     end
 
 type settings =
@@ -54,6 +53,7 @@ type mouse_joint = {get_target : unit -> BDDMath.vec2,
 datatype game_state = GS of {world : BDD.world,
                              mouse_joint : (mouse_joint * BDD.joint) option,
                              test : test,
+                             ticks : int,
                              settings : settings
                             }
 
