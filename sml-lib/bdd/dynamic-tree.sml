@@ -289,11 +289,11 @@ struct
           else A_interior
       end
 
-  (* Climb the tree starting at the given node, expanding the derived
-     AABBs if necessary.
+  (* Climb the tree starting at the given node, balancing and keeping
+     the AABBS and heights up to date.
      Port note: In the original, usually inlined as a do..while loop.
    *)
-  fun adjust_aabbs (tree : 'a dynamic_tree,
+  fun climb_and_adjust (tree : 'a dynamic_tree,
                     nd as Nd _) =
       let
           val nd' = balance (tree, nd)
@@ -302,7 +302,7 @@ struct
 
           case get_parent (Node nd') of
               NoParent => ()
-            | Parent (ptn, _) => adjust_aabbs (tree, ptn)
+            | Parent (ptn, _) => climb_and_adjust (tree, ptn)
       end
 
   fun aabb_perimeter {upperbound, lowerbound} =
@@ -386,10 +386,7 @@ struct
                           Left => left := Node new
                         | Right => right := Node new );
 
-                      (* Port note: This expansion routine is not exactly
-                         the same as the one in the code, but I believe
-                         it has equivalent effect. *)
-                      adjust_aabbs (tree, nd)
+                      climb_and_adjust (tree, nd)
                   end;
 
                 checktreestructure "insert_leaf after" tree
@@ -399,9 +396,7 @@ struct
                    proxy as Lf {parent, ...}) =
     let
     in
-      (* If it's the root, we just make the tree empty.
-         Port note: Throughout this code, Box2D uses equality
-         on proxy IDs (integers); I use ref equality. *)
+      (* If it's the root, we just make the tree empty. *)
       (case !parent of
           NoParent => set_root (tree, NONE)
         | Parent (Nd { left, right, parent = grandparent, ... }, dir) =>
@@ -426,7 +421,7 @@ struct
 
                           set_parent (sibling, Parent (gpn, dir));
                           (* Adjust ancestor bounds. *)
-                          adjust_aabbs (tree, gpn)
+                          climb_and_adjust (tree, gpn)
                       end
             end);
        checktreestructure "remove_leaf after" tree
