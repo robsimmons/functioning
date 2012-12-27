@@ -366,20 +366,20 @@ struct
                A as Node {left = ref B, right = ref C, ...}) =
       let
           val balance = get_height C - get_height B
+          val A_parent = get_parent A
       in
-          (* Rotate C up *)
           if balance > 1
-          then
+          then (* Rotate C up *)
               let
                   val (F, G) = case C of
                                    Node {left, right, ...} => (!left, !right)
                                  | Leaf _ => raise BDDDynamicTree "expected Node"
-                  val A_parent = get_parent A
               in
                   (* Swap A and C *)
+                  (* Port note: this is a rotation, not a swap. *)
                   set_left (C, A);
                   set_parent (C, A_parent);
-                  set_parent (A, Parent(C, Right));
+                  set_parent (A, Parent(C, Left));
 
                   (* A's old parent should point to C *)
                   (case A_parent of
@@ -403,11 +403,43 @@ struct
                   adjust_height_and_aabb C;
                   C
               end
-          else
+          else if balance < ~1
+          then (* Rotate B up *)
               let
+                  val (D, E) = case B of
+                                   Node {left, right, ...} => (!left, !right)
+                                 | Leaf _ => raise BDDDynamicTree "expected Node"
               in
-                  raise Fail "unimplemented"
+                  (* Swap A and B *)
+                  (* Port note: this is a swap, not a rotation. *)
+                  set_left (B, A);
+                  set_parent (B, A_parent);
+                  set_parent (A, Parent(B, Left));
+
+                  (* A's old parent should point to B *)
+                  (case A_parent of
+                       Parent (pt, Left) => set_left (pt, B)
+                     | Parent (pt, Right) => set_right (pt, B)
+                     | NoParent => set_root (tree, SOME B));
+
+                  (* Rotate *)
+                  if get_height D > get_height E
+                  then
+                      (set_right (B, D);
+                       set_left (A, E);
+                       set_parent (E, Parent(A, Left))
+                      )
+                  else
+                      (
+                       set_right (B, E);
+                       set_left (A, D);
+                       set_parent (D, Parent(A, Left))
+                      );
+                  adjust_height_and_aabb A;
+                  adjust_height_and_aabb B;
+                  B
               end
+          else A
       end
 
   fun aabb_proxy (tree : 'a dynamic_tree, aabb : aabb, a : 'a) : 'a aabb_proxy =
