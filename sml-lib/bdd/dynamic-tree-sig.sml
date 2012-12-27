@@ -36,10 +36,6 @@ sig
                    BDDTypes.aabb * BDDMath.vec2 -> 
                    bool
 
-  (* rebalance tree iterations
-     Perform some iterations to re-balance the tree. *)
-  val rebalance : 'a dynamic_tree * int -> unit
-  
   (* Get proxy user data. *)
   val user_data : 'a aabb_proxy -> 'a
 

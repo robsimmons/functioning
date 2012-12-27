@@ -68,9 +68,10 @@ struct
                               which ^ " child's aabb is malformed")
               else if dir = pdir
               then ()
-              else raise BDDDynamicTree
+              else (
+                    raise BDDDynamicTree
                   ("checkstructure " ^ s ^ ": node's " ^
-                   which ^ " child's parent is in wrong direction")
+                   which ^ " child's parent is in wrong direction"))
 
           fun checkpar which dir (Leaf { parent, aabb, ... }) =
               checkpar' which dir (!parent) aabb
@@ -90,23 +91,35 @@ struct
           NONE => ()
         | SOME tn => checkstructure s tn
 
-  fun checktreestructure _ _ = ()
+(*  fun checktreestructure _ _ = () *)
+
+  fun dprint f = print (f ())
 
   fun debugprint pa (tree as ref { node_count, path, root }) =
       let
           fun indent 0 = ()
             | indent n = (dprint (fn () => " "); indent (n - 1))
-          fun pr (depth, Leaf { data = dat, aabb, ... }) =
+          fun pr (depth, Leaf { data = dat, aabb, parent, ... }) =
               let in
                   indent depth;
                   dprint (fn () => "Leaf: " ^ aabbtos (!aabb) ^ "\n");
                   indent depth;
-                  dprint (fn () => " dat: " ^ pa dat ^ "\n")
+                  dprint (fn () => " dat: " ^ pa dat ^ "\n");
+                  indent depth;
+                  case !parent of
+                      NoParent => dprint (fn () => "\n")
+                    | Parent (_, Left) => dprint (fn () => " dir: Left\n")
+                    | Parent (_, Right) => dprint (fn () => " dir: Right\n")
               end
-            | pr (depth, Node { left, right, aabb, ... }) =
+            | pr (depth, Node { left, right, aabb, parent, ... }) =
               let in
                   indent depth;
                   dprint (fn () => "Node: " ^ aabbtos (!aabb) ^ "\n");
+                  indent depth;
+                  case !parent of
+                      NoParent => dprint (fn () => "\n")
+                    | Parent (_, Left) => dprint (fn () => " dir: Left\n")
+                    | Parent (_, Right) => dprint (fn () => " dir: Right\n");
                   pr (depth + 2, !left);
                   pr (depth + 2, !right)
               end
@@ -237,11 +250,13 @@ struct
                   if get_height F > get_height G
                   then
                       (set_right (C, F);
+                       set_parent (F, Parent(C, Right));
                        set_right (A, G);
                        set_parent (G, Parent(A, Right))
                       )
                   else
                       (set_right (C, G);
+                       set_parent (G, Parent(C, Right));
                        set_right (A, F);
                        set_parent (F, Parent(A, Right))
                       );
@@ -272,12 +287,14 @@ struct
                   if get_height D > get_height E
                   then
                       (set_right (B, D);
+                       set_parent (D, Parent(B, Right));
                        set_left (A, E);
                        set_parent (E, Parent(A, Left))
                       )
                   else
                       (
                        set_right (B, E);
+                       set_parent (E, Parent(B, Right));
                        set_left (A, D);
                        set_parent (D, Parent(A, Left))
                       );
@@ -297,6 +314,12 @@ struct
       let
           val tn' = balance (tree, tn)
       in
+          print ("just balanced: " ^ aabbtos (get_aabb tn'));
+          debugprint (fn _ => "?") tree;
+          checktreestructure "adjust_aabbs" tree;
+
+
+
           adjust_height_and_aabb tn';
           case get_parent tn' of
               NoParent => ()
@@ -390,7 +413,10 @@ struct
                          the same as the one in the code, but I believe
                          it has equivalent effect. *)
                       adjust_aabbs (tree, tn)
-                  end
+                  end;
+
+                debugprint (fn _ => "?") tree;
+                checktreestructure "insert_leaf after" tree
             end)
     | insert_leaf _ = raise BDDDynamicTree "can't insert interior node"
 
@@ -400,6 +426,7 @@ struct
                    proxy as Leaf {parent, ...}) =
     let
     in
+        debugprint (fn _ => "?") tree;
       checktreestructure "remove_leaf before" tree;
       (* If it's the root, we just make the tree empty.
          Port note: Throughout this code, Box2D uses equality
@@ -436,47 +463,6 @@ struct
        checktreestructure "remove_leaf after" tree
     end
 
-  fun rebalance (tree : 'a dynamic_tree, iters : int) =
-    case (#root (!tree)) of
-      NONE => ()
-    | SOME tn =>
-      let
-          (* Port note: Rebalancing consists of finding leaves and reinserting
-             them. The member variable path is some kinda magic that seems
-             to be intended to make us choose different nodes each time; we
-             read bits from least to most significant so that we switch
-             between the two children of the root on every step, etc. *)
-          val path = ref (#path (!tree))
-      in
-          checktreestructure "rebalance before" tree;
-          for 1 iters
-          (fn _ =>
-           let fun loop (node, bit) =
-                   case node of
-                       Leaf _ =>
-                       (path := !path + 0w1;
-                        remove_leaf (tree, node);
-                        insert_leaf (tree, node))
-                     | Node {left, right, ...} =>
-                       let
-                           val node =
-                               case Word32.andb(0w1, Word32.>>(!path, bit)) of
-                                   0w0 => !left
-                                 | _ => !right
-                           val bit = Word.andb(bit + 0w1, 0w31)
-                       in
-                           path := !path + 0w1;
-                           loop (node, bit)
-                       end
-           in
-               loop (tn, 0w0)
-           end);
-           set_path (tree, !path);
-           checktreestructure "rebalance after" tree
-      end
-
-
-
   fun aabb_proxy (tree : 'a dynamic_tree, aabb : aabb, a : 'a) : 'a aabb_proxy =
       let
           fun pxy v =
@@ -495,16 +481,10 @@ struct
           val leaf = Leaf { aabb = ref fat, data = a, parent = ref NoParent,
                             stamp = next_stamp () }
 
-          fun rebalance_loop try_count =
-              if try_count >= 10 orelse compute_height tree <= 64
-              then leaf
-              else (rebalance (tree, #node_count (!tree) div 16);
-                    rebalance_loop (try_count + 1))
       in
           set_node_count (tree, #node_count (!tree) + 1);
           insert_leaf (tree, leaf);
-          (* Rebalance if necessary. *)
-          rebalance_loop 0
+          leaf
       end
 
   fun remove_proxy (tree : 'a dynamic_tree, proxy : 'a aabb_proxy) =
