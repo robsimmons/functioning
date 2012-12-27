@@ -21,7 +21,10 @@ struct
   datatype child_direction = Left | Right
 
   datatype 'a tree_node =
-      Node of { (* Fattened aabb *)
+      Node of 'a interior_node
+    | Leaf of 'a leaf_node
+  and 'a interior_node =
+      Nd of { (* Fattened aabb *)
                 aabb : aabb ref,
                 (* Port note: Box2D has a possibility for
                    a 'next' pointer here, but it's just
@@ -31,16 +34,18 @@ struct
                 left : 'a tree_node ref,
                 right : 'a tree_node ref,
                 height : int ref}
-    | Leaf of  { (* Fattened aabb *)
+  and 'a leaf_node =
+      Lf of { (* Fattened aabb *)
                 aabb : aabb ref,
                 parent : 'a parent ref,
                 (* XXX overflow possibility *)
                 stamp : int,
                 data : 'a }
   and 'a parent = NoParent
-                | Parent of 'a tree_node * child_direction
+                | Parent of 'a interior_node * child_direction
 
-  type 'a aabb_proxy = 'a tree_node
+
+  type 'a aabb_proxy = 'a leaf_node
 
   (* Port note: The representation is that leaf nodes are the
      "real" nodes (and have user data) whereas internal nodes just
@@ -54,7 +59,7 @@ struct
 
   (* PERF just for debugging. *)
   fun checkstructure s (r as (Leaf _ )) = ()
-    | checkstructure s (r as (Node { left, right, aabb, ... })) =
+    | checkstructure s (r as (Node (Nd { left, right, aabb, ... }))) =
       let
           fun checkpar' which dir NoParent child_aabb =
               raise BDDDynamicTree
@@ -73,9 +78,9 @@ struct
                   ("checkstructure " ^ s ^ ": node's " ^
                    which ^ " child's parent is in wrong direction"))
 
-          fun checkpar which dir (Leaf { parent, aabb, ... }) =
+          fun checkpar which dir (Leaf (Lf { parent, aabb, ... })) =
               checkpar' which dir (!parent) aabb
-            | checkpar which dir (Node { parent, aabb, ... }) =
+            | checkpar which dir (Node (Nd { parent, aabb, ... })) =
               checkpar' which dir (!parent) aabb
 
       in
@@ -86,7 +91,7 @@ struct
       end
 
   fun checktreestructure s (ref { node_count : int,
-                                  root : 'a aabb_proxy option }) =
+                                  root : 'a tree_node option }) =
       case root of
           NONE => ()
         | SOME tn => checkstructure s tn
@@ -97,7 +102,7 @@ struct
       let
           fun indent 0 = ()
             | indent n = (dprint (fn () => " "); indent (n - 1))
-          fun pr (depth, Leaf { data = dat, aabb, parent, ... }) =
+          fun pr (depth, Leaf (Lf { data = dat, aabb, parent, ... })) =
               let in
                   indent depth;
                   dprint (fn () => "Leaf: " ^ aabbtos (!aabb) ^ "\n");
@@ -109,7 +114,7 @@ struct
                     | Parent (_, Left) => dprint (fn () => " dir: Left\n")
                     | Parent (_, Right) => dprint (fn () => " dir: Right\n")
               end
-            | pr (depth, Node { left, right, aabb, parent, ... }) =
+            | pr (depth, Node (Nd { left, right, aabb, parent, ... })) =
               let in
                   indent depth;
                   dprint (fn () => "Node: " ^ aabbtos (!aabb) ^ "\n");
@@ -130,9 +135,8 @@ struct
       end
 
 
-  fun cmp_proxy ((Leaf { stamp = a, ... }),
-                 (Leaf { stamp = b, ... })) = Int.compare (a, b)
-    | cmp_proxy _ = raise BDDDynamicTree "can only compare leaves."
+  fun cmp_proxy ((Lf { stamp = a, ... }),
+                 (Lf { stamp = b, ... })) = Int.compare (a, b)
 
   fun eq_proxy p = EQUAL = cmp_proxy p
 
@@ -154,44 +158,35 @@ struct
   fun set_root (r as ref { node_count, root = _ }, root) =
       r := { node_count = node_count, root = root }
 
-  fun set_parent (Node {parent, ...}, new_parent) =
+  fun set_parent (Node (Nd {parent, ...}), new_parent) =
       parent := new_parent
-    | set_parent (Leaf {parent, ...}, new_parent) =
+    | set_parent (Leaf (Lf {parent, ...}), new_parent) =
       parent := new_parent
 
-  fun set_left (Node { left, ... }, new_left) =
+  fun set_left (Nd { left, ... }, new_left) =
       left := new_left
-    | set_left _ = raise BDDDynamicTree "expected node; got Leaf"
 
-  fun set_right (Node { right, ... }, new_right) =
+  fun set_right (Nd { right, ... }, new_right) =
       right := new_right
-    | set_right _ = raise BDDDynamicTree "expected node; got Leaf"
 
-  fun set_aabb (Node {aabb, ...}, new_aabb) = aabb := new_aabb
-    | set_aabb (Leaf {aabb, ...}, new_aabb) = aabb := new_aabb
+  fun get_aabb (Node (Nd {aabb, ...})) = !aabb
+    | get_aabb (Leaf (Lf {aabb, ...})) = !aabb
 
-  fun get_aabb (Node {aabb, ...}) = !aabb
-    | get_aabb (Leaf {aabb, ...}) = !aabb
+  fun get_parent (Node (Nd {parent, ...})) = !parent
+    | get_parent (Leaf (Lf {parent, ...})) = !parent
 
-  fun get_parent (Node {parent, ...}) = !parent
-    | get_parent (Leaf {parent, ...}) = !parent
-
-  fun get_height (Node {height, ...}) = !height
+  fun get_height (Node (Nd {height, ...})) = !height
     | get_height (Leaf _) = 0
 
-  fun set_height (Node {height, ...}, new_height) = height := new_height
-    | set_height (Leaf _, _) = raise BDDDynamicTree "expected node; got Leaf"
+  fun set_height (Nd {height, ...}, new_height) = height := new_height
 
-  fun user_data (Leaf {data, ... }) = data
-    | user_data (Node _ ) =
-      raise BDDDynamicTree "data only present for leaves"
+  fun user_data (Lf {data, ... }) = data
 
-  fun fat_aabb (Leaf {aabb, ...}) = !aabb
-    | fat_aabb (Node {aabb, ...}) = !aabb
+  fun fat_aabb (Lf {aabb, ...}) = !aabb
 
   fun compute_height (ref { root, ... } : 'a dynamic_tree) =
       let fun ch (Leaf _) = 0
-            | ch (Node { left, right, ... }) =
+            | ch (Node (Nd { left, right, ... })) =
           1 + Int.max(ch (!left), ch (!right))
       in case root of
              NONE => 0
@@ -201,36 +196,33 @@ struct
   fun dynamic_tree () : 'a dynamic_tree =
       ref { node_count = 0, root = NONE }
 
-  fun adjust_height_and_aabb (Node {aabb, height, left, right, ...}) =
+  fun adjust_height_and_aabb (Nd {aabb, height, left, right, ...}) =
       let in
           aabb := BDDCollision.aabb_combine
                        (get_aabb (!left), get_aabb (!right));
           height := 1 + Int.max (get_height (!left), get_height (!right))
       end
-    | adjust_height_and_aabb (Leaf _ ) = raise BDDDynamicTree "expected node; got Leaf"
 
   (* Perform a left or right rotation if node A is imbalanced.
      Returns the new root tree node. *)
-  fun balance (_, leaf as Leaf _) = leaf
-    | balance (_, node as Node {height = ref 1, ...}) = node
+  fun balance (_, node as Nd {height = ref 1, ...}) = node
     | balance (tree : 'a dynamic_tree,
-               A as Node {left = ref B, right = ref C, ...}) =
+               A as Nd {left = ref B, right = ref C, parent = ref A_parent, ...}) =
       let
           val balance = get_height C - get_height B
-          val A_parent = get_parent A
       in
           if balance > 1
           then (* Rotate C up *)
               let
-                  val (F, G) = case C of
-                                   Node {left, right, ...} => (!left, !right)
+                  val (F, G, C_interior) = case C of
+                                   Node (nd as Nd {left, right, ...}) => (!left, !right, nd)
                                  | Leaf _ => raise BDDDynamicTree "expected Node"
               in
                   (* Swap A and C *)
                   (* Port note: this is a rotation, not a swap. *)
-                  set_left (C, A);
+                  set_left (C_interior, Node A);
                   set_parent (C, A_parent);
-                  set_parent (A, Parent(C, Left));
+                  set_parent (Node A, Parent(C_interior, Left));
 
                   (* A's old parent should point to C *)
                   (case A_parent of
@@ -241,33 +233,33 @@ struct
                   (* Rotate *)
                   if get_height F > get_height G
                   then
-                      (set_right (C, F);
-                       set_parent (F, Parent(C, Right));
+                      (set_right (C_interior, F);
+                       set_parent (F, Parent(C_interior, Right));
                        set_right (A, G);
                        set_parent (G, Parent(A, Right))
                       )
                   else
-                      (set_right (C, G);
-                       set_parent (G, Parent(C, Right));
+                      (set_right (C_interior, G);
+                       set_parent (G, Parent(C_interior, Right));
                        set_right (A, F);
                        set_parent (F, Parent(A, Right))
                       );
                   adjust_height_and_aabb A;
-                  adjust_height_and_aabb C;
-                  C
+                  adjust_height_and_aabb C_interior;
+                  C_interior
               end
           else if balance < ~1
           then (* Rotate B up *)
               let
-                  val (D, E) = case B of
-                                   Node {left, right, ...} => (!left, !right)
+                  val (D, E, B_interior) = case B of
+                                   Node (nd as Nd {left, right, ...}) => (!left, !right, nd)
                                  | Leaf _ => raise BDDDynamicTree "expected Node"
               in
                   (* Swap A and B *)
                   (* Port note: this is a swap, not a rotation. *)
-                  set_left (B, A);
+                  set_left (B_interior, Node A);
                   set_parent (B, A_parent);
-                  set_parent (A, Parent(B, Left));
+                  set_parent (Node A, Parent(B_interior, Left));
 
                   (* A's old parent should point to B *)
                   (case A_parent of
@@ -278,21 +270,21 @@ struct
                   (* Rotate *)
                   if get_height D > get_height E
                   then
-                      (set_right (B, D);
-                       set_parent (D, Parent(B, Right));
+                      (set_right (B_interior, D);
+                       set_parent (D, Parent(B_interior, Right));
                        set_left (A, E);
                        set_parent (E, Parent(A, Left))
                       )
                   else
                       (
-                       set_right (B, E);
-                       set_parent (E, Parent(B, Right));
+                       set_right (B_interior, E);
+                       set_parent (E, Parent(B_interior, Right));
                        set_left (A, D);
                        set_parent (D, Parent(A, Left))
                       );
                   adjust_height_and_aabb A;
-                  adjust_height_and_aabb B;
-                  B
+                  adjust_height_and_aabb B_interior;
+                  B_interior
               end
           else A
       end
@@ -302,17 +294,16 @@ struct
      Port note: In the original, usually inlined as a do..while loop.
    *)
   fun adjust_aabbs (tree : 'a dynamic_tree,
-                    tn as Node _) =
+                    tn as Nd _) =
       let
           val tn' = balance (tree, tn)
       in
           adjust_height_and_aabb tn';
 
-          case get_parent tn' of
+          case get_parent (Node tn') of
               NoParent => ()
             | Parent (ptn, _) => adjust_aabbs (tree, ptn)
       end
-    | adjust_aabbs (_, Leaf _) = raise BDDDynamicTree "expected Node; got Leaf"
 
   fun aabb_perimeter {upperbound, lowerbound} =
       let
@@ -323,19 +314,19 @@ struct
       end
 
   fun insert_leaf (tree as ref { root, ... } : 'a dynamic_tree,
-                   leaf as Leaf { aabb = ref leaf_aabb, ... }) =
+                   leaf as Lf { aabb = ref leaf_aabb, ... }) =
       (case root of
            NONE =>
                let in
                    (* PERF should always be the case already? *)
-                   set_parent (leaf, NoParent);
-                   set_root (tree, SOME leaf)
+                   set_parent (Leaf leaf, NoParent);
+                   set_root (tree, SOME (Leaf leaf))
                end
          | SOME tn =>
             (* Find the best sibling for this leaf. *)
             let
                 fun find (sibling as (Leaf _)) = sibling
-                  | find (sibling as (Node {aabb, parent, left, right, ...})) =
+                  | find (sibling as (Node (Nd {aabb, parent, left, right, ...}))) =
                     let
                         val area = aabb_perimeter (!aabb)
                         val combined_aabb = BDDCollision.aabb_combine (!aabb, leaf_aabb)
@@ -345,11 +336,11 @@ struct
                         (* Mininum cost of pushing the leaf farther down the tree *)
                         val inheritance_cost = 2.0 * (combined_area - area)
 
-                        fun child_cost (Leaf {aabb = ref child_aabb, ...}) =
+                        fun child_cost (Leaf (Lf {aabb = ref child_aabb, ...})) =
                             inheritance_cost + (aabb_perimeter
                                                     (BDDCollision.aabb_combine
                                                          (leaf_aabb, child_aabb)))
-                          | child_cost (Node {aabb = ref child_aabb, ...}) =
+                          | child_cost (Node (Nd {aabb = ref child_aabb, ...})) =
                                 let
                                     val aabb = BDDCollision.aabb_combine(leaf_aabb,
                                                                          child_aabb)
@@ -375,41 +366,37 @@ struct
 
                 val sibling = find tn
                 val parent = get_parent sibling
-                val new = Node { parent = ref parent,
-                                 aabb = ref (BDDCollision.aabb_combine
-                                             (leaf_aabb, get_aabb sibling)),
-                                 (* Port note: Same in both branches. *)
-                                 left = ref sibling,
-                                 right = ref leaf,
-                                 height = ref (get_height sibling + 1)}
+                val new = Nd { parent = ref parent,
+                               aabb = ref (BDDCollision.aabb_combine
+                                               (leaf_aabb, get_aabb sibling)),
+                               (* Port note: Same in both branches. *)
+                               left = ref sibling,
+                               right = ref (Leaf leaf),
+                               height = ref (get_height sibling + 1)}
             in
                 set_parent (sibling, Parent (new, Left));
-                set_parent (leaf, Parent (new, Right));
+                set_parent (Leaf leaf, Parent (new, Right));
 
                 case parent of
-                  NoParent => set_root (tree, SOME new)
-                | Parent (Leaf _, _) => raise BDDDynamicTree "expected Node; got Leaf"
-                | Parent (tn as Node {left, right, ...}, dir) =>
+                  NoParent => set_root (tree, SOME (Node new))
+                | Parent (nd as Nd {left, right, ...}, dir) =>
                   let
                   in
                       (case dir of
-                          Left => left := new
-                        | Right => right := new );
+                          Left => left := Node new
+                        | Right => right := Node new );
 
                       (* Port note: This expansion routine is not exactly
                          the same as the one in the code, but I believe
                          it has equivalent effect. *)
-                      adjust_aabbs (tree, tn)
+                      adjust_aabbs (tree, nd)
                   end;
 
                 checktreestructure "insert_leaf after" tree
             end)
-    | insert_leaf _ = raise BDDDynamicTree "can't insert interior node"
 
-  fun remove_leaf (tree : 'a dynamic_tree, Node _ ) =
-      raise BDDDynamicTree "expected Leaf"
-    | remove_leaf (tree : 'a dynamic_tree,
-                   proxy as Leaf {parent, ...}) =
+  fun remove_leaf (tree : 'a dynamic_tree,
+                   proxy as Lf {parent, ...}) =
     let
     in
       (* If it's the root, we just make the tree empty.
@@ -417,8 +404,7 @@ struct
          on proxy IDs (integers); I use ref equality. *)
       (case !parent of
           NoParent => set_root (tree, NONE)
-        | Parent (Leaf _, _)  => raise BDDDynamicTree "expected Node"
-        | Parent (Node { left, right, parent = grandparent, ... }, dir) =>
+        | Parent (Nd { left, right, parent = grandparent, ... }, dir) =>
             let
                 (* Get the other child of our parent. *)
                 val sibling = case dir of
@@ -429,20 +415,19 @@ struct
                   (* Note: discards parent. *)
                   NoParent => (set_parent (sibling, NoParent);
                                set_root (tree, SOME sibling))
-                | Parent (tn as Node { left = g_left, ... }, dir) =>
+                | Parent (gpn as Nd { left = g_left, ... }, dir) =>
                       let
                       in
                           (* Destroy parent and connect grandparent
                              to sibling. *)
                           (case dir of
-                               Left => set_left (tn, sibling)
-                             | Right => set_right (tn, sibling));
+                               Left => set_left (gpn, sibling)
+                             | Right => set_right (gpn, sibling));
 
-                          set_parent (sibling, Parent (tn, dir));
+                          set_parent (sibling, Parent (gpn, dir));
                           (* Adjust ancestor bounds. *)
-                          adjust_aabbs (tree, tn)
+                          adjust_aabbs (tree, gpn)
                       end
-                | Parent _ => raise BDDDynamicTree "expected Node"
             end);
        checktreestructure "remove_leaf after" tree
     end
@@ -462,8 +447,8 @@ struct
           val fat : aabb = { lowerbound = #lowerbound aabb :-: r,
                              upperbound = #upperbound aabb :+: r }
 
-          val leaf = Leaf { aabb = ref fat, data = a, parent = ref NoParent,
-                            stamp = next_stamp () }
+          val leaf = Lf { aabb = ref fat, data = a, parent = ref NoParent,
+                          stamp = next_stamp () }
 
       in
           set_node_count (tree, #node_count (!tree) + 1);
@@ -475,8 +460,8 @@ struct
       remove_leaf (tree, proxy)
 
   fun move_proxy (tree : 'a dynamic_tree,
-                  proxy as (Leaf { aabb = proxy_aabb,
-                                   data, stamp, ... }) : 'a aabb_proxy,
+                  proxy as (Lf { aabb = proxy_aabb,
+                                 data, stamp, ... }) : 'a aabb_proxy,
                   aabb : aabb,
                   displacement : vec2) : bool =
       if BDDCollision.aabb_contains (!proxy_aabb, aabb)
@@ -510,12 +495,11 @@ struct
                              pxy (#upperbound b) ^ "\n")
 
         in
-            set_aabb (proxy, b);
-            set_parent (proxy, NoParent);
+            proxy_aabb := b;
+            set_parent (Leaf proxy, NoParent);
             insert_leaf (tree, proxy);
             true
         end
-    | move_proxy _ = raise BDDDynamicTree "move_proxy on Node"
 
   (* Port note: Box2D somewhat strangely uses an explicit stack here
      (might be so that it can abort when the callback returns false
@@ -532,13 +516,13 @@ struct
              aabb : aabb) : unit =
     let fun q node =
         case node of
-            Leaf { aabb = leaf_aabb, ... } =>
+            Leaf (leaf as Lf { aabb = leaf_aabb, ... }) =>
             if BDDCollision.aabb_overlap (!leaf_aabb, aabb)
-            then if f node
+            then if f leaf
                  then ()
                  else raise Done
             else ()
-          | Node { left, right, aabb = node_aabb, ... } =>
+          | Node (Nd { left, right, aabb = node_aabb, ... }) =>
             if BDDCollision.aabb_overlap (!node_aabb, aabb)
             then (q (!left); q (!right))
             else ()
@@ -595,11 +579,11 @@ struct
                then ()
                else
                    case node of
-                       Leaf _ =>
+                       Leaf lf =>
                        let
                            val sub_input = { p1 = p1, p2 = p2,
                                              max_fraction = !max_fraction }
-                           val value = f (sub_input, node)
+                           val value = f (sub_input, lf)
                        in
                            (* Just used as a sentinel for the client to
                               request that the ray cast should stop *)
@@ -614,7 +598,7 @@ struct
                                     end
                                 else ()
                        end
-                   | Node {left, right, ...} =>
+                   | Node (Nd {left, right, ...}) =>
                      (loop (!left); loop (!right))
              end
           end
