@@ -178,8 +178,6 @@ struct
           (* Send the pairs back to the client. *)
           app (fn (p, q) => add (user_data p, user_data q)) pairs
 
-          (* Try to keep the tree balanced. *)
-          (* DT.rebalance (tree, 4) *)
       end
 
 end

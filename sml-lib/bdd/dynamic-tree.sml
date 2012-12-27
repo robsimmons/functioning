@@ -63,7 +63,7 @@ struct
                          which ^ " child's parent is NONE")
             | checkpar' which dir (Parent (p, pdir)) child_aabb =
               if not (BDDCollision.aabb_contains (!aabb, !child_aabb))
-              then (print "AABB\n";
+              then (print ("AABB\n" ^ s ^ "\n");
                     raise BDDDynamicTree
                              ("checkstructure " ^ s ^ ": node's " ^
                               which ^ " child's aabb is malformed"))
@@ -92,9 +92,7 @@ struct
           NONE => ()
         | SOME tn => checkstructure s tn
 
-(*  fun checktreestructure _ _ = () *)
-
-  fun dprint f = print (f ())
+  fun checktreestructure _ _ = ()
 
   fun debugprint pa (tree as ref { node_count, path, root }) =
       let
@@ -313,11 +311,8 @@ struct
       let
           val tn' = balance (tree, tn)
       in
-          print ("just balanced: " ^ aabbtos (get_aabb tn'));
-          debugprint (fn _ => "?") tree;
-          checktreestructure "adjust_aabbs" tree;
-
           adjust_height_and_aabb tn';
+
           case get_parent tn' of
               NoParent => ()
             | Parent (ptn, _) => adjust_aabbs (tree, ptn)
@@ -412,7 +407,6 @@ struct
                       adjust_aabbs (tree, tn)
                   end;
 
-                debugprint (fn _ => "?") tree;
                 checktreestructure "insert_leaf after" tree
             end)
     | insert_leaf _ = raise BDDDynamicTree "can't insert interior node"
@@ -423,8 +417,6 @@ struct
                    proxy as Leaf {parent, ...}) =
     let
     in
-        debugprint (fn _ => "?") tree;
-      checktreestructure "remove_leaf before" tree;
       (* If it's the root, we just make the tree empty.
          Port note: Throughout this code, Box2D uses equality
          on proxy IDs (integers); I use ref equality. *)
