@@ -29,7 +29,8 @@ struct
                    in freelists for its custom allocator. *)
                 parent : 'a parent ref,
                 left : 'a tree_node ref,
-                right : 'a tree_node ref }
+                right : 'a tree_node ref,
+                height : int ref}
     | Leaf of  { (* Fattened aabb *)
                 aabb : aabb ref,
                 parent : 'a parent ref,
@@ -168,6 +169,12 @@ struct
   fun get_parent (Node {parent, ...}) = !parent
     | get_parent (Leaf {parent, ...}) = !parent
 
+  fun get_height (Node {height, ...}) = !height
+    | get_height (Leaf _) = 0
+
+  fun set_height (Node {height, ...}, new_height) = height := new_height
+    | set_height (Leaf _, _) = raise BDDDynamicTree "expected node; got Leaf"
+
   fun user_data (Leaf {data, ... }) = data
     | user_data (Node _ ) =
       raise BDDDynamicTree "data only present for leaves"
@@ -218,7 +225,7 @@ struct
             let
                 val center : vec2 = BDDCollision.aabb_center (!aabb)
                 fun find (sibling as (Leaf _)) = sibling
-                  | find (sibling as (Node {aabb, parent, left, right})) =
+                  | find (sibling as (Node {aabb, parent, left, right, ...})) =
                     let
                       val ldelta : vec2 =
                         vec2abs (BDDCollision.aabb_center (get_aabb (!left)) :-: center)
@@ -238,7 +245,8 @@ struct
                                              (get_aabb leaf, get_aabb sibling)),
                                  (* Port note: Same in both branches. *)
                                  left = ref sibling,
-                                 right = ref leaf }
+                                 right = ref leaf,
+                                 height = ref 0}
             in
                 set_parent (sibling, Parent (new, Left));
                 set_parent (leaf, Parent (new, Right));
@@ -340,6 +348,66 @@ struct
            end);
            set_path (tree, !path);
            checktreestructure "rebalance after" tree
+      end
+
+  fun adjust_height_and_aabb (Node {aabb, height, left, right, ...}) =
+      let in
+          aabb := BDDCollision.aabb_combine
+                       (get_aabb (!left), get_aabb (!right));
+          height := 1 + Int.max (get_height (!left), get_height (!right))
+      end
+    | adjust_height_and_aabb (Leaf _ ) = raise BDDDynamicTree "expected node; got Leaf"
+
+  (* Perform a left or right rotation if node A is imbalanced.
+     Returns the new root tree node. *)
+  fun balance (_, leaf as Leaf _) = leaf
+    | balance (_, node as Node {height = ref 1, ...}) = node
+    | balance (tree : 'a dynamic_tree,
+               A as Node {left = ref B, right = ref C, ...}) =
+      let
+          val balance = get_height C - get_height B
+      in
+          (* Rotate C up *)
+          if balance > 1
+          then
+              let
+                  val (F, G) = case C of
+                                   Node {left, right, ...} => (!left, !right)
+                                 | Leaf _ => raise BDDDynamicTree "expected Node"
+                  val A_parent = get_parent A
+              in
+                  (* Swap A and C *)
+                  set_left (C, A);
+                  set_parent (C, A_parent);
+                  set_parent (A, Parent(C, Right));
+
+                  (* A's old parent should point to C *)
+                  (case A_parent of
+                       Parent (pt, Left) => set_left (pt, C)
+                     | Parent (pt, Right) => set_right (pt, C)
+                     | NoParent => set_root (tree, SOME C));
+
+                  (* Rotate *)
+                  if get_height F > get_height G
+                  then
+                      (set_right (C, F);
+                       set_right (A, G);
+                       set_parent (G, Parent(A, Right))
+                      )
+                  else
+                      (set_right (C, G);
+                       set_right (A, F);
+                       set_parent (F, Parent(A, Right))
+                      );
+                  adjust_height_and_aabb A;
+                  adjust_height_and_aabb C;
+                  C
+              end
+          else
+              let
+              in
+                  raise Fail "unimplemented"
+              end
       end
 
   fun aabb_proxy (tree : 'a dynamic_tree, aabb : aabb, a : 'a) : 'a aabb_proxy =
