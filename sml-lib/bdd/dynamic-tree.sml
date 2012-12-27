@@ -63,12 +63,13 @@ struct
                          which ^ " child's parent is NONE")
             | checkpar' which dir (Parent (p, pdir)) child_aabb =
               if not (BDDCollision.aabb_contains (!aabb, !child_aabb))
-              then raise BDDDynamicTree
+              then (print "AABB\n";
+                    raise BDDDynamicTree
                              ("checkstructure " ^ s ^ ": node's " ^
-                              which ^ " child's aabb is malformed")
+                              which ^ " child's aabb is malformed"))
               else if dir = pdir
               then ()
-              else (
+              else (print "L/R\n";
                     raise BDDDynamicTree
                   ("checkstructure " ^ s ^ ": node's " ^
                    which ^ " child's parent is in wrong direction"))
@@ -207,7 +208,6 @@ struct
   fun dynamic_tree () : 'a dynamic_tree =
       ref { node_count = 0, root = NONE, path = 0w0 }
 
-
   fun adjust_height_and_aabb (Node {aabb, height, left, right, ...}) =
       let in
           aabb := BDDCollision.aabb_combine
@@ -215,7 +215,6 @@ struct
           height := 1 + Int.max (get_height (!left), get_height (!right))
       end
     | adjust_height_and_aabb (Leaf _ ) = raise BDDDynamicTree "expected node; got Leaf"
-
 
   (* Perform a left or right rotation if node A is imbalanced.
      Returns the new root tree node. *)
@@ -317,8 +316,6 @@ struct
           print ("just balanced: " ^ aabbtos (get_aabb tn'));
           debugprint (fn _ => "?") tree;
           checktreestructure "adjust_aabbs" tree;
-
-
 
           adjust_height_and_aabb tn';
           case get_parent tn' of
