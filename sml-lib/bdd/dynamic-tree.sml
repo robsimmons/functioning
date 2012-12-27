@@ -211,8 +211,16 @@ struct
       end
     | adjust_aabbs (Leaf _) = raise BDDDynamicTree "expected Node; got Leaf"
 
+  fun aabb_perimeter {upperbound, lowerbound} =
+      let
+          val wx = vec2x upperbound - vec2x lowerbound
+          val wy = vec2y upperbound - vec2y lowerbound
+      in
+          2.0 * (wx + wy)
+      end
+
   fun insert_leaf (tree as ref { root, ... } : 'a dynamic_tree,
-                   leaf as Leaf { aabb, ... }) =
+                   leaf as Leaf { aabb = ref leaf_aabb, ... }) =
       (case root of
            NONE =>
                let in
@@ -223,21 +231,45 @@ struct
          | SOME tn =>
             (* Find the best sibling for this leaf. *)
             let
-                val center : vec2 = BDDCollision.aabb_center (!aabb)
                 fun find (sibling as (Leaf _)) = sibling
                   | find (sibling as (Node {aabb, parent, left, right, ...})) =
                     let
-                      val ldelta : vec2 =
-                        vec2abs (BDDCollision.aabb_center (get_aabb (!left)) :-: center)
-                      val rdelta : vec2 =
-                        vec2abs (BDDCollision.aabb_center (get_aabb (!right)) :-: center)
-                      val lnorm = vec2x ldelta + vec2y ldelta
-                      val rnorm = vec2x rdelta + vec2y rdelta
+                        val area = aabb_perimeter (!aabb)
+                        val combined_aabb = BDDCollision.aabb_combine (!aabb, leaf_aabb)
+                        val combined_area = aabb_perimeter combined_aabb
+                        (* Cost of creating a new parent for this node and the new leaf *)
+                        val cost = 2.0 * combined_area
+                        (* Mininum cost of pushing the leaf farther down the tree *)
+                        val inheritance_cost = 2.0 * (combined_area - area)
+
+                        fun child_cost (Leaf {aabb = ref child_aabb, ...}) =
+                            inheritance_cost + (aabb_perimeter
+                                                    (BDDCollision.aabb_combine
+                                                         (leaf_aabb, child_aabb)))
+                          | child_cost (Node {aabb = ref child_aabb, ...}) =
+                                let
+                                    val aabb = BDDCollision.aabb_combine(leaf_aabb,
+                                                                         child_aabb)
+                                    val old_area = aabb_perimeter child_aabb
+                                    val new_area = aabb_perimeter aabb
+                                in
+                                    new_area - old_area + inheritance_cost
+                                end
+
+                        (* Cost of descending into left child *)
+                        val lcost = child_cost (!left)
+
+                        (* Cost of descending into right child *)
+                        val rcost = child_cost (!right)
+
                     in
-                      if lnorm < rnorm
+                      if cost < lcost andalso cost < rcost
+                      then sibling
+                      else if lcost < rcost
                       then find (!left)
                       else find (!right)
                     end
+
                 val sibling = find tn
                 val parent = get_parent sibling
                 val new = Node { parent = ref parent,
