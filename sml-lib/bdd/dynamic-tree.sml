@@ -50,7 +50,6 @@ struct
      there. *)
   type 'a dynamic_tree =
       { node_count : int,
-        path : Word32.word,
         root : 'a tree_node option } ref
 
   (* PERF just for debugging. *)
@@ -86,7 +85,7 @@ struct
           checkstructure s (!right)
       end
 
-  fun checktreestructure s (ref { node_count : int, path : Word32.word,
+  fun checktreestructure s (ref { node_count : int,
                                   root : 'a aabb_proxy option }) =
       case root of
           NONE => ()
@@ -94,7 +93,7 @@ struct
 
   fun checktreestructure _ _ = ()
 
-  fun debugprint pa (tree as ref { node_count, path, root }) =
+  fun debugprint pa (tree as ref { node_count, root }) =
       let
           fun indent 0 = ()
             | indent n = (dprint (fn () => " "); indent (n - 1))
@@ -123,8 +122,7 @@ struct
                   pr (depth + 2, !right)
               end
       in
-          dprint (fn () => "DT: " ^ Int.toString node_count ^ " " ^
-                 Word32.toString path ^ ":\n");
+          dprint (fn () => "DT: " ^ Int.toString node_count ^ ":\n");
           (case root of
                NONE => ()
              | SOME tn => pr (0, tn));
@@ -150,14 +148,11 @@ struct
      idiomatic in SML). This allows us to quickly compare the objects
      for equality, but means that we need setter functions for the
      fields that we modify. *)
-  fun set_node_count (r as ref { node_count = _, root, path }, node_count) =
-      r := { node_count = node_count, root = root, path = path }
+  fun set_node_count (r as ref { node_count = _, root }, node_count) =
+      r := { node_count = node_count, root = root }
 
-  fun set_root (r as ref { node_count, root = _, path }, root) =
-      r := { node_count = node_count, root = root, path = path }
-
-  fun set_path (r as ref { node_count, root, path = _ }, path) =
-      r := { node_count = node_count, root = root, path = path }
+  fun set_root (r as ref { node_count, root = _ }, root) =
+      r := { node_count = node_count, root = root }
 
   fun set_parent (Node {parent, ...}, new_parent) =
       parent := new_parent
@@ -204,7 +199,7 @@ struct
       end
 
   fun dynamic_tree () : 'a dynamic_tree =
-      ref { node_count = 0, root = NONE, path = 0w0 }
+      ref { node_count = 0, root = NONE }
 
   fun adjust_height_and_aabb (Node {aabb, height, left, right, ...}) =
       let in
