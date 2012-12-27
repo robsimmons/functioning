@@ -207,7 +207,7 @@ struct
      Returns the new root tree node. *)
   fun balance (_, node as Nd {height = ref 1, ...}) = node
     | balance (tree : 'a dynamic_tree,
-               A as Nd {left = ref B, right = ref C, parent = ref A_parent, ...}) =
+               A_interior as Nd {left = ref B, right = ref C, parent = ref A_parent, ...}) =
       let
           val balance = get_height C - get_height B
       in
@@ -220,9 +220,9 @@ struct
               in
                   (* Swap A and C *)
                   (* Port note: this is a rotation, not a swap. *)
-                  set_left (C_interior, Node A);
+                  set_left (C_interior, Node A_interior);
                   set_parent (C, A_parent);
-                  set_parent (Node A, Parent(C_interior, Left));
+                  set_parent (Node A_interior, Parent(C_interior, Left));
 
                   (* A's old parent should point to C *)
                   (case A_parent of
@@ -235,16 +235,16 @@ struct
                   then
                       (set_right (C_interior, F);
                        set_parent (F, Parent(C_interior, Right));
-                       set_right (A, G);
-                       set_parent (G, Parent(A, Right))
+                       set_right (A_interior, G);
+                       set_parent (G, Parent(A_interior, Right))
                       )
                   else
                       (set_right (C_interior, G);
                        set_parent (G, Parent(C_interior, Right));
-                       set_right (A, F);
-                       set_parent (F, Parent(A, Right))
+                       set_right (A_interior, F);
+                       set_parent (F, Parent(A_interior, Right))
                       );
-                  adjust_height_and_aabb A;
+                  adjust_height_and_aabb A_interior;
                   adjust_height_and_aabb C_interior;
                   C_interior
               end
@@ -257,9 +257,9 @@ struct
               in
                   (* Swap A and B *)
                   (* Port note: this is a swap, not a rotation. *)
-                  set_left (B_interior, Node A);
+                  set_left (B_interior, Node A_interior);
                   set_parent (B, A_parent);
-                  set_parent (Node A, Parent(B_interior, Left));
+                  set_parent (Node A_interior, Parent(B_interior, Left));
 
                   (* A's old parent should point to B *)
                   (case A_parent of
@@ -272,21 +272,21 @@ struct
                   then
                       (set_right (B_interior, D);
                        set_parent (D, Parent(B_interior, Right));
-                       set_left (A, E);
-                       set_parent (E, Parent(A, Left))
+                       set_left (A_interior, E);
+                       set_parent (E, Parent(A_interior, Left))
                       )
                   else
                       (
                        set_right (B_interior, E);
                        set_parent (E, Parent(B_interior, Right));
-                       set_left (A, D);
-                       set_parent (D, Parent(A, Left))
+                       set_left (A_interior, D);
+                       set_parent (D, Parent(A_interior, Left))
                       );
-                  adjust_height_and_aabb A;
+                  adjust_height_and_aabb A_interior;
                   adjust_height_and_aabb B_interior;
                   B_interior
               end
-          else A
+          else A_interior
       end
 
   (* Climb the tree starting at the given node, expanding the derived
@@ -294,13 +294,13 @@ struct
      Port note: In the original, usually inlined as a do..while loop.
    *)
   fun adjust_aabbs (tree : 'a dynamic_tree,
-                    tn as Nd _) =
+                    nd as Nd _) =
       let
-          val tn' = balance (tree, tn)
+          val nd' = balance (tree, nd)
       in
-          adjust_height_and_aabb tn';
+          adjust_height_and_aabb nd';
 
-          case get_parent (Node tn') of
+          case get_parent (Node nd') of
               NoParent => ()
             | Parent (ptn, _) => adjust_aabbs (tree, ptn)
       end
