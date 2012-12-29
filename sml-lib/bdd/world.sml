@@ -506,7 +506,15 @@ struct
            val joints = ref nil
            val contacts = ref nil
            (* Perform a depth first search (DFS) on the constraint graph. *)
-           fun explore b =
+
+           val stack = ref [seed];
+           val () = D.B.set_flag (seed, D.B.FLAG_ISLAND)
+
+           fun explore () =
+            case !stack of
+                nil => ()
+              | b :: stack' =>
+              (stack := stack';
                if not (Body.get_active b)
                then raise BDDWorld "expected body to be active in stack"
                else
@@ -514,7 +522,7 @@ struct
                    (* Port note: Added this here, since it has to be done
                       before exploring a node in order to get termination;
                       Box2D does it right before inserting into its stack. *)
-                   val () = D.B.set_flag (b, D.B.FLAG_ISLAND)
+                   (* val () = D.B.set_flag (b, D.B.FLAG_ISLAND)*)
                    (* Add to island. *)
                    val () = bodies := b :: !bodies
                    (* Make sure body is awake. *)
@@ -565,7 +573,8 @@ struct
                                   a previous island. *)
                                if D.B.get_flag (other, D.B.FLAG_ISLAND)
                                then ()
-                               else explore other
+                               else (stack := (other :: (!stack));
+                                     D.B.set_flag (other, D.B.FLAG_ISLAND))
                            end
                        end
 
@@ -586,18 +595,20 @@ struct
                                  the other body in the joint. *)
                               if D.B.get_flag (other, D.B.FLAG_ISLAND)
                               then ()
-                              else explore other
+                              else (stack := (other :: (!stack));
+                                     D.B.set_flag (other, D.B.FLAG_ISLAND))
                            end
                        end
 
                    in
                        oapp D.E.get_next one_cedge (D.B.get_contact_list b);
                        oapp D.G.get_next one_jedge (D.B.get_joint_list b)
-                   end
-               end
+                   end;
+                   explore ()
+               end)
 
          in
-             explore seed;
+             explore ();
              BDDIsland.solve_island (!bodies, !contacts, !joints, world,
                                      step,
                                      get_gravity world, get_allow_sleep world);
