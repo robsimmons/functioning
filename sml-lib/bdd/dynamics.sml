@@ -405,6 +405,7 @@ struct
                 let in
                     clear_flag (b, FLAG_AWAKE);
                     set_linear_velocity (b, vec2 (0.0, 0.0));
+                    set_angular_velocity (b, 0.0);
                     set_force (b, vec2 (0.0, 0.0));
                     set_torque (b, 0.0)
                 end
