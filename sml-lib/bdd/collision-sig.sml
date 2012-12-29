@@ -53,20 +53,20 @@ sig
                         BDDTypes.manifold
 
   (* Pack contact_id from components (all ints must be in [0, 255]). *)
-  val contact_id : { reference_edge : int, incident_edge : int,
-                     incident_vertex : int, flip : bool } -> BDDTypes.contact_id
+  val contact_id : { index_a : int, index_b : int,
+                     type_a : int, type_b : int } -> BDDTypes.contact_id
 
-  val contact_id_reference_edge : BDDTypes.contact_id -> int
-  val contact_id_incident_edge : BDDTypes.contact_id -> int
-  val contact_id_incident_vertex : BDDTypes.contact_id -> int
-  val contact_id_flip : BDDTypes.contact_id -> bool
+  val contact_id_index_a : BDDTypes.contact_id -> int
+  val contact_id_index_b : BDDTypes.contact_id -> int
+  val contact_id_type_a : BDDTypes.contact_id -> int
+  val contact_id_type_b : BDDTypes.contact_id -> int
 
 
-  (* clip_segment_to_line (v1, v2, normal, offset)
+  (* clip_segment_to_line (v1, v2, normal, offset, vertex_index_a)
      Clipping for contact manifolds. Returns either no points (entire segment
      is clipped out) or two points (possibly modified). *)
   val clip_segment_to_line : BDDTypes.clip_vertex * BDDTypes.clip_vertex *
-                             BDDMath.vec2 * real ->
+                             BDDMath.vec2 * real * int ->
                              (BDDTypes.clip_vertex * BDDTypes.clip_vertex) option
 
   (* Compute the collision manifold between a polygon and a circle. *)

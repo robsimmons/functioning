@@ -117,6 +117,7 @@ struct
           (state1, state2)
       end
 
+
   fun contact_id { reference_edge : int, incident_edge : int,
                    incident_vertex : int, flip : bool } : BDDTypes.contact_id =
       let val re = Word32.fromInt reference_edge
@@ -132,14 +133,33 @@ struct
           f
       end
 
-  fun contact_id_reference_edge w =
+  val vertex_feature = 0
+  val face_feature = 1
+
+  fun contact_id { index_a : int, index_b : int,
+                   type_a : int, type_b : int } =
+      let val ia = Word32.fromInt index_a
+          val ib = Word32.fromInt index_b
+          val ta = Word32.fromInt type_a
+          val tb = Word32.fromInt type_b
+          val orb = Word32.orb
+          infix orb
+      in
+          Word32.<<(ia, 0w24) orb
+          Word32.<<(ib, 0w16) orb
+          Word32.<<(ta, 0w8) orb
+          tb
+      end
+
+
+  fun contact_id_index_a w =
       Word32.toInt(Word32.andb(Word32.>>(w, 0w24), 0w255))
-  fun contact_id_incident_edge w =
+  fun contact_id_index_b w =
       Word32.toInt(Word32.andb(Word32.>>(w, 0w16), 0w255))
-  fun contact_id_incident_vertex w =
+  fun contact_id_type_a w =
       Word32.toInt(Word32.andb(Word32.>>(w, 0w8), 0w255))
-  fun contact_id_flip w =
-      Word32.andb(w, 0w255) <> 0w0
+  fun contact_id_type_b w =
+      Word32.toInt(Word32.andb(w, 0w255))
 
   fun aabb_valid { lowerbound, upperbound } =
       let val d : vec2 = upperbound :-: lowerbound
@@ -271,7 +291,7 @@ struct
      I made them more exlicit here and also clearer that this
      can only return 0 or 2 points.
      *)
-  fun clip_segment_to_line (v0, v1, normal : vec2, offset : real)
+  fun clip_segment_to_line (v0, v1, normal : vec2, offset : real, vertex_index_a : int)
       : (clip_vertex * clip_vertex) option =
       let
           (* Calculate distance of end points to the line. *)
@@ -286,10 +306,15 @@ struct
               let
                   val interp : real = distance0 / (distance0 - distance1)
                   val clippedv = #v v0 :+: interp *: (#v v1 :-: #v v0)
+                  val id = contact_id {index_a = vertex_index_a,
+                                       index_b = contact_id_index_b (#id v0),
+                                       type_a = vertex_feature,
+                                       type_b = face_feature}
               in
                   if distance0 > 0.0
-                  then SOME(v1, { v = clippedv, id = #id v0 })
-                  else SOME(v0, { v = clippedv, id = #id v1 })
+                  then SOME(v1, { v = clippedv, id = id })
+                  else SOME(v0, { v = clippedv, id = id })
+
               end
           else
             (* Otherwise, we either take both or none. *)
@@ -568,15 +593,15 @@ struct
                    else 0
       in
           ({ v = xf2 @*: Array.sub(vertices2, i1),
-             id = contact_id { reference_edge = edge1,
-                               incident_edge = i1,
-                               incident_vertex = 0,
-                               flip = false } },
+             id = contact_id { index_a = edge1,
+                               index_b = i1,
+                               type_a = face_feature,
+                               type_b = vertex_feature } },
            { v = xf2 @*: Array.sub(vertices2, i2),
-             id = contact_id { reference_edge = edge1,
-                               incident_edge = i2,
-                               incident_vertex = 1,
-                               flip = false } })
+             id = contact_id { index_a = edge1,
+                               index_b = i2,
+                               type_a = face_feature,
+                               type_b = vertex_feature } })
       end
 
   (* PERF used for control flow. shouldn't carry diagnostic string data *)
@@ -620,10 +645,11 @@ struct
           find_incident_edge (poly1, xf1, edge1, poly2, xf2)
       val vertices1 = #vertices poly1
       val count1 = Array.length vertices1
-      val v11 = Array.sub(vertices1, edge1)
-      val v12 = Array.sub(vertices1, if edge1 + 1 < count1
-                                     then edge1 + 1
-                                     else 0)
+
+      val iv1 = edge1
+      val iv2 = if edge1 + 1 < count1 then edge1 + 1 else 0
+      val v11 = Array.sub(vertices1, iv1)
+      val v12 = Array.sub(vertices1, iv2)
       val local_tangent : vec2 = vec2normalized (v12 :-: v11)
 
       val local_normal : vec2 = cross2vs (local_tangent, 1.0)
@@ -648,14 +674,16 @@ struct
           case clip_segment_to_line (incident_edge1,
                                      incident_edge2,
                                      vec2neg tangent,
-                                     side_offset1) of
+                                     side_offset1,
+                                     iv1) of
               NONE => raise NoCollision "side1"
             | SOME p => p
       (* Clip to box side 2. *)
       val (cp1, cp2) =
           case clip_segment_to_line (cp1, cp2,
                                      tangent,
-                                     side_offset2) of
+                                     side_offset2,
+                                     iv2) of
               NONE => raise NoCollision "side2"
             | SOME p => p
 
@@ -666,18 +694,24 @@ struct
           (fn cp =>
            let val separation : real = dot2(normal, #v cp) - front_offset
            in if separation <= total_radius
-              then SOME { local_point = mul_ttransformv (xf2, #v cp),
-                          id = contact_id { reference_edge =
-                                            contact_id_reference_edge (#id cp),
-                                            incident_edge =
-                                            contact_id_incident_edge (#id cp),
-                                            incident_vertex =
-                                            contact_id_incident_vertex (#id cp),
-                                            flip = flip },
-                          (* PERF uninitialized in Box2D *)
-                          normal_impulse = 0.0,
-                          tangent_impulse = 0.0 }
-
+              then
+                  let
+                      val old_id = #id cp
+                      val id = if flip
+                               then contact_id {
+                                    index_a = contact_id_index_b old_id,
+                                    index_b = contact_id_index_a old_id,
+                                    type_a = contact_id_type_b old_id,
+                                    type_b = contact_id_type_a old_id
+                                    }
+                               else old_id
+                  in
+                      SOME { local_point = mul_ttransformv (xf2, #v cp),
+                             id = id,
+                             (* PERF uninitialized in Box2D *)
+                             normal_impulse = 0.0,
+                             tangent_impulse = 0.0 }
+                  end
               else NONE
            end) [cp1, cp2]
 
