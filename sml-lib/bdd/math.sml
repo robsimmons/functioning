@@ -292,15 +292,15 @@ struct
   fun multransformv (t : transform, v : vec2) : vec2 =
       let
           val x = vec2x (transformposition t) +
-              vec2x (#col1 (transformr t)) *
-              vec2x v +
-              vec2x (#col2 (transformr t)) *
-              vec2y v
+              (vec2x (#col1 (transformr t)) *
+               vec2x v +
+               vec2x (#col2 (transformr t)) *
+               vec2y v)
           val y = vec2y (transformposition t) +
-              vec2y (#col1 (transformr t)) *
-              vec2x v +
-              vec2y (#col2 (transformr t)) *
-              vec2y v
+              (vec2y (#col1 (transformr t)) *
+               vec2x v +
+               vec2y (#col2 (transformr t)) *
+               vec2y v)
       in
         vec2 (x, y)
       end
