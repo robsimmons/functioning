@@ -280,8 +280,7 @@ struct
               (* The whole island goes to sleep. *)
               if !min_sleep_time > BDDSettings.time_to_sleep andalso
                  position_solved
-              then Vector.app (fn body =>
-                                  D.B.clear_flag (body, D.B.FLAG_AWAKE)) bodies
+              then Vector.app (fn body => D.B.set_awake (body, false)) bodies
               else ()
           end
           else ()
