@@ -201,10 +201,11 @@ struct
                                         velocitiesv, velocitiesw,
                                         h, NONE)
 
+          (* Solve position constraints *)
           (* Iterate over constraints. *)
           fun iterate n =
             if n = #position_iterations step
-            then ()
+            then false
             else
             let val contacts_okay =
                   CS.solve_position_constraints solver
@@ -219,10 +220,10 @@ struct
             in
               (* Exit early if the position errors are small. *)
               if contacts_okay andalso !joints_okay
-              then ()
+              then true
               else iterate (n + 1)
             end
-          val () = iterate 0
+          val position_solved = iterate 0
 
 
           (* Copy state buffers back to the bodies *)
@@ -277,9 +278,10 @@ struct
           in
               Vector.app sleep_one_body bodies;
               (* The whole island goes to sleep. *)
-              if !min_sleep_time > BDDSettings.time_to_sleep
+              if !min_sleep_time > BDDSettings.time_to_sleep andalso
+                 position_solved
               then Vector.app (fn body =>
-                               D.B.clear_flag (body, D.B.FLAG_AWAKE)) bodies
+                                  D.B.clear_flag (body, D.B.FLAG_AWAKE)) bodies
               else ()
           end
           else ()

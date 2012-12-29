@@ -233,6 +233,7 @@ struct
     let
         val Test {tick = test_tick, ...} = test
         val () = test_tick world
+(*        val () = print ("tick " ^ Int.toString ticks ^ "\n") *)
         val () = dophysics world
         val ticks' = ticks + 1
         val () = case !(#profile settings) of

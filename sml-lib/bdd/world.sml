@@ -930,6 +930,10 @@ struct
     fun step (world : world, dt : real,
               velocity_iterations : int, position_iterations : int) : unit =
       let
+          (* DEBUG
+          val () = print "bodies:\n"
+          fun onebody b = print (xftos (Body.get_transform b) ^ "\n")
+          val () = oapp Body.get_next onebody (D.W.get_body_list world) *)
 
           val step_timer = Time.now()
           (* XXX good, but not implemented in box2d *)
@@ -946,9 +950,7 @@ struct
         let
             val { point_count, ... } = Contact.get_manifold c
             val world_manifold = Contact.get_world_manifold c
-            val name1 = (* getfixturename (Contact.get_fixture_a c) *) "name1"
-            val name2 = (* getfixturename (Contact.get_fixture_b c) *) "name2"
-            val rtos = Real.fmt (StringCvt.FIX (SOME 2))
+            fun dprint f = print (f ())
         in
             dprint (fn () => " Contact! ");
             if Contact.is_touching c
@@ -963,9 +965,9 @@ struct
              end);
 
             dprint (fn () => "\n")
-        end 
-          val () = oapp Contact.get_next onecontact (D.W.get_contact_list world) *)
-
+        end
+          val () = oapp Contact.get_next onecontact (D.W.get_contact_list world)
+*)
 
           (* XXX end all debug *)
 
@@ -990,11 +992,9 @@ struct
         let
             val { point_count, ... } = Contact.get_manifold c
             val world_manifold = Contact.get_world_manifold c
-            val name1 = (* getfixturename (Contact.get_fixture_a c) *) "name1"
-            val name2 = (* getfixturename (Contact.get_fixture_b c) *) "name2"
-            (* val rtos = Real.fmt (StringCvt.FIX (SOME 2)) *)
+            fun dprint f = print (f ())
         in
-            dprint (fn () => "Post-collide " ^ name1 ^ "-" ^ name2 ^ " Contact! ");
+            dprint (fn () => " post-collide Contact! ");
             if Contact.is_touching c
             then dprint (fn () => "touching ")
             else ();
@@ -1032,6 +1032,33 @@ struct
               (get_body_list world)
           (* XXX end just debug *)
 
+          (* XXX all debug *)
+(*          fun onecontact2 c =
+        let
+            val { point_count, ... } = Contact.get_manifold c
+            val world_manifold = Contact.get_world_manifold c
+            fun dprint f = print (f ())
+        in
+            dprint (fn () => " post-solve Contact! ");
+            if Contact.is_touching c
+            then dprint (fn () => "touching ")
+            else ();
+            dprint (fn () => itos point_count ^ " points: ");
+            for 0 (point_count - 1)
+            (fn i =>
+             let val pt = Array.sub(#points world_manifold, i)
+                 (* val (x, y) = vectoscreen pt *)
+             in
+                 dprint (fn () => vtos pt ^ ", ")
+             end);
+
+            dprint (fn () => "\n")
+        end
+          val () = oapp Contact.get_next onecontact2 (D.W.get_contact_list world)
+*)
+
+
+
           (* Handle TOI events. *)
           val timer = Time.now()
           val () = if get_continuous_physics world andalso dt > 0.0
@@ -1049,6 +1076,31 @@ struct
                end)
               (get_body_list world) *)
           (* XXX end just debug *)
+
+
+          (* XXX all debug *)
+(*          fun onecontact2 c =
+        let
+            val { point_count, ... } = Contact.get_manifold c
+            val world_manifold = Contact.get_world_manifold c
+            fun dprint f = print (f ())
+        in
+            dprint (fn () => " post-toi Contact! ");
+            if Contact.is_touching c
+            then dprint (fn () => "touching ")
+            else ();
+            dprint (fn () => itos point_count ^ " points: ");
+            for 0 (point_count - 1)
+            (fn i =>
+             let val pt = Array.sub(#points world_manifold, i)
+             in
+                 dprint (fn () => vtos pt ^ ", ")
+             end);
+
+            dprint (fn () => "\n")
+        end
+          val () = oapp Contact.get_next onecontact2 (D.W.get_contact_list world)
+*)
 
 
           val () = if dt > 0.0
