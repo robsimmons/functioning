@@ -1022,14 +1022,14 @@ struct
           val solve_time = get_elapsed timer
 
           (* XXX just debug *)
-          val () = oapp D.B.get_next
+(*          val () = oapp D.B.get_next
               (fn b =>
                let in
                    dprint (fn () =>
                            "Postsolve sweep: " ^ sweeptos (D.B.get_sweep b) ^ "\n" ^
                            "             xf: " ^ xftos (D.B.get_xf b) ^ "\n")
                end)
-              (get_body_list world)
+              (get_body_list world) *)
           (* XXX end just debug *)
 
           (* XXX all debug *)
