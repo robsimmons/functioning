@@ -90,7 +90,7 @@ struct
                    (oapp D.E.get_next 
                     (fn edge =>
                      let
-                         val contact = !!(D.E.get_contact edge)
+                         val contact = (D.E.get_contact edge)
                          val fixture_a = D.C.get_fixture_a contact
                          val fixture_b = D.C.get_fixture_b contact
                      in

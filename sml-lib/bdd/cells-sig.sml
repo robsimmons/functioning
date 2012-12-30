@@ -136,8 +136,8 @@ sig
     val get_flags : ('b, 'f, 'j) contact -> (Word32.word)
     val get_prev : ('b, 'f, 'j) contact -> (('b, 'f, 'j) contact option)
     val get_next : ('b, 'f, 'j) contact -> (('b, 'f, 'j) contact option)
-    val get_node_a : ('b, 'f, 'j) contact -> (('b, 'f, 'j) contactedge)
-    val get_node_b : ('b, 'f, 'j) contact -> (('b, 'f, 'j) contactedge)
+    val get_node_a : ('b, 'f, 'j) contact -> (('b, 'f, 'j) contactedge option)
+    val get_node_b : ('b, 'f, 'j) contact -> (('b, 'f, 'j) contactedge option)
     val get_fixture_a : ('b, 'f, 'j) contact -> (('b, 'f, 'j) fixture)
     val get_fixture_b : ('b, 'f, 'j) contact -> (('b, 'f, 'j) fixture)
     val get_manifold : ('b, 'f, 'j) contact -> (BDDTypes.manifold)
@@ -150,8 +150,8 @@ sig
     val set_flags : ('b, 'f, 'j) contact * (Word32.word) -> unit
     val set_prev : ('b, 'f, 'j) contact * (('b, 'f, 'j) contact option) -> unit
     val set_next : ('b, 'f, 'j) contact * (('b, 'f, 'j) contact option) -> unit
-    val set_node_a : ('b, 'f, 'j) contact * (('b, 'f, 'j) contactedge) -> unit
-    val set_node_b : ('b, 'f, 'j) contact * (('b, 'f, 'j) contactedge) -> unit
+    val set_node_a : ('b, 'f, 'j) contact * (('b, 'f, 'j) contactedge option) -> unit
+    val set_node_b : ('b, 'f, 'j) contact * (('b, 'f, 'j) contactedge option) -> unit
     val set_fixture_a : ('b, 'f, 'j) contact * (('b, 'f, 'j) fixture) -> unit
     val set_fixture_b : ('b, 'f, 'j) contact * (('b, 'f, 'j) fixture) -> unit
     val set_manifold : ('b, 'f, 'j) contact * (BDDTypes.manifold) -> unit
@@ -165,8 +165,8 @@ sig
       flags : Word32.word,
       prev : ('b, 'f, 'j) contact option,
       next : ('b, 'f, 'j) contact option,
-      node_a : ('b, 'f, 'j) contactedge,
-      node_b : ('b, 'f, 'j) contactedge,
+      node_a : ('b, 'f, 'j) contactedge option,
+      node_b : ('b, 'f, 'j) contactedge option,
       fixture_a : ('b, 'f, 'j) fixture,
       fixture_b : ('b, 'f, 'j) fixture,
       manifold : BDDTypes.manifold,
@@ -180,19 +180,19 @@ sig
 
   structure E :
   sig
-    val get_other : ('b, 'f, 'j) contactedge -> (('b, 'f, 'j) body option)
-    val get_contact : ('b, 'f, 'j) contactedge -> (('b, 'f, 'j) contact option)
+    val get_other : ('b, 'f, 'j) contactedge -> (('b, 'f, 'j) body)
+    val get_contact : ('b, 'f, 'j) contactedge -> (('b, 'f, 'j) contact)
     val get_prev : ('b, 'f, 'j) contactedge -> (('b, 'f, 'j) contactedge option)
     val get_next : ('b, 'f, 'j) contactedge -> (('b, 'f, 'j) contactedge option)
 
-    val set_other : ('b, 'f, 'j) contactedge * (('b, 'f, 'j) body option) -> unit
-    val set_contact : ('b, 'f, 'j) contactedge * (('b, 'f, 'j) contact option) -> unit
+    val set_other : ('b, 'f, 'j) contactedge * (('b, 'f, 'j) body) -> unit
+    val set_contact : ('b, 'f, 'j) contactedge * (('b, 'f, 'j) contact) -> unit
     val set_prev : ('b, 'f, 'j) contactedge * (('b, 'f, 'j) contactedge option) -> unit
     val set_next : ('b, 'f, 'j) contactedge * (('b, 'f, 'j) contactedge option) -> unit
 
     val new : {
-      other : ('b, 'f, 'j) body option,
-      contact : ('b, 'f, 'j) contact option,
+      other : ('b, 'f, 'j) body,
+      contact : ('b, 'f, 'j) contact,
       prev : ('b, 'f, 'j) contactedge option,
       next : ('b, 'f, 'j) contactedge option } -> ('b, 'f, 'j) contactedge
     val eq : ('b, 'f, 'j) contactedge * ('b, 'f, 'j) contactedge -> bool

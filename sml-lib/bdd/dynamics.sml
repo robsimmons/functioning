@@ -33,6 +33,11 @@ struct
        "(e.g. fixture, joint) was used after being detached, " ^
        "or before being initialized: " ^ s)
 
+  fun !!! (SOME x) = x
+    | !!! NONE = raise Fail ""
+
+
+
   type ('b, 'f, 'j) body = ('b, 'f, 'j) BDDCells.body
   type ('b, 'f, 'j) fixture = ('b, 'f, 'j) BDDCells.fixture
   type ('b, 'f, 'j) contact = ('b, 'f, 'j) BDDCells.contact
@@ -418,8 +423,8 @@ struct
   struct
       open BDDCells.E
 
-      fun new () = BDDCells.E.new { contact = NONE, other = NONE,
-                                    prev = NONE, next = NONE }
+      fun new (other, contact) = BDDCells.E.new { contact = contact, other = other,
+                                                  prev = NONE, next = NONE }
   end
 
   (* Internal, contacts *)
@@ -495,8 +500,7 @@ struct
                 case (F.get_shape fixture_a, F.get_shape fixture_b) of
                     (BDDShape.Circle _, BDDShape.Polygon _) => (fixture_b, fixture_a)
                   | _ => (fixture_a, fixture_b)
-        in
-          BDDCells.C.new { flags = FLAG_ENABLED,
+            val c =           BDDCells.C.new { flags = FLAG_ENABLED,
                            fixture_a = fixture_a,
                            fixture_b = fixture_b,
                            manifold = { point_count = 0,
@@ -507,8 +511,8 @@ struct
                                         local_point = vec2 (0.0, 0.0) },
                            prev = NONE,
                            next = NONE,
-                           node_a = E.new (),
-                           node_b = E.new (),
+                           node_a = NONE,
+                           node_b = NONE,
                            toi_count = 0,
                            toi = 0.0,
                            friction = mix_friction (F.get_friction fixture_a,
@@ -516,6 +520,10 @@ struct
                            restitution = mix_restitution (F.get_restitution fixture_a,
                                                           F.get_restitution fixture_b),
                            tangent_speed = 0.0 }
+        in
+            set_node_a (c, SOME (E.new (F.get_body fixture_b, c)));
+            set_node_b (c, SOME (E.new (F.get_body fixture_a, c)));
+            c
         end
   end
 
@@ -574,7 +582,7 @@ struct
                    else ()
 
           (* Remove from body A *)
-          val nodea = C.get_node_a c
+          val nodea = !!!(C.get_node_a c)
           val prev = E.get_prev nodea
           val next = E.get_next nodea
           val () = case prev of
@@ -592,7 +600,7 @@ struct
                    else ()
 
           (* Remove from body B *)
-          val nodeb = C.get_node_b c
+          val nodeb = !!!(C.get_node_b c)
           val prev = E.get_prev nodeb
           val next = E.get_next nodeb
           val () = case prev of
@@ -622,10 +630,10 @@ struct
 
           (* Just raises Return if a contact already exists. *)
           fun one_edge e =
-              if oeq B.eq (SOME body_a, E.get_other e)
+              if B.eq (body_a, E.get_other e)
               then
-                  let val fa = C.get_fixture_a (!! "fa" (E.get_contact e))
-                      val fb = C.get_fixture_b (!! "fb" (E.get_contact e))
+                  let val fa = C.get_fixture_a ((E.get_contact e))
+                      val fb = C.get_fixture_b ((E.get_contact e))
                   in
                       if (F.eq(fa, fixture_a) andalso F.eq(fb, fixture_b)) orelse
                          (F.eq(fa, fixture_b) andalso F.eq(fb, fixture_a))
@@ -671,9 +679,9 @@ struct
           val () = set_contact_list (world, SOME c)
 
           (* Connect to island graph. *)
-          val node_a = C.get_node_a c
-          val () = E.set_contact (node_a, SOME c)
-          val () = E.set_other (node_a, SOME body_b)
+          val node_a = !!!(C.get_node_a c)
+          val () = E.set_contact (node_a, c)
+(*          val () = E.set_other (node_a, SOME body_b) *)
 
           val () = E.set_next (node_a, B.get_contact_list body_a)
           val () = case B.get_contact_list body_a of
@@ -681,9 +689,9 @@ struct
             | SOME prev => E.set_prev (prev, SOME node_a)
           val () = B.set_contact_list (body_a, SOME node_a)
 
-          val node_b = C.get_node_b c
-          val () = E.set_contact (node_b, SOME c)
-          val () = E.set_other (node_b, SOME body_a)
+          val node_b = !!!(C.get_node_b c)
+          val () = E.set_contact (node_b, c)
+(*          val () = E.set_other (node_b, SOME body_a) *)
 
           val () = E.set_next (node_b, B.get_contact_list body_b)
           val () = case B.get_contact_list body_b of

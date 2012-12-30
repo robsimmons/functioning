@@ -234,8 +234,8 @@ struct
                 (D.G.set_prev (j, SOME edge_b);
                  D.G.set_next (edge_b, SOME j))
             val () = D.B.set_joint_list (body_b, SOME edge_b)
-            fun one_edge ce = if D.B.eq (!!(D.E.get_other ce), body_a)
-                              then D.C.flag_for_filtering (!! (D.E.get_contact ce))
+            fun one_edge ce = if D.B.eq ((D.E.get_other ce), body_a)
+                              then D.C.flag_for_filtering ((D.E.get_contact ce))
                               else ()
             val () =
                 if collide_connected then ()
@@ -318,8 +318,8 @@ struct
 
             (* If the joint prevents collisions, then flag any contacts for filtering. *)
             (* Port note: this is exactly the same code as in create_joint. *)
-            fun one_edge ce = if D.B.eq (!!(D.E.get_other ce), body_a)
-                              then D.C.flag_for_filtering (!! (D.E.get_contact ce))
+            fun one_edge ce = if D.B.eq ((D.E.get_other ce), body_a)
+                              then D.C.flag_for_filtering ((D.E.get_contact ce))
                               else ()
         in
             if D.J.get_collide_connected joint
@@ -349,10 +349,8 @@ struct
              (* Delete the attached contacts. *)
              fun one_contactedge ce =
                  ContactManager.destroy
-                 (world,
-                  case D.E.get_contact ce of
-                      NONE => raise BDDWorld "contact edge had no contact?"
-                    | SOME c => c)
+                 (world, D.E.get_contact ce )
+
              val () = oapp D.E.get_next one_contactedge (D.B.get_contact_list
                                                          body)
              val () = D.B.set_contact_list (body, NONE)
@@ -538,7 +536,7 @@ struct
                         joints, which might include other bodies in the
                         island. *)
                      fun one_cedge (ce : contactedge) =
-                       let val contact = !! (D.E.get_contact ce)
+                       let val contact = D.E.get_contact ce
                            val fixture_a = D.C.get_fixture_a contact
                            val fixture_b = D.C.get_fixture_b contact
                        in
@@ -561,7 +559,7 @@ struct
                          then ()
                          else
                            let
-                               val other : body = !! (D.E.get_other ce)
+                               val other : body =  (D.E.get_other ce)
                            in
                                D.C.set_flag (contact, D.C.FLAG_ISLAND);
                                contacts := contact :: !contacts;
@@ -820,7 +818,7 @@ struct
                               fun onecontactedge ce =
                                   let
                                       (* TODO bodyCapacity? contactCapacity? *)
-                                      val contact = !! (D.E.get_contact ce)
+                                      val contact = (D.E.get_contact ce)
 
                                       (* Has this contact already been added to the island? *)
                                       val () = if D.C.get_flag (contact, D.C.FLAG_ISLAND)
@@ -828,7 +826,7 @@ struct
                                                else ()
 
                                       (* Only add static, kinemetic, or bullet bodies. *)
-                                      val other = !! (D.E.get_other ce)
+                                      val other = (D.E.get_other ce)
                                       val () = if Body.get_type other = T.Dynamic andalso
                                                   (not (Body.get_bullet b)) andalso
                                                   (not (Body.get_bullet other))
@@ -913,8 +911,8 @@ struct
                            let
                                val () = D.B.synchronize_fixtures (body, get_broad_phase world)
                                fun onece ce =
-                                   ( D.C.clear_flag (!! (D.E.get_contact ce), D.C.FLAG_TOI);
-                                     D.C.clear_flag (!! (D.E.get_contact ce), D.C.FLAG_ISLAND)
+                                   ( D.C.clear_flag ((D.E.get_contact ce), D.C.FLAG_TOI);
+                                     D.C.clear_flag ((D.E.get_contact ce), D.C.FLAG_ISLAND)
                                    )
                                val () = oapp D.E.get_next onece (D.B.get_contact_list body)
                            in

@@ -114,7 +114,7 @@ struct
                   (D.B.get_fixture_list b);
                   (* Destroy the attached contacts. *)
                   oapp D.E.get_next
-                  (fn ce0 => D.W.CM.destroy (w, !!(D.E.get_contact ce0)))
+                  (fn ce0 => D.W.CM.destroy (w, (D.E.get_contact ce0)))
                   (D.B.get_contact_list b);
                   (* Clear them. *)
                   D.B.set_contact_list (b, NONE)
@@ -489,7 +489,7 @@ struct
                 D.B.set_torque (b, 0.0);
                 (* Since the body type changed, we need to flag 
                    contacts for filtering. *)
-                oapp D.E.get_next (D.C.flag_for_filtering o !! o
+                oapp D.E.get_next (D.C.flag_for_filtering o
                                    D.E.get_contact)
                   (D.B.get_contact_list b)
             end

@@ -44,8 +44,8 @@ struct
     flags : (Word32.word) ref,
     prev : (('b, 'f, 'j) contactcell option) ref,
     next : (('b, 'f, 'j) contactcell option) ref,
-    node_a : (('b, 'f, 'j) contactedgecell) ref,
-    node_b : (('b, 'f, 'j) contactedgecell) ref,
+    node_a : (('b, 'f, 'j) contactedgecell option) ref,
+    node_b : (('b, 'f, 'j) contactedgecell option) ref,
     fixture_a : (('b, 'f, 'j) fixturecell) ref,
     fixture_b : (('b, 'f, 'j) fixturecell) ref,
     manifold : (BDDTypes.manifold) ref,
@@ -56,8 +56,8 @@ struct
     tangent_speed : (real) ref }
 
   and ('b, 'f, 'j) contactedgecell = E of {
-    other : (('b, 'f, 'j) bodycell option) ref,
-    contact : (('b, 'f, 'j) contactcell option) ref,
+    other : (('b, 'f, 'j) bodycell) ref,
+    contact : (('b, 'f, 'j) contactcell) ref,
     prev : (('b, 'f, 'j) contactedgecell option) ref,
     next : (('b, 'f, 'j) contactedgecell option) ref }
 
