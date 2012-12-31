@@ -178,10 +178,13 @@ fun initialize_velocity_constraints ({ step,
 
                 val () = assert (#point_count manifold > 0)
 
-                val xf_a = transform_pos_angle (c_a :-: (mat22angle a_a +*: local_center_a),
-                                                a_a)
-                val xf_b = transform_pos_angle (c_b :-: (mat22angle a_b +*: local_center_b),
-                                                a_b)
+                val q_a = rotation a_a
+                val q_b = rotation a_b
+
+                val xf_a = transform (c_a :-: (q_a @*: local_center_a),
+                                      q_a)
+                val xf_b = transform (c_b :-: (q_b @*: local_center_b),
+                                      q_b)
 
                 val world_manifold =
                     BDDCollision.create_world_manifold (manifold,
@@ -768,12 +771,14 @@ fun warm_start ({ step,
             for 0 (Array.length (#local_points pc) - 1)
             (fn j =>
              let
-                val xf_a = transform_pos_angle
-                               (!c_a :-: (mat22angle (!a_a) +*: local_center_a),
-                                !a_a)
-                val xf_b = transform_pos_angle
-                               (!c_b :-: (mat22angle (!a_b) +*: local_center_b),
-                                !a_b)
+                val q_a = rotation (!a_a)
+                val q_b = rotation (!a_b)
+                val xf_a = transform
+                               (!c_a :-: (q_a @*: local_center_a),
+                                q_a)
+                val xf_b = transform
+                               (!c_b :-: (q_b @*: local_center_b),
+                                q_b)
                  val { normal : vec2, point : vec2, separation : real } =
                      position_solver_manifold (pc, xf_a, xf_b, j)
 
