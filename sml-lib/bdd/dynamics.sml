@@ -520,9 +520,34 @@ struct
                            restitution = mix_restitution (F.get_restitution fixture_a,
                                                           F.get_restitution fixture_b),
                            tangent_speed = 0.0 }
+            val body_a = F.get_body fixture_a
+            val body_b = F.get_body fixture_b
+            val node_a = E.new (body_b, c)
+            val node_b = E.new (body_a, c)
         in
-            set_node_a (c, SOME (E.new (F.get_body fixture_b, c)));
-            set_node_b (c, SOME (E.new (F.get_body fixture_a, c)));
+            set_node_a (c, SOME node_a);
+            set_node_b (c, SOME node_b);
+
+            (* Update the island graph. *)
+            E.set_next (node_a, B.get_contact_list body_a);
+            (case B.get_contact_list body_a of
+                 NONE => ()
+               | SOME prev => E.set_prev (prev, SOME node_a));
+            B.set_contact_list (body_a, SOME node_a);
+            E.set_next (node_b, B.get_contact_list body_b);
+            (case B.get_contact_list body_b of
+                 NONE => ()
+               | SOME prev => E.set_prev (prev, SOME node_b));
+            B.set_contact_list (body_b, SOME node_b);
+
+            (* Wake up the bodies *)
+            if not (F.get_sensor fixture_a) andalso
+               not (F.get_sensor fixture_b)
+            then (B.set_awake (body_a, true);
+                  B.set_awake (body_b, true))
+            else ();
+
+
             c
         end
   end
@@ -663,14 +688,6 @@ struct
           (* Call the factory. *)
           val c = C.new (fixture_a, fixture_b)
 
-          (* Contact creation may swap fixtures.
-             XXX (it doesn't, currently.)
-             *)
-          val fixture_a = C.get_fixture_a c
-          val fixture_b = C.get_fixture_b c
-          val body_a = F.get_body fixture_a
-          val body_b = F.get_body fixture_b
-
           (* Add to world DLL. *)
           val () = C.set_next (c, get_contact_list world)
           val () = case get_contact_list world of
@@ -678,33 +695,8 @@ struct
             | SOME prev => C.set_prev (prev, SOME c)
           val () = set_contact_list (world, SOME c)
 
-          (* Connect to island graph. *)
-          val node_a = !!!(C.get_node_a c)
-(*          val () = E.set_contact (node_a, c) *)
-(*          val () = E.set_other (node_a, SOME body_b) *)
-
-          val () = E.set_next (node_a, B.get_contact_list body_a)
-          val () = case B.get_contact_list body_a of
-              NONE => ()
-            | SOME prev => E.set_prev (prev, SOME node_a)
-          val () = B.set_contact_list (body_a, SOME node_a)
-
-          val node_b = !!!(C.get_node_b c)
-(*          val () = E.set_contact (node_b, c) *)
-(*          val () = E.set_other (node_b, SOME body_a) *)
-
-          val () = E.set_next (node_b, B.get_contact_list body_b)
-          val () = case B.get_contact_list body_b of
-              NONE => ()
-            | SOME prev => E.set_prev (prev, SOME node_b)
-          val () = B.set_contact_list (body_b, SOME node_b)
-
-          (* Wake up the bodies *)
-          val () = if not (F.get_sensor fixture_a) andalso
-                      not (F.get_sensor fixture_b)
-                   then (B.set_awake (body_a, true);
-                         B.set_awake (body_b, true))
-                   else ()
+          (* Port note: moved the updating of the island graph
+             and the waking up of the bodies into C.new *)
         in
           set_contact_count (world, get_contact_count world + 1)
         end handle Return => ()

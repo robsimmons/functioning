@@ -72,6 +72,8 @@ fun contact cc = ("C", "Contact", "contact", "CONTACT",
                 ("prev", cc "contact" ^ " option"),
                 ("next", cc "contact" ^ " option"),
                 (* nodes for connecting bodies *)
+                (* Port note: made these optional so the contact
+                   field of contactedge can be nonoptional *)
                 ("node_a", cc "contactedge" ^ " option"),
                 ("node_b", cc "contactedge" ^ " option"),
                 (* Port note: made these non-optional. *)
@@ -91,10 +93,7 @@ fun contact cc = ("C", "Contact", "contact", "CONTACT",
    nodes, one for each attached body. *)
 fun contactedge cc = ("E", "ContactEdge", "contactedge", "CONTACTEDGE",
                    [
-                    (* provides quick access to the other body attached. 
-                       PERF: Do these really need to be optional? 
-                       See World.ContactManager.add_pair. Could pass them
-                       to 'new' or do initialization in that function. *)
+                    (* provides quick access to the other body attached. *)
                     ("other", cc "body"),
                     ("contact", cc "contact"),
                     (* the previous and next contact edge in the 
