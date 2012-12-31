@@ -680,7 +680,7 @@ struct
 
           (* Connect to island graph. *)
           val node_a = !!!(C.get_node_a c)
-          val () = E.set_contact (node_a, c)
+(*          val () = E.set_contact (node_a, c) *)
 (*          val () = E.set_other (node_a, SOME body_b) *)
 
           val () = E.set_next (node_a, B.get_contact_list body_a)
@@ -690,7 +690,7 @@ struct
           val () = B.set_contact_list (body_a, SOME node_a)
 
           val node_b = !!!(C.get_node_b c)
-          val () = E.set_contact (node_b, c)
+(*          val () = E.set_contact (node_b, c) *)
 (*          val () = E.set_other (node_b, SOME body_a) *)
 
           val () = E.set_next (node_b, B.get_contact_list body_b)
