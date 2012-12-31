@@ -19,16 +19,15 @@ struct
   fun create_world_manifold (manifold : manifold,
                              xfa : transform, radiusa : real,
                              xfb : transform, radiusb : real) : world_manifold =
-    if #point_count manifold = 0
-    then { normal = vec2 (0.0, 0.0),
-           points = Array.fromList nil }
-    else case #typ manifold of
-        E_Circles =>
+      case manifold of
+          E_None =>
+          { normal = vec2 (0.0, 0.0),
+            points = Array.fromList nil }
+       | E_Circles { point, local_point } =>
             let
-                val pointa = multransformv(xfa, #local_point manifold)
+                val pointa = multransformv(xfa, local_point)
                 val pointb = multransformv
-                    (xfb,
-                     #local_point (Array.sub(#points manifold, 0)))
+                    (xfb, #local_point point)
                 val normal =
                     if distance_squared (pointa, pointb) >
                        epsilon * epsilon
@@ -42,12 +41,12 @@ struct
                   points = Array.fromList [0.5 *: (ca :+: cb)] }
             end
 
-      | E_FaceA =>
+      | E_FaceA {points, local_normal, local_point} =>
             let
-                val normal = transformr xfa @*: #local_normal manifold
-                val plane_point = xfa &*: #local_point manifold
+                val normal = transformr xfa @*: local_normal
+                val plane_point = xfa &*: local_point
                 fun one_point i =
-                    let val clip_point = xfb &*: #local_point (Array.sub(#points manifold,
+                    let val clip_point = xfb &*: #local_point (Array.sub(points,
                                                                          i))
                         val ca = clip_point :+:
                                  (radiusa - dot2(clip_point :-: plane_point,
@@ -59,15 +58,15 @@ struct
                     end
             in
                 { normal = normal,
-                  points = Array.tabulate(#point_count manifold, one_point) }
+                  points = Array.tabulate(Array.length points, one_point) }
             end
 
-      | E_FaceB =>
-            let val normal = transformr xfb @*: #local_normal manifold
-                val plane_point = xfb &*: #local_point manifold
+      | E_FaceB {points, local_normal, local_point} =>
+            let val normal = transformr xfb @*: local_normal
+                val plane_point = xfb &*: local_point
                 fun one_point i =
-                    let val clip_point = xfa &*: #local_point (Array.sub(#points manifold,
-                                                                      i))
+                    let val clip_point = xfa &*: #local_point (Array.sub(points,
+                                                                         i))
                         val cb = clip_point :+:
                                   (radiusb - dot2(clip_point :-: plane_point,
                                                   normal)) *:
@@ -79,7 +78,7 @@ struct
             in
                 (* Ensure normal points from A to B. *)
                 { normal = vec2neg normal,
-                  points = Array.tabulate(#point_count manifold, one_point) }
+                  points = Array.tabulate(Array.length points, one_point) }
             end
 
 
