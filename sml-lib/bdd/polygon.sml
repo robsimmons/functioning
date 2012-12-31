@@ -10,7 +10,7 @@ struct
   open BDDMath
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% &*:
+  infix 7 *: *% +*: +*+ #*% @*: &*:
 
   exception BDDPolygon of string
 
@@ -81,7 +81,7 @@ struct
 
           val xf = transform_pos_angle (center, angle)
           val vertices = map (fn v => xf &*: v) vertices
-          val normals = map (fn v => transformr xf +*: v) normals
+          val normals = map (fn v => transformr xf @*: v) normals
       in
           { vertices = Array.fromList vertices,
             normals = Array.fromList normals,
@@ -168,7 +168,7 @@ struct
 
   fun test_point ( { vertices, normals, ... } : polygon, xf : transform, p : vec2) : bool =
       let
-          val p_local : vec2 = mul_t22mv(transformr xf, p :-: transformposition xf)
+          val p_local : vec2 = mul_trotv(transformr xf, p :-: transformposition xf)
           (* Since the polygon is convex, it just has to be contained in each half-plane. *)
           fun loop i =
               if i < Array.length vertices
@@ -187,8 +187,8 @@ struct
                   max_fraction : real }) : BDDTypes.ray_cast_output option =
       let
           (* Put the ray into the polygon's frame of reference. *)
-          val p1 : vec2 = mul_t22mv (transformr xf, p1 :-: transformposition xf)
-          val p2 : vec2 = mul_t22mv (transformr xf, p2 :-: transformposition xf)
+          val p1 : vec2 = mul_trotv (transformr xf, p1 :-: transformposition xf)
+          val p2 : vec2 = mul_trotv (transformr xf, p2 :-: transformposition xf)
           val d : vec2 = p2 :-: p1
       in
           if Array.length vertices = 2
@@ -289,8 +289,8 @@ struct
 
                if !index >= 0
                then SOME { fraction = !lower,
-                           normal = mul22v (transformr xf,
-                                            Array.sub(normals, !index)) }
+                           normal = mulrotv (transformr xf,
+                                             Array.sub(normals, !index)) }
                else NONE
             end
       end handle NoRay => NONE

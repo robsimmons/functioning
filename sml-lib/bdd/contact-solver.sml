@@ -7,7 +7,7 @@ struct
   exception BDDContactSolver of string
   open BDDMath BDDTypes BDDSettings BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% &*:
+  infix 7 *: *% +*: +*+ #*% @*: &*:
   structure D = BDDDynamics
 
   type velocity_constraint_point =
@@ -692,7 +692,7 @@ fun warm_start ({ step,
           end
     | E_FaceA =>
           let
-              val normal = transformr xf_a +*: (#local_normal pc)
+              val normal = transformr xf_a @*: (#local_normal pc)
               val plane_point = xf_a &*: (#local_point pc)
               val clip_point = xf_b &*: (Array.sub(#local_points pc, index))
               val separation : real =
@@ -707,7 +707,7 @@ fun warm_start ({ step,
           end
     | E_FaceB =>
           let
-              val normal = transformr xf_b +*: (#local_normal pc)
+              val normal = transformr xf_b @*: (#local_normal pc)
               val plane_point = xf_b &*: (#local_point pc)
               val clip_point = xf_a &*: (Array.sub(#local_points pc, index))
               val separation : real =

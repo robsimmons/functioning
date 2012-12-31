@@ -9,7 +9,7 @@ struct
   open BDDMath val distance = ()
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% &*:
+  infix 7 *: *% +*: +*+ #*% @*: &*:
 
   exception BDDDistance
 
@@ -443,12 +443,12 @@ struct
                           (* Compute a tentative new simplex vertex using 
                              support points. *)
                           val indexa =
-                              #support proxya (mul_t22mv
+                              #support proxya (mul_trotv
                                                (transformr transforma,
                                                 vec2neg d))
                           val wa = transforma &*: #vertex proxya indexa
                           val indexb =
-                              #support proxyb (mul_t22mv
+                              #support proxyb (mul_trotv
                                                (transformr transformb, d))
                           val wb = transformb &*: #vertex proxyb indexb
                           val new : simplex_vertex =

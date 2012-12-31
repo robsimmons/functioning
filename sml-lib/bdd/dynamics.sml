@@ -18,7 +18,7 @@ struct
   open BDDMath
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% &*:
+  infix 7 *: *% +*: +*+ #*% @*: &*:
 
   exception BDDDynamics of string
 
@@ -338,8 +338,8 @@ struct
                     then raise BDDDynamics "ANGLE OVERFLOW."
                     else ()
 *)
-           val r : mat22 = mat22angle (sweepa sweep)
-           val pos : vec2 = sweepc sweep :-: (r +*: sweeplocalcenter sweep)
+           val r : rotation = rotation (sweepa sweep)
+           val pos : vec2 = sweepc sweep :-: (r @*: sweeplocalcenter sweep)
            val () = dprint (fn () => "s_t pos: " ^ vtos pos ^ "\n")
        in
            set_xf (b, transform (pos, r))
@@ -365,9 +365,9 @@ struct
          broadphase : ('b, 'f, 'j) fixture BDDBroadPhase.broadphase) : unit =
       let
           val sweep : sweep = get_sweep b
-          val r = mat22angle (sweepa0 sweep)
+          val r = rotation (sweepa0 sweep)
           val xf1 = transform (sweepc0 sweep :-:
-                               (r +*: sweeplocalcenter sweep),
+                               (r @*: sweeplocalcenter sweep),
                                r)
       in
           oapp F.get_next
@@ -383,9 +383,9 @@ struct
 
             get_xf b &*: p
         end
-    fun get_world_vector (b, v) = transformr (get_xf b) +*: v
+    fun get_world_vector (b, v) = transformr (get_xf b) @*: v
     fun get_local_point (b, p) = mul_ttransformv (get_xf b, p)
-    fun get_local_vector (b, v) = mul_t22mv (transformr (get_xf b), v)
+    fun get_local_vector (b, v) = mul_trotv (transformr (get_xf b), v)
 
     fun get_linear_velocity_from_world_point (b, world_point : vec2) =
         get_linear_velocity b :+:

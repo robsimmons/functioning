@@ -93,11 +93,11 @@ sig
   (* A transform contains translation and rotation. It is used to represent
      the position and orientation of rigid frames. *)
   type transform
-  val transform : vec2 * mat22 -> transform
+  val transform : vec2 * rotation -> transform
   (* Create with offset and angle *)
   val transform_pos_angle : vec2 * real -> transform
   val transformposition : transform -> vec2
-  val transformr : transform -> mat22
+  val transformr : transform -> rotation
   val transform_getangle : transform -> real
 
   val vec2_zero : vec2
@@ -127,11 +127,13 @@ sig
   val mul22m : mat22 * mat22 -> mat22
   val mul33v : mat33 * vec3 -> vec3
   val multransformv : transform * vec2 -> vec2
+  val mulrotv : rotation * vec2 -> vec2
 
   (* These multiply the transpose of the (first) matrix. *)
   (* XXX these should probably be called mul_t22v etc. to match above *)
   val mul_t22mv : mat22 * vec2 -> vec2
   val mul_t22mm : mat22 * mat22 -> mat22
+  val mul_trotv : rotation * vec2 -> vec2
   (* Applies the inverse of a transformation; subtracting the position
      and then multipling the transform of the rotation matrix. *)
   val mul_ttransformv : transform * vec2 -> vec2

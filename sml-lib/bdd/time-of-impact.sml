@@ -9,8 +9,8 @@ struct
   open BDDMath
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% &*:
-  
+  infix 7 *: *% +*: +*+ #*% @*: &*:
+
   (* Port note: Box2D contains some overall max iteration counts, which
      seem to be for diagnostics and tuning. I left them out. *)
 
@@ -87,7 +87,7 @@ struct
 
                 val axis = vec2normalized
                                (cross2vs(local_point_b2 :-: local_point_b1, 1.0))
-                val normal : vec2 = mul22v (transformr xfb, axis)
+                val normal : vec2 = mulrotv (transformr xfb, axis)
 
                 val local_point = 0.5 *: (local_point_b1 :+: local_point_b2)
                 val point_b : vec2 = xfb &*: local_point
@@ -115,7 +115,7 @@ struct
                     
                  val axis = vec2normalized
                                 (cross2vs(local_point_a2 :-: local_point_a1, 1.0))
-                 val normal : vec2 = mul22v (transformr xfa, axis)
+                 val normal : vec2 = mulrotv (transformr xfa, axis)
 
                  val local_point = 0.5 *: (local_point_a1 :+: local_point_a2)
                  val point_a : vec2 = xfa &*: local_point
@@ -152,8 +152,8 @@ struct
         case typ of
             TPoints =>
               let
-                  val axis_a : vec2 = mul_t22mv (transformr xfa, axis)
-                  val axis_b : vec2 = mul_t22mv (transformr xfb, vec2neg axis)
+                  val axis_a : vec2 = mul_trotv (transformr xfa, axis)
+                  val axis_b : vec2 = mul_trotv (transformr xfb, vec2neg axis)
 
                   val indexa = #support proxya axis_a
                   val indexb = #support proxyb axis_b
@@ -171,9 +171,9 @@ struct
 
          | TFaceA => 
               let
-                  val normal : vec2 = mul22v (transformr xfa, axis)
+                  val normal : vec2 = mulrotv (transformr xfa, axis)
                   val point_a : vec2 = xfa &*: local_point
-                  val axis_b : vec2 = mul_t22mv (transformr xfb, vec2neg normal)
+                  val axis_b : vec2 = mul_trotv (transformr xfb, vec2neg normal)
 
                   val indexa = ~1
                   val indexb = #support proxyb axis_b
@@ -188,10 +188,10 @@ struct
 
          | TFaceB => 
               let
-                  val normal = mul22v (transformr xfb, axis)
+                  val normal = mulrotv (transformr xfb, axis)
                   val point_b = xfb &*: local_point
 
-                  val axis_a : vec2 = mul_t22mv(transformr xfa, vec2neg normal)
+                  val axis_a : vec2 = mul_trotv(transformr xfa, vec2neg normal)
                   val indexb = ~1
                   val indexa = #support proxya axis_a
 
@@ -237,7 +237,7 @@ struct
 
           | TFaceA => 
               let
-                  val normal : vec2 = mul22v (transformr xfa, axis)
+                  val normal : vec2 = mulrotv (transformr xfa, axis)
                   val point_a : vec2 = xfa &*: local_point
 
                   (* unused -twm
@@ -252,7 +252,7 @@ struct
 
           | TFaceB => 
               let 
-                  val normal : vec2 = mul22v (transformr xfb, axis)
+                  val normal : vec2 = mulrotv (transformr xfb, axis)
                   val point_b = xfb &*: local_point
 
                   (* unused -twm

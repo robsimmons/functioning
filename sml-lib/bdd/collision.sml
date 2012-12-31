@@ -12,7 +12,7 @@ struct
   open BDDMath
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% &*:
+  infix 7 *: *% +*: +*+ #*% @*: &*:
 
   exception BDDCollision of string
 
@@ -44,7 +44,7 @@ struct
 
       | E_FaceA =>
             let
-                val normal = transformr xfa +*: #local_normal manifold
+                val normal = transformr xfa @*: #local_normal manifold
                 val plane_point = xfa &*: #local_point manifold
                 fun one_point i =
                     let val clip_point = xfb &*: #local_point (Array.sub(#points manifold,
@@ -63,7 +63,7 @@ struct
             end
 
       | E_FaceB =>
-            let val normal = transformr xfb +*: #local_normal manifold
+            let val normal = transformr xfb @*: #local_normal manifold
                 val plane_point = xfb &*: #local_point manifold
                 fun one_point i =
                     let val clip_point = xfa &*: #local_point (Array.sub(#points manifold,
@@ -469,8 +469,8 @@ struct
                    else raise BDDCollision "bad edge index"
 
           (* Convert normal from poly1's frame into poly2's frame. *)
-          val normal1_world = transformr xf1 +*: Array.sub(normals1, edge1)
-          val normal1 = mul_t22mv (transformr xf2, normal1_world)
+          val normal1_world = transformr xf1 @*: Array.sub(normals1, edge1)
+          val normal1 = mul_trotv (transformr xf2, normal1_world)
 
           (* Find support vertex on poly2 for -normal. *)
           val index = ref 0
@@ -502,7 +502,7 @@ struct
 
           (* Vector pointing from the centroid of poly1 to the centroid of poly2. *)
           val d : vec2 = xf2 &*: #centroid poly2 :-: xf1 &*: #centroid poly1
-          val d_local1 = mul_t22mv (transformr xf1, d)
+          val d_local1 = mul_trotv (transformr xf1, d)
 
           (* Find edge normal on poly1 that has the largest projection onto d. *)
           val edge = ref 0
@@ -571,8 +571,8 @@ struct
                    else raise BDDCollision "edge out of bounds"
 
           (* Get the normal of the reference edge in poly2's frame. *)
-          val normal1 : vec2 = mul_t22mv (transformr xf2,
-                                          transformr xf1 +*: Array.sub(normals1, edge1))
+          val normal1 : vec2 = mul_trotv (transformr xf2,
+                                          transformr xf1 @*: Array.sub(normals1, edge1))
 
           (* Find the incident edge on poly2. *)
           val index = ref 0
@@ -654,7 +654,7 @@ struct
 
       val local_normal : vec2 = cross2vs (local_tangent, 1.0)
       val plane_point = 0.5 *: (v11 :+: v12)
-      val tangent : vec2 = mul22v (transformr xf1, local_tangent)
+      val tangent : vec2 = mulrotv (transformr xf1, local_tangent)
       val normal : vec2 = cross2vs (tangent, 1.0)
 
       (* Port note: shadowing instead of assignment in original *)

@@ -4,7 +4,7 @@ struct
   open GL
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% &*:
+  infix 7 *: *% +*: +*+ #*% @*: &*:
 
   type state = game_state
   type screen = SDL.surface
@@ -143,7 +143,7 @@ struct
           end
         | BDDShape.Circle {radius, p} =>
           let val center = tf &*: p
-              val axis = (BDDMath.transformr tf) +*: (BDDMath.vec2 (1.0, 0.0))
+              val axis = (BDDMath.transformr tf) @*: (BDDMath.vec2 (1.0, 0.0))
           in Render.draw_solid_circle center radius axis color
           end
 

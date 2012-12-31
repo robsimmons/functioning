@@ -236,21 +236,21 @@ struct
   fun rotation_getxaxis { c, s } = vec2 (c, s)
   fun rotation_getyaxis { c : real, s : real } = vec2 (~s, c)
 
-  type transform = { position : vec2, r : mat22 }
+  type transform = { position : vec2, r : rotation }
   fun transform (pp, rr) = { position = pp, r = rr }
   fun transform_pos_angle (pp, angle : real) =
       { position = pp,
-        r = mat22angle angle }
+        r = rotation angle }
   fun transformposition { position, r = _ } = position
   fun transformr ({ position = _, r } : transform) = r
 
-  fun transform_getangle { position = _, r } = mat22getangle r
+  fun transform_getangle { position = _, r } = rotation_getangle r
 
   val vec2_zero : vec2 = vec2(0.0, 0.0)
   val mat22_identity : mat22 = mat22with(1.0, 0.0,
                                          0.0, 1.0)
   val transform_identity = { position = vec2 (0.0, 0.0) : vec2,
-                             r = mat22_identity }
+                             r = rotation_identity }
 
   (* Functional math on vectors, matrices, etc. *)
 
@@ -287,23 +287,27 @@ struct
   fun mul22m (a : mat22, b : mat22) : mat22 =
       mat22cols (mul22v(a, #col1 b), mul22v(a, #col2 b))
 
+
   fun mul33v (a : mat33, v : vec3) : vec3 =
       vec3add(vec3add (vec3stimes (vec3x v, #col1 a),
                        vec3stimes (vec3y v, #col2 a)),
               vec3stimes (vec3z v, #col3 a))
 
+  fun mulrot (q : rotation, r : rotation) =
+      { c = #c q * #c r - #s q * #s r ,
+        s = #s q * #c r + #c q * #c r }
+
+  fun mulrotv (q : rotation, v : vec2) =
+      vec2 (#c q * vec2x v - #s q * vec2y v,
+            #s q * vec2x v + #c q * vec2y v)
+
   fun multransformv (t : transform, v : vec2) : vec2 =
       let
+          val r = transformr t
           val x = vec2x (transformposition t) +
-              (vec2x (#col1 (transformr t)) *
-               vec2x v +
-               vec2x (#col2 (transformr t)) *
-               vec2y v)
+                  (#c r * vec2x v - #s r * vec2y v)
           val y = vec2y (transformposition t) +
-              (vec2y (#col1 (transformr t)) *
-               vec2x v +
-               vec2y (#col2 (transformr t)) *
-               vec2y v)
+                  (#s r * vec2x v + #c r * vec2y v)
       in
         vec2 (x, y)
       end
@@ -345,8 +349,13 @@ struct
       in
           mat22cols (c1, c2)
       end
+
+  fun mul_trotv (q : rotation, v : vec2) =
+      vec2 (#c q * vec2x v + #s q * vec2y v,
+            ~(#s q) * vec2x v + #c q * vec2y v)
+
   fun mul_ttransformv (t : transform, v : vec2) : vec2 =
-      mul_t22mv (transformr t, vec2sub (v, transformposition t))
+      mul_trotv (transformr t, vec2sub (v, transformposition t))
 
   (* Cool trick: By downshifting and oring, ensure that the bits are all ones
      starting with the first one in the input. Then the result plus 1 is the
@@ -434,12 +443,12 @@ struct
   fun sweep_transform ({ local_center, c0, c, a0, a, alpha0 },
                          alpha : real) =
       let val angle : real = (1.0 - alpha) * !a0 + alpha * !a
-          val q = mat22angle angle
+          val q = rotation angle
           val p = vec2add(vec2stimes (1.0 - alpha, !c0),
                           vec2stimes (alpha, !c))
           val p' = vec2sub (p,
-                            mul22v(q,
-                                   !local_center))
+                            mulrotv(q,
+                                    !local_center))
       in
           transform (p', q)
       end
