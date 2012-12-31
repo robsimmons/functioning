@@ -228,6 +228,14 @@ struct
                det * (a11 * vec2y b - a21 * vec2x b))
       end
 
+  type rotation = { c : real, s : real }
+
+  fun rotation angle = { c = Math.cos angle, s = Math.sin angle }
+  val rotation_identity = { c = 1.0, s = 0.0 }
+  fun rotation_getangle { c, s } = atan2 (s, c)
+  fun rotation_getxaxis { c, s } = vec2 (c, s)
+  fun rotation_getyaxis { c : real, s : real } = vec2 (~s, c)
+
   type transform = { position : vec2, r : mat22 }
   fun transform (pp, rr) = { position = pp, r = rr }
   fun transform_pos_angle (pp, angle : real) =
@@ -236,13 +244,8 @@ struct
   fun transformposition { position, r = _ } = position
   fun transformr ({ position = _, r } : transform) = r
 
-  fun identity_transform () = { position = vec2 (0.0, 0.0),
-                                r = mat22with (1.0, 0.0,
-                                               0.0, 1.0) }
-
   fun transform_getangle { position = _, r } = mat22getangle r
 
-  (* Don't modify these. *)
   val vec2_zero : vec2 = vec2(0.0, 0.0)
   val mat22_identity : mat22 = mat22with(1.0, 0.0,
                                          0.0, 1.0)

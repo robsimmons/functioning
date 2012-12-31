@@ -83,6 +83,13 @@ sig
      2-by-2 matrix equation. *)
   val mat33solve22 : mat33 * vec2 -> vec2
 
+  type rotation
+  val rotation : real -> rotation
+  val rotation_identity : rotation
+  val rotation_getangle : rotation -> real
+  val rotation_getxaxis : rotation -> vec2
+  val rotation_getyaxis : rotation -> vec2
+
   (* A transform contains translation and rotation. It is used to represent
      the position and orientation of rigid frames. *)
   type transform
@@ -92,9 +99,7 @@ sig
   val transformposition : transform -> vec2
   val transformr : transform -> mat22
   val transform_getangle : transform -> real
-  val identity_transform : unit -> transform
 
-  (* Constants. Unfortunately they are mutable. Don't modify them. *)
   val vec2_zero : vec2
   val mat22_identity : mat22
   val transform_identity : transform
