@@ -341,9 +341,9 @@ struct
       vec2max (low, vec2min(a, high))
 
   (* These multiply the transpose of the matrix! *)
-  fun mul_t22mv (a : mat22, v : vec2) : vec2 =
+  fun mul_t22v (a : mat22, v : vec2) : vec2 =
       vec2(dot2(v, #col1 a), dot2(v, #col2 a))
-  fun mul_t22mm (a : mat22, b : mat22) : mat22 =
+  fun mul_t22m (a : mat22, b : mat22) : mat22 =
       let val c1 = vec2(dot2(#col1 a, #col1 b), dot2(#col2 a, #col1 b))
           val c2 = vec2(dot2(#col1 a, #col2 b), dot2(#col2 a, #col2 b))
       in

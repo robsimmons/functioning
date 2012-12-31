@@ -15,11 +15,7 @@ sig
   val atan2 : real * real -> real
   val abs : real -> real
 
-  (* 2D column vector. Mutable, for porting purposes. 
-     Most of the code does not make use of the fact
-     that the vectors are mutable, so it would be good
-     to make them immutable, which is more idiomatic
-     ML and probably performs better. *)
+  (* 2D column vector. *)
   type vec2
   val vec2 : real * real -> vec2
   val vec2x : vec2 -> real
@@ -47,7 +43,7 @@ sig
   val vec3neg : vec3 -> vec3
   val vec3idx : vec3 -> int -> real
 
-  (* 2x2 matrix; column-major order. Mutable. *)
+  (* 2x2 matrix; column-major order. *)
   type mat22
   val mat22cols : vec2 * vec2 -> mat22
   val mat22with : real * real *
@@ -65,7 +61,7 @@ sig
   val mat22col1 : mat22 -> vec2
   val mat22col2 : mat22 -> vec2
 
-  (* 3x3 matrix; column-major order. Mutable. *)
+  (* 3x3 matrix; column-major order. *)
   type mat33
   val mat33cols : vec3 * vec3 * vec3 -> mat33
   val mat33with : real * real * real *
@@ -130,9 +126,8 @@ sig
   val mulrotv : rotation * vec2 -> vec2
 
   (* These multiply the transpose of the (first) matrix. *)
-  (* XXX these should probably be called mul_t22v etc. to match above *)
-  val mul_t22mv : mat22 * vec2 -> vec2
-  val mul_t22mm : mat22 * mat22 -> mat22
+  val mul_t22v : mat22 * vec2 -> vec2
+  val mul_t22m : mat22 * mat22 -> mat22
   val mul_trotv : rotation * vec2 -> vec2
   (* Applies the inverse of a transformation; subtracting the position
      and then multipling the transform of the rotation matrix. *)
