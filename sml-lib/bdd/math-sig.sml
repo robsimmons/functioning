@@ -81,6 +81,8 @@ sig
 
   type rotation
   val rotation : real -> rotation
+  val rotationc : rotation -> real
+  val rotations : rotation -> real
   val rotation_identity : rotation
   val rotation_getangle : rotation -> real
   val rotation_getxaxis : rotation -> vec2

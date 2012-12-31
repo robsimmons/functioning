@@ -67,10 +67,13 @@ struct
     fun mat22tos m = "[" ^ rtos (vec2x (mat22col1 m)) ^ " " ^ rtos (vec2x (mat22col2 m)) ^
                      " / " ^ rtos (vec2y (mat22col1 m)) ^ " " ^ rtos (vec2y (mat22col2 m)) ^ "]"
 
+    fun rottos r = "[ cos: " ^ rtos (rotationc r) ^
+                   " sin: " ^  rtos (rotations r) ^ "]"
+
     fun xftos xf =
         (vtos (transformposition xf) ^
-         " @" ^ rtos (transform_getangle xf)   )(* ^ " " ^
-         mat22tos (transformr xf)) *)
+         " @" ^ rtos (transform_getangle xf) ^ " " ^
+         rottos (transformr xf))
 
     fun sweeptos sweep =
         ("lc: " ^ vtos (sweeplocalcenter sweep) ^ " c: " ^

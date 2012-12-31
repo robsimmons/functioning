@@ -231,6 +231,8 @@ struct
   type rotation = { c : real, s : real }
 
   fun rotation angle = { c = Math.cos angle, s = Math.sin angle }
+  fun rotationc { c : real, s = _ } = c
+  fun rotations { c = _, s : real } = s
   val rotation_identity = { c = 1.0, s = 0.0 }
   fun rotation_getangle { c, s } = atan2 (s, c)
   fun rotation_getxaxis { c, s } = vec2 (c, s)
