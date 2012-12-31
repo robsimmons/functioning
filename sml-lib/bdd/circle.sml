@@ -10,7 +10,7 @@ struct
   open BDDMath
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% @*: &*:
 
   exception BDDCircle
 
@@ -25,7 +25,7 @@ struct
 
   fun test_point ({ radius, p }, transform, pp) : bool =
       let val center = transformposition transform :+:
-              transformr transform +*: p
+              transformr transform @*: p
           val d = pp :-: center
       in dot2 (d, d) <= radius * radius
       end
@@ -38,7 +38,7 @@ struct
                                             max_fraction : real }) :
       BDDTypes.ray_cast_output option =
       let
-          val position = transformposition transform :+: transformr transform +*: p
+          val position = transformposition transform :+: transformr transform @*: p
           val s : vec2 = p1 :-: position
           val b : real = dot2(s, s) - radius * radius
 
@@ -66,8 +66,8 @@ struct
       end
 
   fun compute_aabb ({ radius, p }, transform : BDDMath.transform) : BDDTypes.aabb =
-      let val p : vec2 = transformposition transform :+: 
-          transformr transform +*: p
+      let val p : vec2 = transformposition transform :+:
+          transformr transform @*: p
       in
           { lowerbound = vec2(vec2x p - radius, vec2y p - radius),
             upperbound = vec2(vec2x p + radius, vec2y p + radius) }

@@ -7,7 +7,7 @@ struct
   exception BDDContactSolver of string
   open BDDMath BDDTypes BDDSettings BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% @*: &*:
   structure D = BDDDynamics
 
   type velocity_constraint_point =
@@ -682,8 +682,8 @@ fun warm_start ({ step,
     case #typ pc of
         E_Circles =>
           let
-              val point_a : vec2 = xf_a @*: (#local_point pc)
-              val point_b : vec2 = xf_b @*: (Array.sub(#local_points pc, 0))
+              val point_a : vec2 = xf_a &*: (#local_point pc)
+              val point_b : vec2 = xf_b &*: (Array.sub(#local_points pc, 0))
               val normal = vec2normalized (point_b :-: point_a)
           in
               { normal = normal,
@@ -692,9 +692,9 @@ fun warm_start ({ step,
           end
     | E_FaceA =>
           let
-              val normal = transformr xf_a +*: (#local_normal pc)
-              val plane_point = xf_a @*: (#local_point pc)
-              val clip_point = xf_b @*: (Array.sub(#local_points pc, index))
+              val normal = transformr xf_a @*: (#local_normal pc)
+              val plane_point = xf_a &*: (#local_point pc)
+              val clip_point = xf_b &*: (Array.sub(#local_points pc, index))
               val separation : real =
                   dot2(clip_point :-: plane_point, normal) - #radius_a pc - #radius_b pc
           in
@@ -707,9 +707,9 @@ fun warm_start ({ step,
           end
     | E_FaceB =>
           let
-              val normal = transformr xf_b +*: (#local_normal pc)
-              val plane_point = xf_b @*: (#local_point pc)
-              val clip_point = xf_a @*: (Array.sub(#local_points pc, index))
+              val normal = transformr xf_b @*: (#local_normal pc)
+              val plane_point = xf_b &*: (#local_point pc)
+              val clip_point = xf_a &*: (Array.sub(#local_points pc, index))
               val separation : real =
                   dot2(clip_point :-: plane_point, normal) - #radius_a pc - #radius_b pc
           in

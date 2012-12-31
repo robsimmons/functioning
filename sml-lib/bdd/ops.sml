@@ -23,7 +23,9 @@ struct
      (empty string) is a scalar, so that * is scalar
      times scalar.
      
-     @ is a transform (rotation ideograph) *)
+     @ is a rotation (rotation ideograph)
+     & is a transform
+*)
 
   val op :-: = BDDMath.vec2sub
   val op :+: = BDDMath.vec2add
@@ -36,11 +38,12 @@ struct
   val op +*: = BDDMath.mul22v
   val op +*+ = BDDMath.mul22m
   val op #*% = BDDMath.mul33v
-  val op @*: = BDDMath.multransformv
+  val op @*: = BDDMath.mulrotv
+  val op &*: = BDDMath.multransformv
 
 (*
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% @*: &*:
 *)
 
   (* other stuff you want everywhere. *)
@@ -64,10 +67,13 @@ struct
     fun mat22tos m = "[" ^ rtos (vec2x (mat22col1 m)) ^ " " ^ rtos (vec2x (mat22col2 m)) ^
                      " / " ^ rtos (vec2y (mat22col1 m)) ^ " " ^ rtos (vec2y (mat22col2 m)) ^ "]"
 
+    fun rottos r = "[ cos: " ^ rtos (rotationc r) ^
+                   " sin: " ^  rtos (rotations r) ^ "]"
+
     fun xftos xf =
         (vtos (transformposition xf) ^
          " @" ^ rtos (transform_getangle xf) ^ " " ^
-         mat22tos (transformr xf))
+         rottos (transformr xf))
 
     fun sweeptos sweep =
         ("lc: " ^ vtos (sweeplocalcenter sweep) ^ " c: " ^

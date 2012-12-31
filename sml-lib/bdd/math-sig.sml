@@ -15,11 +15,7 @@ sig
   val atan2 : real * real -> real
   val abs : real -> real
 
-  (* 2D column vector. Mutable, for porting purposes. 
-     Most of the code does not make use of the fact
-     that the vectors are mutable, so it would be good
-     to make them immutable, which is more idiomatic
-     ML and probably performs better. *)
+  (* 2D column vector. *)
   type vec2
   val vec2 : real * real -> vec2
   val vec2x : vec2 -> real
@@ -47,7 +43,7 @@ sig
   val vec3neg : vec3 -> vec3
   val vec3idx : vec3 -> int -> real
 
-  (* 2x2 matrix; column-major order. Mutable. *)
+  (* 2x2 matrix; column-major order. *)
   type mat22
   val mat22cols : vec2 * vec2 -> mat22
   val mat22with : real * real *
@@ -65,7 +61,7 @@ sig
   val mat22col1 : mat22 -> vec2
   val mat22col2 : mat22 -> vec2
 
-  (* 3x3 matrix; column-major order. Mutable. *)
+  (* 3x3 matrix; column-major order. *)
   type mat33
   val mat33cols : vec3 * vec3 * vec3 -> mat33
   val mat33with : real * real * real *
@@ -83,18 +79,25 @@ sig
      2-by-2 matrix equation. *)
   val mat33solve22 : mat33 * vec2 -> vec2
 
+  type rotation
+  val rotation : real -> rotation
+  val rotationc : rotation -> real
+  val rotations : rotation -> real
+  val rotation_identity : rotation
+  val rotation_getangle : rotation -> real
+  val rotation_getxaxis : rotation -> vec2
+  val rotation_getyaxis : rotation -> vec2
+
   (* A transform contains translation and rotation. It is used to represent
      the position and orientation of rigid frames. *)
   type transform
-  val transform : vec2 * mat22 -> transform
+  val transform : vec2 * rotation -> transform
   (* Create with offset and angle *)
   val transform_pos_angle : vec2 * real -> transform
   val transformposition : transform -> vec2
-  val transformr : transform -> mat22
+  val transformr : transform -> rotation
   val transform_getangle : transform -> real
-  val identity_transform : unit -> transform
 
-  (* Constants. Unfortunately they are mutable. Don't modify them. *)
   val vec2_zero : vec2
   val mat22_identity : mat22
   val transform_identity : transform
@@ -122,11 +125,12 @@ sig
   val mul22m : mat22 * mat22 -> mat22
   val mul33v : mat33 * vec3 -> vec3
   val multransformv : transform * vec2 -> vec2
+  val mulrotv : rotation * vec2 -> vec2
 
   (* These multiply the transpose of the (first) matrix. *)
-  (* XXX these should probably be called mul_t22v etc. to match above *)
-  val mul_t22mv : mat22 * vec2 -> vec2
-  val mul_t22mm : mat22 * mat22 -> mat22
+  val mul_t22v : mat22 * vec2 -> vec2
+  val mul_t22m : mat22 * mat22 -> mat22
+  val mul_trotv : rotation * vec2 -> vec2
   (* Applies the inverse of a transformation; subtracting the position
      and then multipling the transform of the rotation matrix. *)
   val mul_ttransformv : transform * vec2 -> vec2
