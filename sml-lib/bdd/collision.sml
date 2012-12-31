@@ -12,7 +12,7 @@ struct
   open BDDMath
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% &*:
 
   exception BDDCollision of string
 
@@ -45,9 +45,9 @@ struct
       | E_FaceA =>
             let
                 val normal = transformr xfa +*: #local_normal manifold
-                val plane_point = xfa @*: #local_point manifold
+                val plane_point = xfa &*: #local_point manifold
                 fun one_point i =
-                    let val clip_point = xfb @*: #local_point (Array.sub(#points manifold,
+                    let val clip_point = xfb &*: #local_point (Array.sub(#points manifold,
                                                                          i))
                         val ca = clip_point :+:
                                  (radiusa - dot2(clip_point :-: plane_point,
@@ -64,9 +64,9 @@ struct
 
       | E_FaceB =>
             let val normal = transformr xfb +*: #local_normal manifold
-                val plane_point = xfb @*: #local_point manifold
+                val plane_point = xfb &*: #local_point manifold
                 fun one_point i =
-                    let val clip_point = xfa @*: #local_point (Array.sub(#points manifold,
+                    let val clip_point = xfa &*: #local_point (Array.sub(#points manifold,
                                                                       i))
                         val cb = clip_point :+:
                                   (radiusb - dot2(clip_point :-: plane_point,
@@ -255,8 +255,8 @@ struct
                        circleb : BDDCircle.circle,
                        xfb : transform) : manifold =
       let
-          val pa : vec2 = xfa @*: #p circlea
-          val pb : vec2 = xfb @*: #p circleb
+          val pa : vec2 = xfa &*: #p circlea
+          val pb : vec2 = xfb &*: #p circleb
           val d  : vec2 = pb :-: pa
 
           val dist_sqr = dot2(d, d)
@@ -347,7 +347,7 @@ struct
                                   xfb : BDDMath.transform) : BDDTypes.manifold =
       let
         (* Compute circle position in the frame of the polygon. *)
-        val c : vec2 = xfb @*: cirp
+        val c : vec2 = xfb &*: cirp
         val c_local : vec2 = mul_ttransformv (xfa, c)
 
         (* Find the min separating edge. *)
@@ -485,8 +485,8 @@ struct
                   else ()
                end)
 
-          val v1 = xf1 @*: Array.sub(vertices1, edge1)
-          val v2 = xf2 @*: Array.sub(vertices2, !index)
+          val v1 = xf1 &*: Array.sub(vertices1, edge1)
+          val v2 = xf2 &*: Array.sub(vertices2, !index)
       in
           dot2 (v2 :-: v1, normal1_world)
       end
@@ -501,7 +501,7 @@ struct
           val count1 = Array.length normals1
 
           (* Vector pointing from the centroid of poly1 to the centroid of poly2. *)
-          val d : vec2 = xf2 @*: #centroid poly2 :-: xf1 @*: #centroid poly1
+          val d : vec2 = xf2 &*: #centroid poly2 :-: xf1 &*: #centroid poly1
           val d_local1 = mul_t22mv (transformr xf1, d)
 
           (* Find edge normal on poly1 that has the largest projection onto d. *)
@@ -592,12 +592,12 @@ struct
                    then i1 + 1
                    else 0
       in
-          ({ v = xf2 @*: Array.sub(vertices2, i1),
+          ({ v = xf2 &*: Array.sub(vertices2, i1),
              id = contact_id { index_a = edge1,
                                index_b = i1,
                                type_a = face_feature,
                                type_b = vertex_feature } },
-           { v = xf2 @*: Array.sub(vertices2, i2),
+           { v = xf2 &*: Array.sub(vertices2, i2),
              id = contact_id { index_a = edge1,
                                index_b = i2,
                                type_a = face_feature,
@@ -658,8 +658,8 @@ struct
       val normal : vec2 = cross2vs (tangent, 1.0)
 
       (* Port note: shadowing instead of assignment in original *)
-      val v11 = xf1 @*: v11
-      val v12 = xf1 @*: v12
+      val v11 = xf1 &*: v11
+      val v12 = xf1 &*: v12
 
       (* Face offset. *)
       val front_offset : real = dot2(normal, v11)

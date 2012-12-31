@@ -36,11 +36,11 @@ struct
   val op +*: = BDDMath.mul22v
   val op +*+ = BDDMath.mul22m
   val op #*% = BDDMath.mul33v
-  val op @*: = BDDMath.multransformv
+  val op &*: = BDDMath.multransformv
 
 (*
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% &*:
 *)
 
   (* other stuff you want everywhere. *)

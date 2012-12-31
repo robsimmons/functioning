@@ -10,7 +10,7 @@ struct
   open BDDMath
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% &*:
 
   exception BDDPolygon of string
 
@@ -80,7 +80,7 @@ struct
                                   (~1.0, 0.0)]
 
           val xf = transform_pos_angle (center, angle)
-          val vertices = map (fn v => xf @*: v) vertices
+          val vertices = map (fn v => xf &*: v) vertices
           val normals = map (fn v => transformr xf +*: v) normals
       in
           { vertices = Array.fromList vertices,
@@ -297,14 +297,14 @@ struct
 
   fun compute_aabb ({vertices, ...} : polygon, xf : transform) : aabb =
       let
-        val start = xf @*: Array.sub(vertices, 0)
+        val start = xf &*: Array.sub(vertices, 0)
         val lower = ref start
         val upper = ref start
 
         (* Want ArrayUtil.combinel... *)
         val () = for 1 (Array.length vertices - 1)
             (fn i =>
-             let val vec = xf @*: Array.sub(vertices, i)
+             let val vec = xf &*: Array.sub(vertices, i)
              in lower := vec2min (!lower, vec);
                 upper := vec2max (!upper, vec)
              end)

@@ -16,7 +16,7 @@ struct
   open BDDMath
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% &*:
 
   exception BDDBody of string
   
@@ -200,7 +200,7 @@ struct
 
                  (* Move center of mass *)
                  val old_center : vec2 = sweepc (D.B.get_sweep b)
-                 val c = D.B.get_xf b @*: (!center)
+                 val c = D.B.get_xf b &*: (!center)
              in
                  sweep_set_localcenter (D.B.get_sweep b, !center);
                  sweep_set_c0 (D.B.get_sweep b, c);
@@ -433,7 +433,7 @@ struct
                     (* Move center of mass *)
                     val center = #center mass_data
                     val old_center : vec2 = sweepc (D.B.get_sweep b)
-                    val c = D.B.get_xf b @*: center
+                    val c = D.B.get_xf b &*: center
                 in
                     sweep_set_localcenter (D.B.get_sweep b, center);
                     sweep_set_c0 (D.B.get_sweep b, c);
@@ -457,7 +457,7 @@ struct
             val xf = transform_pos_angle (position, angle)
             (* nb. so that we can modify it *)
             val sweep = D.B.get_sweep b
-            val c = xf @*: sweeplocalcenter sweep
+            val c = xf &*: sweeplocalcenter sweep
 
             val bp = D.W.get_broad_phase world
         in

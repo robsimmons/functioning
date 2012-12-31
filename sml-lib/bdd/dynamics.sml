@@ -18,7 +18,7 @@ struct
   open BDDMath
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% &*:
 
   exception BDDDynamics of string
 
@@ -245,7 +245,7 @@ struct
              next : ('b, 'f, 'j) body option) : ('b, 'f, 'j) body =
         let
             val xf = transform_pos_angle (position, angle)
-            val center = xf @*: vec2 (0.0, 0.0)
+            val center = xf &*: vec2 (0.0, 0.0)
             val (mass, inv_mass) =
                 case typ of
                     Dynamic => (1.0, 1.0)
@@ -379,9 +379,9 @@ struct
         let in
             dprint (fn () => "[getworldpoint lp " ^ vtos p ^
                    " xf " ^ xftos (get_xf b) ^
-                   " -> " ^ vtos (get_xf b @*: p) ^ "]\n");
+                   " -> " ^ vtos (get_xf b &*: p) ^ "]\n");
 
-            get_xf b @*: p
+            get_xf b &*: p
         end
     fun get_world_vector (b, v) = transformr (get_xf b) +*: v
     fun get_local_point (b, p) = mul_ttransformv (get_xf b, p)

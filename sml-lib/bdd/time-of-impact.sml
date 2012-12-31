@@ -9,7 +9,7 @@ struct
   open BDDMath
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% &*:
   
   (* Port note: Box2D contains some overall max iteration counts, which
      seem to be for diagnostics and tuning. I left them out. *)
@@ -64,8 +64,8 @@ struct
             let
                 val local_point_a = #vertex proxya (Array.sub(#indexa cache, 0))
                 val local_point_b = #vertex proxyb (Array.sub(#indexb cache, 0))
-                val point_a = xfa @*: local_point_a
-                val point_b = xfb @*: local_point_b
+                val point_a = xfa &*: local_point_a
+                val point_b = xfb &*: local_point_b
                 val axis = vec2normalized (point_b :-: point_a)
             in
                 { typ = TPoints,
@@ -90,10 +90,10 @@ struct
                 val normal : vec2 = mul22v (transformr xfb, axis)
 
                 val local_point = 0.5 *: (local_point_b1 :+: local_point_b2)
-                val point_b : vec2 = xfb @*: local_point
+                val point_b : vec2 = xfb &*: local_point
 
                 val local_point_a = #vertex proxya (Array.sub(#indexa cache, 0))
-                val point_a = xfa @*: local_point_a
+                val point_a = xfa &*: local_point_a
 
                 val axis = if dot2(point_a :-: point_b, normal) < 0.0
                            then vec2neg axis
@@ -118,10 +118,10 @@ struct
                  val normal : vec2 = mul22v (transformr xfa, axis)
 
                  val local_point = 0.5 *: (local_point_a1 :+: local_point_a2)
-                 val point_a : vec2 = xfa @*: local_point
+                 val point_a : vec2 = xfa &*: local_point
 
                  val local_point_b : vec2 = #vertex proxyb (Array.sub(#indexb cache, 0))
-                 val point_b : vec2 = xfb @*: local_point_b
+                 val point_b : vec2 = xfb &*: local_point_b
 
                  val axis = if dot2(point_b :-: point_a, normal) < 0.0
                             then vec2neg axis
@@ -161,8 +161,8 @@ struct
                   val local_point_a : vec2 = #vertex proxya indexa
                   val local_point_b : vec2 = #vertex proxyb indexb
 
-                  val point_a : vec2 = xfa @*: local_point_a
-                  val point_b : vec2 = xfb @*: local_point_b
+                  val point_a : vec2 = xfa &*: local_point_a
+                  val point_b : vec2 = xfb &*: local_point_b
 
                   val separation : real = dot2(point_b :-: point_a, axis)
               in
@@ -172,14 +172,14 @@ struct
          | TFaceA => 
               let
                   val normal : vec2 = mul22v (transformr xfa, axis)
-                  val point_a : vec2 = xfa @*: local_point
+                  val point_a : vec2 = xfa &*: local_point
                   val axis_b : vec2 = mul_t22mv (transformr xfb, vec2neg normal)
 
                   val indexa = ~1
                   val indexb = #support proxyb axis_b
                       
                   val local_point_b = #vertex proxyb indexb
-                  val point_b = xfb @*: local_point_b
+                  val point_b = xfb &*: local_point_b
 
                   val separation = dot2(point_b :-: point_a, normal)
               in
@@ -189,14 +189,14 @@ struct
          | TFaceB => 
               let
                   val normal = mul22v (transformr xfb, axis)
-                  val point_b = xfb @*: local_point
+                  val point_b = xfb &*: local_point
 
                   val axis_a : vec2 = mul_t22mv(transformr xfa, vec2neg normal)
                   val indexb = ~1
                   val indexa = #support proxya axis_a
 
                   val local_point_a = #vertex proxya indexa
-                  val point_a = xfa @*: local_point_a
+                  val point_a = xfa &*: local_point_a
 
                   val separation = dot2 (point_a :-: point_b, normal)
               in
@@ -229,8 +229,8 @@ struct
                   val local_point_a : vec2 = #vertex proxya indexa
                   val local_point_b : vec2 = #vertex proxyb indexb
 
-                  val point_a = xfa @*: local_point_a
-                  val point_b = xfb @*: local_point_b
+                  val point_a = xfa &*: local_point_a
+                  val point_b = xfb &*: local_point_b
               in
                   dot2(point_b :-: point_a, axis)
               end
@@ -238,14 +238,14 @@ struct
           | TFaceA => 
               let
                   val normal : vec2 = mul22v (transformr xfa, axis)
-                  val point_a : vec2 = xfa @*: local_point
+                  val point_a : vec2 = xfa &*: local_point
 
                   (* unused -twm
                   val axis_b : vec2 = mul_t22mv (transformr xfb, vec2neg normal)
                   *)
 
                   val local_point_b = #vertex proxyb indexb
-                  val point_b = xfb @*: local_point_b
+                  val point_b = xfb &*: local_point_b
               in
                   dot2 (point_b :-: point_a, normal)
               end
@@ -253,13 +253,13 @@ struct
           | TFaceB => 
               let 
                   val normal : vec2 = mul22v (transformr xfb, axis)
-                  val point_b = xfb @*: local_point
+                  val point_b = xfb &*: local_point
 
                   (* unused -twm
                   val axis_a : vec2 = mul_t22mv (transformr xfa, vec2neg normal)
                   *)
                   val local_point_a : vec2 = #vertex proxya indexa
-                  val point_a : vec2 = xfa @*: local_point_a
+                  val point_a : vec2 = xfa &*: local_point_a
 
                   val sep = dot2(point_a :-: point_b, normal)
               in

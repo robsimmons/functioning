@@ -4,7 +4,7 @@ struct
   open GL
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% &*:
 
   type state = game_state
   type screen = SDL.surface
@@ -138,11 +138,11 @@ struct
       case BDD.Fixture.shape fix of
           BDDShape.Polygon p =>
           let val n = BDDPolygon.get_vertex_count p
-              val vl = List.tabulate (n, fn ii => tf @*: (BDDPolygon.get_vertex(p, ii)))
+              val vl = List.tabulate (n, fn ii => tf &*: (BDDPolygon.get_vertex(p, ii)))
           in Render.draw_solid_polygon vl color
           end
         | BDDShape.Circle {radius, p} =>
-          let val center = tf @*: p
+          let val center = tf &*: p
               val axis = (BDDMath.transformr tf) +*: (BDDMath.vec2 (1.0, 0.0))
           in Render.draw_solid_circle center radius axis color
           end

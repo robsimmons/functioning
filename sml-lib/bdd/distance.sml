@@ -9,7 +9,7 @@ struct
   open BDDMath val distance = ()
   open BDDOps
   infix 6 :+: :-: %-% %+% +++
-  infix 7 *: *% +*: +*+ #*% @*:
+  infix 7 *: *% +*: +*+ #*% &*:
 
   exception BDDDistance
 
@@ -110,8 +110,8 @@ struct
               val () = dprint (fn () => "vertexb: " ^ vtos (#vertex proxyb 0) ^ "\n")
               val () = dprint (fn () => "transforma: " ^ xftos transforma ^ "\n");
               val () = dprint (fn () => "transformb: " ^ xftos transformb ^ "\n");
-              val wa = transforma @*: #vertex proxya 0
-              val wb = transformb @*: #vertex proxyb 0
+              val wa = transforma &*: #vertex proxya 0
+              val wb = transformb &*: #vertex proxyb 0
           in
               One { indexa = 0,
                     indexb = 0,
@@ -131,8 +131,8 @@ struct
                     let 
                         val indexa = Array.sub(#indexa cache, i)
                         val indexb = Array.sub(#indexb cache, i)
-                        val wa = transforma @*: #vertex proxya indexa
-                        val wb = transformb @*: #vertex proxyb indexb
+                        val wa = transforma &*: #vertex proxya indexa
+                        val wb = transformb &*: #vertex proxyb indexb
                     in
                         { indexa = indexa,
                           indexb = indexb,
@@ -446,11 +446,11 @@ struct
                               #support proxya (mul_t22mv
                                                (transformr transforma,
                                                 vec2neg d))
-                          val wa = transforma @*: #vertex proxya indexa
+                          val wa = transforma &*: #vertex proxya indexa
                           val indexb =
                               #support proxyb (mul_t22mv
                                                (transformr transformb, d))
-                          val wb = transformb @*: #vertex proxyb indexb
+                          val wb = transformb &*: #vertex proxyb indexb
                           val new : simplex_vertex =
                               { indexa = indexa, wa = wa,
                                 indexb = indexb, wb = wb,
