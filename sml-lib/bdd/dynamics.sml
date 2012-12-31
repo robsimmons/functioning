@@ -33,11 +33,6 @@ struct
        "(e.g. fixture, joint) was used after being detached, " ^
        "or before being initialized: " ^ s)
 
-  fun !!! (SOME x) = x
-    | !!! NONE = raise Fail ""
-
-
-
   type ('b, 'f, 'j) body = ('b, 'f, 'j) BDDCells.body
   type ('b, 'f, 'j) fixture = ('b, 'f, 'j) BDDCells.fixture
   type ('b, 'f, 'j) contact = ('b, 'f, 'j) BDDCells.contact
@@ -607,7 +602,7 @@ struct
                    else ()
 
           (* Remove from body A *)
-          val nodea = !!!(C.get_node_a c)
+          val nodea = !! "nodea" (C.get_node_a c)
           val prev = E.get_prev nodea
           val next = E.get_next nodea
           val () = case prev of
@@ -625,7 +620,7 @@ struct
                    else ()
 
           (* Remove from body B *)
-          val nodeb = !!!(C.get_node_b c)
+          val nodeb = !! "nodeb" (C.get_node_b c)
           val prev = E.get_prev nodeb
           val next = E.get_next nodeb
           val () = case prev of
