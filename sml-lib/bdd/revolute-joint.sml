@@ -374,9 +374,6 @@ fun new {local_anchor_a : vec2,
                 val () = cB := !cB :+: mB *: impulse
                 val () = aB := !aB + iB * cross2vv (rB, impulse)
 
-                val sweepA = D.B.get_sweep bA
-                val sweepB = D.B.get_sweep bB
-
                 val () = Array.update(positionsa, !m_indexA, !aA)
                 val () = Array.update(positionsa, !m_indexB, !aB)
                 val () = Array.update(positionsc, !m_indexA, !cA)
