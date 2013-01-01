@@ -86,9 +86,9 @@ struct
     | FrictionDef
 
   type solver_data = { step : time_step,
-                       positionsc : BDDMath.vec2 Array.array,
+                       positionsc : BDDMath.vec2mut Array.array,
                        positionsa : real Array.array,
-                       velocitiesv : BDDMath.vec2 Array.array,
+                       velocitiesv : BDDMath.vec2mut Array.array,
                        velocitiesw : real Array.array
                      }
 

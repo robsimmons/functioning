@@ -29,17 +29,17 @@ struct
       let
           fun integrate_onebody ii =
                let
-                 val c = ref (Array.sub(positionsc, ii))
+                 val c = Array.sub(positionsc, ii)
                  val a = ref (Array.sub(positionsa, ii))
-                 val v = ref (Array.sub(velocitiesv, ii))
+                 val v = Array.sub(velocitiesv, ii)
                  val w = ref (Array.sub(velocitiesw, ii))
 
                  (* Check for large velocities. *)
-                 val translation : vec2 = h *: (!v)
+                 val translation : vec2 = h *: (vec2immut v)
                  val () = if dot2 (translation, translation) >
                              max_translation_squared
                           then
-                              v := (max_translation / vec2length translation) *: (!v)
+                              vec2mutset (v,(max_translation / vec2length translation) *: (vec2immut v))
                           else ()
                  val rotation = h * (!w)
                  val () = if rotation * rotation > max_rotation_squared
@@ -48,12 +48,10 @@ struct
                           else ()
 
                  (* Integrate *)
-                 val () = c := !c :+: h *: !v
+                 val () = vec2mutpluseq (c, h *: vec2immut v)
                  val () = a := !a + h * !w
 
-                 val () = Array.update (positionsc, ii, !c)
                  val () = Array.update (positionsa, ii, !a)
-                 val () = Array.update (velocitiesv, ii, !v)
                  val () = Array.update (velocitiesw, ii, !w)
                in
                    case mbe_bodies of
@@ -64,9 +62,9 @@ struct
                            val body = Vector.sub (bodies, ii)
                            val sweep = D.B.get_sweep body
                        in
-                           sweep_set_c (sweep, !c);
+                           sweep_set_c (sweep, vec2immut c);
                            sweep_set_a (sweep, !a);
-                           D.B.set_linear_velocity (body, !v);
+                           D.B.set_linear_velocity (body, vec2immut v);
                            D.B.set_angular_velocity (body, !w);
                            D.B.synchronize_transform body
                        end
@@ -153,7 +151,7 @@ struct
 
                        end
                      | _ => ());
-                  {c = c, a = a, v = !v, w = !w}
+                  {c = vec2mut c, a = a, v = vec2mut (!v), w = !w}
               end
 
           val vectors = Vector.mapi onebody bodies
@@ -233,8 +231,8 @@ struct
                   val sweep = D.B.get_sweep body
               in
                   sweep_set_a (sweep, Array.sub(positionsa, ii));
-                  sweep_set_c (sweep, Array.sub(positionsc, ii));
-                  D.B.set_linear_velocity (body, Array.sub(velocitiesv, ii));
+                  sweep_set_c (sweep, vec2immut (Array.sub(positionsc, ii)));
+                  D.B.set_linear_velocity (body, vec2immut (Array.sub(velocitiesv, ii)));
                   D.B.set_angular_velocity (body, Array.sub(velocitiesw, ii));
                   D.B.synchronize_transform body
               end
@@ -304,11 +302,13 @@ struct
 
           (* Initialize the body state. *)
           val positionsc =
-              Array.tabulate (count, fn ii => sweepc (D.B.get_sweep (Vector.sub(bodies, ii))))
+              Array.tabulate (count,
+                           fn ii => vec2mut (sweepc (D.B.get_sweep (Vector.sub(bodies, ii)))))
           val positionsa =
               Array.tabulate (count, fn ii => sweepa (D.B.get_sweep (Vector.sub(bodies, ii))))
           val velocitiesv =
-              Array.tabulate (count, fn ii => D.B.get_linear_velocity (Vector.sub(bodies, ii)))
+              Array.tabulate (count,
+                           fn ii => vec2mut (D.B.get_linear_velocity (Vector.sub(bodies, ii))))
           val velocitiesw =
               Array.tabulate (count, fn ii => D.B.get_angular_velocity (Vector.sub(bodies, ii)))
 
@@ -338,9 +338,9 @@ struct
           (* Leap of faith to new safe state. *)
           val sweep_a = D.B.get_sweep (Vector.sub(bodies, toi_index_a))
           val sweep_b = D.B.get_sweep (Vector.sub(bodies, toi_index_b))
-          val () = sweep_set_c0 (sweep_a, Array.sub(positionsc, toi_index_a))
+          val () = sweep_set_c0 (sweep_a, vec2immut (Array.sub(positionsc, toi_index_a)))
           val () = sweep_set_a0 (sweep_a, Array.sub(positionsa, toi_index_a))
-          val () = sweep_set_c0 (sweep_b, Array.sub(positionsc, toi_index_b))
+          val () = sweep_set_c0 (sweep_b, vec2immut (Array.sub(positionsc, toi_index_b)))
           val () = sweep_set_a0 (sweep_b, Array.sub(positionsa, toi_index_b))
 
           (* No warm starting is needed for TOI events because warm
