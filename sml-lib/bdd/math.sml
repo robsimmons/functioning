@@ -84,6 +84,23 @@ struct
   fun vec2is_valid {x, y} =
       is_valid x andalso is_valid y
 
+  type vec2mut = { x : real ref, y : real ref }
+  fun vec2mut {x : real, y : real} = {x = ref x, y = ref y}
+  fun vec2immut {x : real ref, y : real ref} = {x = !x, y = !y}
+  fun vec2mutpluseq ({ x, y } : vec2mut, v : vec2) =
+      let in
+          x := !x + vec2x v;
+          y := !y + vec2y v
+      end
+
+  fun vec2mutminuseq ({ x, y } : vec2mut, v : vec2) =
+      let in
+          x := !x - vec2x v;
+          y := !y - vec2y v
+      end
+
+
+
   type vec3 = { x : real, y : real, z : real }
   fun vec3 (x, y, z) = { x = x, y = y, z = z }
   fun vec3x ({x, y = _, z = _} : vec3) = x

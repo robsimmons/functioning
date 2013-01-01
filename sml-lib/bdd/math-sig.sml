@@ -34,6 +34,12 @@ sig
   val vec2normalized : vec2 -> vec2
   val vec2is_valid : vec2 -> bool
 
+  type vec2mut
+  val vec2mut : vec2 -> vec2mut
+  val vec2immut : vec2mut -> vec2
+  val vec2mutpluseq : vec2mut * vec2 -> unit
+  val vec2mutminuseq : vec2mut * vec2 -> unit
+
   type vec3
   val vec3 : real * real * real -> vec3
   val vec3x : vec3 -> real
