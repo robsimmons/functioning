@@ -203,9 +203,9 @@ struct
         else
         let
             val constructor = case typ of
-                        D.J.MouseDef md => BDDMouseJoint.new md
-                      | D.J.RevoluteDef rd => BDDRevoluteJoint.new rd
-                      | D.J.PrismaticDef pd => BDDPrismaticJoint.new pd
+(*                        D.J.MouseDef md => BDDMouseJoint.new md *)
+                        D.J.RevoluteDef rd => BDDRevoluteJoint.new rd
+(*                      | D.J.PrismaticDef pd => BDDPrismaticJoint.new pd *)
                       | _ => raise BDDWorld "Unimplemented"
             val joint = D.J.new (world, constructor, def)
             (* Connect to the world list. *)

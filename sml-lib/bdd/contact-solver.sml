@@ -56,18 +56,18 @@ struct
      polymorpic types. *)
   type ('b, 'f, 'j) pre_contact_solver =
       { step : BDDDynamicsTypes.time_step,
-        positionsc : BDDMath.vec2 Array.array,
+        positionsc : BDDMath.vec2mut Array.array,
         positionsa : real Array.array,
-        velocitiesv : BDDMath.vec2 Array.array,
+        velocitiesv : BDDMath.vec2mut Array.array,
         velocitiesw : real Array.array,
         position_constraints : position_constraint Array.array,
         contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector }
 
   type ('b, 'f, 'j) contact_solver =
       { step : BDDDynamicsTypes.time_step,
-        positionsc : BDDMath.vec2 Array.array,
+        positionsc : BDDMath.vec2mut Array.array,
         positionsa : real Array.array,
-        velocitiesv : BDDMath.vec2 Array.array,
+        velocitiesv : BDDMath.vec2mut Array.array,
         velocitiesw : real Array.array,
         position_constraints : position_constraint Array.array,
         velocity_constraints : velocity_constraint Array.array,
@@ -76,9 +76,9 @@ struct
 
   fun pre_contact_solver
       ({step = time_step : BDDDynamicsTypes.time_step,
-        positionsc : BDDMath.vec2 Array.array,
+        positionsc : BDDMath.vec2mut Array.array,
         positionsa : real Array.array,
-        velocitiesv : BDDMath.vec2 Array.array,
+        velocitiesv : BDDMath.vec2mut Array.array,
         velocitiesw : real Array.array},
        contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector)
       : ('b, 'f, 'j) pre_contact_solver =
@@ -181,9 +181,9 @@ fun initialize_velocity_constraints ({ step,
                 val q_a = rotation a_a
                 val q_b = rotation a_b
 
-                val xf_a = transform (c_a :-: (q_a @*: local_center_a),
+                val xf_a = transform ((vec2immut c_a) :-: (q_a @*: local_center_a),
                                       q_a)
-                val xf_b = transform (c_b :-: (q_b @*: local_center_b),
+                val xf_b = transform ((vec2immut c_b) :-: (q_b @*: local_center_b),
                                       q_b)
 
                 val world_manifold =
@@ -202,8 +202,8 @@ fun initialize_velocity_constraints ({ step,
                                   (#dt_ratio step) * (#tangent_impulse cp))
                             else (0.0, 0.0)
 
-                        val r_a = Array.sub(#points world_manifold, jj) :-: c_a
-                        val r_b = Array.sub(#points world_manifold, jj) :-: c_b
+                        val r_a = Array.sub(#points world_manifold, jj) :-: (vec2immut c_a)
+                        val r_b = Array.sub(#points world_manifold, jj) :-: (vec2immut c_b)
                         val rn_a = cross2vv(r_a, normal)
                         val rn_b = cross2vv(r_b, normal)
                         val k_normal = m_a + m_b + i_a * rn_a * rn_a + i_b * rn_b * rn_b
@@ -219,8 +219,8 @@ fun initialize_velocity_constraints ({ step,
 
                         (* Set up a velocity bias for restitution. *)
                         val v_rel : real = dot2(normal,
-                                                v_b :+: cross2sv(w_b, r_b) :-:
-                                                v_a :-: cross2sv(w_a, r_a))
+                                                (vec2immut v_b) :+: cross2sv(w_b, r_b) :-:
+                                                (vec2immut v_a) :-: cross2sv(w_a, r_a))
                         val velocity_bias =
                             if v_rel < ~ velocity_threshold
                             then ~restitution * v_rel
@@ -342,12 +342,10 @@ fun warm_start ({ step,
               in
                   Array.update (velocitiesw, index_a,
                                 w_a - i_a * cross2vv(r_a, p));
-                  Array.update (velocitiesv, index_a,
-                                v_a :-: m_a *: p);
+                  vec2mutminuseq (v_a, m_a *: p);
                   Array.update (velocitiesw, index_b,
                                 w_b + i_b * cross2vv(r_b, p));
-                  Array.update (velocitiesv, index_b,
-                                v_b :+: m_b *: p)
+                  vec2mutpluseq (v_b, m_b *: p)
               end
           in
             Array.app warm_point points
@@ -390,10 +388,10 @@ fun warm_start ({ step,
         val p1 : vec2 = vec2x d *: normal
         val p2 : vec2 = vec2y d *: normal
       in
-        v_a := !v_a :-: (inv_mass_a *: (p1 :+: p2));
+        vec2mutminuseq (v_a, (inv_mass_a *: (p1 :+: p2)));
         w_a := !w_a - (inv_i_a * (cross2vv (#r_a cp1, p1) +
                                   cross2vv (#r_a cp2, p2)));
-        v_b := !v_b :+: (inv_mass_b *: (p1 :+: p2));
+        vec2mutpluseq (v_b, (inv_mass_b *: (p1 :+: p2)));
         w_b := !w_b + (inv_i_b * (cross2vv (#r_b cp1, p1) +
                                   cross2vv (#r_b cp2, p2)));
         (* Accumulate *)
@@ -407,9 +405,9 @@ fun warm_start ({ step,
     let
     in
         resubstitute_and_apply x;
-
+        ()
         (* Postconditions *)
-        (* PERF all this is just assertion when B2_DEBUG_SOLVER *)
+(*        (* PERF all this is just assertion when B2_DEBUG_SOLVER *)
         let val dv1 = !v_b :+: cross2sv(!w_b, #r_b cp1) :-: !v_a :-:
                 cross2sv(!w_a, #r_a cp1)
             val dv2 = !v_b :+: cross2sv(!w_b, #r_b cp2) :-: !v_a :-:
@@ -422,7 +420,7 @@ fun warm_start ({ step,
                Real.abs(vn2 - #velocity_bias cp2) < ERROR_TOL
             then ()
             else raise BDDContactSolver "assertion failure"
-        end
+        end *)
     end
     else
     let
@@ -438,9 +436,9 @@ fun warm_start ({ step,
         then
         let in
           resubstitute_and_apply x;
-
+          ()
           (* Postcondtions *)
-          (* PERF all assertion *)
+(*          (* PERF all assertion *)
           let
             val dv1 : vec2 = !v_b :+: cross2sv(!w_b, #r_b cp1) :-:
                 !v_a :-: cross2sv(!w_a, #r_a cp1)
@@ -451,7 +449,7 @@ fun warm_start ({ step,
             if Real.abs(vn1 - #velocity_bias cp1) < ERROR_TOL
             then ()
             else raise BDDContactSolver "assertion failure"
-          end
+          end *)
         end
         else
         let
@@ -467,8 +465,8 @@ fun warm_start ({ step,
             then
             let in
                 resubstitute_and_apply x;
-
-                (* Postconditions *)
+                ()
+(*                (* Postconditions *)
                 (* PERF all assertion *)
                 let
                   val dv2 = !v_b :+: cross2sv(!w_b, #r_b cp2) :-:
@@ -478,7 +476,7 @@ fun warm_start ({ step,
                   if Real.abs(vn2 - #velocity_bias cp2) < ERROR_TOL
                   then ()
                   else raise BDDContactSolver "assertion failure"
-                end
+                end *)
             end
             else
             let
@@ -509,15 +507,15 @@ fun warm_start ({ step,
 
       val w_a : real ref = ref (Array.sub(velocitiesw, index_a))
       val w_b : real ref = ref (Array.sub(velocitiesw, index_b))
-      val v_a : vec2 ref = ref (Array.sub(velocitiesv, index_a))
-      val v_b : vec2 ref = ref (Array.sub(velocitiesv, index_b))
+      val v_a : vec2mut = (Array.sub(velocitiesv, index_a))
+      val v_b : vec2mut = (Array.sub(velocitiesv, index_b))
       val tangent : vec2 = cross2vs (normal, 1.0)
 
-      val () = dprint (fn () => "Solve vel: v_a " ^ vtos (!v_a) ^
+(*      val () = dprint (fn () => "Solve vel: v_a " ^ vtos (!v_a) ^
                        " v_b " ^ vtos (!v_b) ^
                        " w_a " ^ rtos (!w_a) ^
                        " w_b " ^ rtos (!w_b) ^
-                       " norm " ^ vtos normal ^ "\n")
+                       " norm " ^ vtos normal ^ "\n") *)
 
       val () = assert (point_count = 1 orelse point_count = 2)
 
@@ -525,7 +523,7 @@ fun warm_start ({ step,
       fun one_tangent_constraint (vcp : velocity_constraint_point) : unit =
         let
             (* Relative velocity at contact. *)
-            val dv : vec2 = !v_b :+: cross2sv(!w_b, #r_b vcp) :-: !v_a :-:
+            val dv : vec2 = (vec2immut v_b) :+: cross2sv(!w_b, #r_b vcp) :-: (vec2immut v_a) :-:
                 cross2sv(!w_a, #r_a vcp)
             (* Compute tangent force *)
             val vt : real = dot2(dv, tangent) - (#tangent_speed vc)
@@ -540,9 +538,9 @@ fun warm_start ({ step,
             (* Apply contact impulse *)
             val p : vec2 = lambda *: tangent
         in
-            v_a := !v_a :-: (inv_mass_a *: p);
+            vec2mutminuseq (v_a, inv_mass_a *: p);
             w_a := !w_a - (inv_i_a * cross2vv(#r_a vcp, p));
-            v_b := !v_b :+: (inv_mass_b *: p);
+            vec2mutpluseq (v_b, inv_mass_b *: p);
             w_b := !w_b + (inv_i_b * cross2vv(#r_b vcp, p));
             #tangent_impulse vcp := new_impulse
         end
@@ -554,8 +552,8 @@ fun warm_start ({ step,
           let
             val vcp = Array.sub(#points vc, 0)
             (* Relative velocity at contact *)
-            val dv : vec2 = !v_b :+: cross2sv(!w_b, #r_b vcp) :-:
-                !v_a :-: cross2sv(!w_a, #r_a vcp)
+            val dv : vec2 = (vec2immut v_b) :+: cross2sv(!w_b, #r_b vcp) :-:
+                (vec2immut v_a) :-: cross2sv(!w_a, #r_a vcp)
             (* Compute normal impulse *)
             val vn : real = dot2(dv, normal)
             val lambda : real = ~(#normal_mass vcp) * (vn - #velocity_bias vcp)
@@ -567,9 +565,9 @@ fun warm_start ({ step,
             (* Apply contact impulse. *)
             val p : vec2 = lambda *: normal
           in
-            v_a := !v_a :-: (inv_mass_a *: p);
+            vec2mutminuseq (v_a, inv_mass_a *: p);
             w_a := !w_a - (inv_i_a * cross2vv (#r_a vcp, p));
-            v_b := !v_b :+: (inv_mass_b *: p);
+            vec2mutpluseq (v_b, inv_mass_b *: p);
             w_b := !w_b + (inv_i_b * cross2vv (#r_b vcp, p));
             #normal_impulse vcp := new_impulse
           end
@@ -619,10 +617,10 @@ fun warm_start ({ step,
             val () = assert (vec2x a >= 0.0 andalso vec2y a >= 0.0)
 
             (* Relative velocity at contact *)
-            val dv1 : vec2 = !v_b :+: cross2sv(!w_b, #r_b cp1) :-:
-                !v_a :-: cross2sv(!w_a, #r_a cp1)
-            val dv2 : vec2 = !v_b :+: cross2sv(!w_b, #r_b cp2) :-:
-                !v_a :-: cross2sv(!w_a, #r_a cp2)
+            val dv1 : vec2 = (vec2immut v_b) :+: cross2sv(!w_b, #r_b cp1) :-:
+                (vec2immut v_a) :-: cross2sv(!w_a, #r_a cp1)
+            val dv2 : vec2 = (vec2immut v_b) :+: cross2sv(!w_b, #r_b cp2) :-:
+                (vec2immut v_a) :-: cross2sv(!w_a, #r_a cp2)
 
             (* Compute normal velocity *)
             val vn1 : real = dot2(dv1, normal)
@@ -639,15 +637,14 @@ fun warm_start ({ step,
           end
       | _ => raise BDDContactSolver "can only solve 1 or 2-point contacts");
 
-      Array.update(velocitiesv, index_a, !v_a);
       Array.update(velocitiesw, index_a, !w_a);
-      Array.update(velocitiesv, index_b, !v_b);
-      Array.update(velocitiesw, index_b, !w_b);
+      Array.update(velocitiesw, index_b, !w_b)
 
+(*
       dprint (fn () => "      aft alv " ^ vtos (!v_a) ^
               " aav " ^ rtos (!w_a) ^
               " blv " ^ vtos (!v_b) ^
-              " bav " ^ rtos (!w_b) ^ "\n")
+              " bav " ^ rtos (!w_b) ^ "\n") *)
   end
 
   fun solve_velocity_constraints
@@ -762,9 +759,9 @@ fun warm_start ({ step,
                     then (#inv_mass_b pc, #inv_i_b pc)
                     else (0.0, 0.0)
 
-            val c_a = ref (Array.sub(positionsc, index_a))
+            val c_a = Array.sub(positionsc, index_a)
             val a_a = ref (Array.sub(positionsa, index_a))
-            val c_b = ref (Array.sub(positionsc, index_b))
+            val c_b = Array.sub(positionsc, index_b)
             val a_b = ref (Array.sub(positionsa, index_b))
         in
             (* Solve normal constraints. *)
@@ -774,16 +771,16 @@ fun warm_start ({ step,
                 val q_a = rotation (!a_a)
                 val q_b = rotation (!a_b)
                 val xf_a = transform
-                               (!c_a :-: (q_a @*: local_center_a),
+                               ((vec2immut c_a) :-: (q_a @*: local_center_a),
                                 q_a)
                 val xf_b = transform
-                               (!c_b :-: (q_b @*: local_center_b),
+                               ((vec2immut c_b) :-: (q_b @*: local_center_b),
                                 q_b)
                  val { normal : vec2, point : vec2, separation : real } =
                      position_solver_manifold (pc, xf_a, xf_b, j)
 
-                 val r_a : vec2 = point :-: !c_a
-                 val r_b : vec2 = point :-: !c_b
+                 val r_a : vec2 = point :-: (vec2immut c_a)
+                 val r_b : vec2 = point :-: (vec2immut c_b)
 
                  val () = dprint (fn () => "    pt " ^ vtos point ^
                                  " sep " ^ rtos separation ^
@@ -810,14 +807,12 @@ fun warm_start ({ step,
                  val impulse : real = if k > 0.0 then ~ capital_c / k else 0.0
                  val p : vec2 = impulse *: normal
              in
-                 c_a := (!c_a) :-: (m_a *: p);
+                 vec2mutminuseq (c_a, m_a *: p);
                  a_a := (!a_a) - (i_a * cross2vv (r_a, p));
-                 c_b := (!c_b) :+: (m_b *: p);
+                 vec2mutpluseq (c_b, m_b *: p);
                  a_b := (!a_b) + (i_b * cross2vv (r_b, p))
              end);
-            Array.update(positionsc, index_a, !c_a);
             Array.update(positionsa, index_a, !a_a);
-            Array.update(positionsc, index_b, !c_b);
             Array.update(positionsa, index_b, !a_b)
         end
     in

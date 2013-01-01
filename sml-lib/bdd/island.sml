@@ -39,7 +39,8 @@ struct
                  val () = if dot2 (translation, translation) >
                              max_translation_squared
                           then
-                              vec2mutset (v,(max_translation / vec2length translation) *: (vec2immut v))
+                              vec2mutset (v, (max_translation / vec2length translation)
+                                                 *: (vec2immut v))
                           else ()
                  val rotation = h * (!w)
                  val () = if rotation * rotation > max_rotation_squared

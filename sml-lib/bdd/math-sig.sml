@@ -39,6 +39,7 @@ sig
   val vec2immut : vec2mut -> vec2
   val vec2mutpluseq : vec2mut * vec2 -> unit
   val vec2mutminuseq : vec2mut * vec2 -> unit
+  val vec2mutset : vec2mut * vec2 -> unit
 
   type vec3
   val vec3 : real * real * real -> vec3

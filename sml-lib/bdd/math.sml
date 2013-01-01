@@ -99,6 +99,12 @@ struct
           y := !y - vec2y v
       end
 
+  fun vec2mutset ({x, y }, v : vec2) =
+      let in
+          x := vec2x v;
+          y := vec2y v
+      end
+
 
 
   type vec3 = { x : real, y : real, z : real }

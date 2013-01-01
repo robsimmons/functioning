@@ -161,17 +161,15 @@ fun new {local_anchor_a : vec2,
                                   val () = m_impulse := dt_ratio *% !m_impulse
                                   val () = m_motor_impulse := !m_motor_impulse * dt_ratio;
                                   val p = vec2 (vec3x (!m_impulse), vec3y (!m_impulse))
-                                  val () = Array.update
-                                           (velocitiesv, !m_indexA,
-                                            Array.sub(velocitiesv, !m_indexA) :-: mA *: p)
+                                  val () = vec2mutminuseq (Array.sub(velocitiesv, !m_indexA),
+                                                           mA *: p)
                                   val () = Array.update
                                            (velocitiesw, !m_indexA,
                                             (Array.sub(velocitiesw, !m_indexA)) -
                                             iA * (cross2vv (!m_rA, p) + !m_motor_impulse
                                                    + (vec3z (!m_impulse))))
-                                  val () = Array.update
-                                           (velocitiesv, !m_indexB,
-                                           Array.sub(velocitiesv, !m_indexB) :+: mB *: p)
+                                  val () = vec2mutpluseq (Array.sub(velocitiesv, !m_indexB),
+                                                          mB *: p)
                                   val () = Array.update
                                            (velocitiesw, !m_indexB,
                                             Array.sub(velocitiesw, !m_indexB) +
@@ -191,9 +189,9 @@ fun new {local_anchor_a : vec2,
                                          velocitiesw } =
             let
 
-                val vA = ref (Array.sub(velocitiesv, !m_indexA))
+                val vA = Array.sub(velocitiesv, !m_indexA)
                 val wA = ref (Array.sub(velocitiesw, !m_indexA))
-                val vB = ref (Array.sub(velocitiesv, !m_indexB))
+                val vB = Array.sub(velocitiesv, !m_indexB)
                 val wB = ref (Array.sub(velocitiesw, !m_indexB))
 
                 val mA = !m_invMassA
@@ -223,8 +221,8 @@ fun new {local_anchor_a : vec2,
                 (* Solve limit constraint. *)
                 val () = if !m_enable_limit andalso !m_limit_state <> InactiveLimit
                          then
-                             let val Cdot1 = !vB :+: cross2sv (!wB, !m_rB)
-                                             :-: !vA :-: cross2sv (!wA, !m_rA)
+                             let val Cdot1 = (vec2immut vB) :+: cross2sv (!wB, !m_rB)
+                                             :-: (vec2immut vA) :-: cross2sv (!wA, !m_rA)
                                  val Cdot2 = !wB - !wA
                                  val Cdot = vec3 (vec2x Cdot1, vec2y Cdot1, Cdot2)
                                  val impulse = ref (~1.0 *% mat33solve33 (!m_mass, Cdot))
@@ -263,33 +261,32 @@ fun new {local_anchor_a : vec2,
                                                (vec3z (!m_impulse) + vec3z (!impulse) > 0.0)
                                        | _ => ()
                                  val P = vec2 (vec3x (!impulse), vec3y (!impulse))
-                                 val () = vA := !vA :-: mA *: P
+                                 val () = vec2mutminuseq(vA, mA *: P)
                                  val () = wA := !wA - iA *
                                                       (cross2vv (!m_rA, P) + vec3z (!impulse))
-                                 val () = vB := !vB :+: mB *: P
+                                 val () = vec2mutpluseq(vB, mB *: P)
                                  val () = wB := !wB + iB *
                                                       (cross2vv (!m_rB, P) + vec3z (!impulse))
                              in () end
                          else
                              (* Solve point-to-point constraint *)
-                             let val Cdot = !vB :+: cross2sv (!wB, !m_rB)
-                                            :-: !vA :-: cross2sv (!wA, !m_rA)
+                             let val Cdot = (vec2immut vB) :+: cross2sv (!wB, !m_rB)
+                                            :-: (vec2immut vA) :-: cross2sv (!wA, !m_rA)
                                  val impulse = mat33solve22 (!m_mass, ~1.0 *: Cdot)
                                  val () = m_impulse :=
                                           vec3 (vec3x (!m_impulse) + vec2x impulse,
                                                 vec3y (!m_impulse) + vec2y impulse,
                                                 vec3z (!m_impulse))
-                                 val () = vA := !vA :-: mA *: impulse
+                                 val () = vec2mutminuseq(vA, mA *: impulse)
                                  val () = wA := !wA - iA *
                                                       (cross2vv (!m_rA, impulse))
-                                 val () = vB := !vB :+: mB *: impulse
+                                 val () = vec2mutpluseq(vB, mB *: impulse)
                                  val () = wB := !wB + iB *
                                                       (cross2vv (!m_rB, impulse))
                              in () end
 
-            in Array.update (velocitiesv, !m_indexA, !vA);
+            in
                Array.update (velocitiesw, !m_indexA, !wA);
-               Array.update (velocitiesv, !m_indexB, !vB);
                Array.update (velocitiesw, !m_indexB, !wB)
             end
 
@@ -300,9 +297,9 @@ fun new {local_anchor_a : vec2,
                                          velocitiesw } =
             let
                 val aA = ref (Array.sub(positionsa, !m_indexA))
-                val cA = ref (Array.sub(positionsc, !m_indexA))
+                val cA = Array.sub(positionsc, !m_indexA)
                 val aB = ref (Array.sub(positionsa, !m_indexB))
-                val cB = ref (Array.sub(positionsc, !m_indexB))
+                val cB = Array.sub(positionsc, !m_indexB)
 
                 val iA = !m_invIA
                 val iB = !m_invIB
@@ -354,7 +351,7 @@ fun new {local_anchor_a : vec2,
                 val qB = mat22angle (!aB)
                 val rA = qA +*: (m_local_anchor_a :-: !m_local_center_a)
                 val rB = qB +*: (m_local_anchor_b :-: !m_local_center_b)
-                val C = !cB :+: rB :-: !cA :-: rA
+                val C = (vec2immut cB) :+: rB :-: (vec2immut cA) :-: rA
                 val positionError = vec2length C
                 val mA = D.B.get_inv_mass bA
                 val mB = D.B.get_inv_mass bB
@@ -369,9 +366,9 @@ fun new {local_anchor_a : vec2,
                          mA + mB + iA * rax * rax + iB * rbx * rbx
                         )
                 val impulse = ~1.0 *: mat22solve (K, C)
-                val () = cA := !cA :-: mA *: impulse
+                val () = vec2mutminuseq(cA, mA *: impulse)
                 val () = aA := !aA - iA * cross2vv (rA, impulse)
-                val () = cB := !cB :+: mB *: impulse
+                val () = vec2mutpluseq(cB, mB *: impulse)
                 val () = aB := !aB + iB * cross2vv (rB, impulse)
 
                 val sweepA = D.B.get_sweep bA
@@ -379,8 +376,6 @@ fun new {local_anchor_a : vec2,
 
                 val () = Array.update(positionsa, !m_indexA, !aA)
                 val () = Array.update(positionsa, !m_indexB, !aB)
-                val () = Array.update(positionsc, !m_indexA, !cA)
-                val () = Array.update(positionsc, !m_indexB, !cB)
             in positionError <= BDDSettings.linear_slop andalso
                !angularError <= BDDSettings.angular_slop
             end
