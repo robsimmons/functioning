@@ -117,22 +117,6 @@ struct
           (state1, state2)
       end
 
-
-  fun contact_id { reference_edge : int, incident_edge : int,
-                   incident_vertex : int, flip : bool } : BDDTypes.contact_id =
-      let val re = Word32.fromInt reference_edge
-          val ie = Word32.fromInt incident_edge
-          val iv = Word32.fromInt incident_vertex
-          val f = if flip then 0w1 else 0w0
-          val orb = Word32.orb
-          infix orb
-      in
-          Word32.<<(re, 0w24) orb
-          Word32.<<(ie, 0w16) orb
-          Word32.<<(iv, 0w8) orb
-          f
-      end
-
   val vertex_feature = 0
   val face_feature = 1
 
