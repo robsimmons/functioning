@@ -59,9 +59,9 @@ struct
         (* usage depends on manifold type; see above *)
         local_point : BDDMath.vec2,
         (* the non-penetration impulse *)
-        normal_impulse : real,
+        normal_impulse : real ref,
         (* the friction impulse *)
-        tangent_impulse : real,
+        tangent_impulse : real ref,
         (* uniquely identifies a contact point
            between two shapes *)
         id : contact_id

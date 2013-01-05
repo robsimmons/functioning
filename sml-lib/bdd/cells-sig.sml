@@ -140,7 +140,7 @@ sig
     val get_node_b : ('b, 'f, 'j) contact -> (('b, 'f, 'j) contactedge option)
     val get_fixture_a : ('b, 'f, 'j) contact -> (('b, 'f, 'j) fixture)
     val get_fixture_b : ('b, 'f, 'j) contact -> (('b, 'f, 'j) fixture)
-    val get_manifold : ('b, 'f, 'j) contact -> (BDDTypes.manifold)
+    val get_manifold : ('b, 'f, 'j) contact -> (BDDTypes.manifold option)
     val get_toi_count : ('b, 'f, 'j) contact -> (int)
     val get_toi : ('b, 'f, 'j) contact -> (real)
     val get_friction : ('b, 'f, 'j) contact -> (real)
@@ -154,7 +154,7 @@ sig
     val set_node_b : ('b, 'f, 'j) contact * (('b, 'f, 'j) contactedge option) -> unit
     val set_fixture_a : ('b, 'f, 'j) contact * (('b, 'f, 'j) fixture) -> unit
     val set_fixture_b : ('b, 'f, 'j) contact * (('b, 'f, 'j) fixture) -> unit
-    val set_manifold : ('b, 'f, 'j) contact * (BDDTypes.manifold) -> unit
+    val set_manifold : ('b, 'f, 'j) contact * (BDDTypes.manifold option) -> unit
     val set_toi_count : ('b, 'f, 'j) contact * (int) -> unit
     val set_toi : ('b, 'f, 'j) contact * (real) -> unit
     val set_friction : ('b, 'f, 'j) contact * (real) -> unit
@@ -169,7 +169,7 @@ sig
       node_b : ('b, 'f, 'j) contactedge option,
       fixture_a : ('b, 'f, 'j) fixture,
       fixture_b : ('b, 'f, 'j) fixture,
-      manifold : BDDTypes.manifold,
+      manifold : BDDTypes.manifold option,
       toi_count : int,
       toi : real,
       friction : real,

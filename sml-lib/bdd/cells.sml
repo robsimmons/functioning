@@ -48,7 +48,7 @@ struct
     node_b : (('b, 'f, 'j) contactedgecell option) ref,
     fixture_a : (('b, 'f, 'j) fixturecell) ref,
     fixture_b : (('b, 'f, 'j) fixturecell) ref,
-    manifold : (BDDTypes.manifold) ref,
+    manifold : (BDDTypes.manifold option) ref,
     toi_count : (int) ref,
     toi : (real) ref,
     friction : (real) ref,

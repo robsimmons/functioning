@@ -79,7 +79,7 @@ fun contact cc = ("C", "Contact", "contact", "CONTACT",
                 (* Port note: made these non-optional. *)
                 ("fixture_a", cc "fixture"),
                 ("fixture_b", cc "fixture"),
-                ("manifold", "BDDTypes.manifold"),
+                ("manifold", "BDDTypes.manifold option"),
                 ("toi_count", "int"),
                 ("toi", "real"),
                 ("friction", "real"),

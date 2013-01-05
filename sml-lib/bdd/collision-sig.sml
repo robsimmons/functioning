@@ -7,6 +7,10 @@
 signature BDDCOLLISION =
 sig
 
+  val app_one_or_two : ('a -> unit) -> 'a BDDTypes.one_or_two -> unit
+
+  val manifold_points : BDDTypes.manifold -> BDDTypes.manifold_point BDDTypes.one_or_two
+
   (* Evaluate the manifold with supplied transforms. This assumes
      modest motion from the original state. This does not change the
      point count, impulses, etc. The radii must come from the shapes

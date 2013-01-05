@@ -16,8 +16,8 @@ struct
 
   exception BDDCollision of string
 
-  fun map_points f (OnePoint mp) = f mp
-    | map_points f (TwoPoints (mp1, mp2)) = (f mp1; f mp2)
+  fun app_one_or_two f (OnePoint p) = f p
+    | app_one_or_two f (TwoPoints (p1, p2)) = (f p1; f p2)
 
   fun map_one_or_two f (OnePoint p) = OnePoint (f p)
     | map_one_or_two f (TwoPoints (p1, p2)) = TwoPoints (f p1, f p2)
@@ -251,8 +251,8 @@ struct
                    { point = { local_point = #p circleb,
                                id = 0w0,
                                (* uninitialized in original *)
-                               normal_impulse = 0.0,
-                               tangent_impulse = 0.0 },
+                               normal_impulse = ref 0.0,
+                               tangent_impulse = ref 0.0 },
                      local_point = #p circlea} )
       end
 
@@ -361,8 +361,8 @@ struct
                          points = OnePoint { local_point = cirp,
                                              id = 0w0,
                                              (* PERF uninitialized in Box2D *)
-                                             normal_impulse = 0.0,
-                                             tangent_impulse = 0.0 }})
+                                             normal_impulse = ref 0.0,
+                                             tangent_impulse = ref 0.0 }})
         else
         let
             (* Compute barycentric coordinates. *)
@@ -379,8 +379,8 @@ struct
                                   points = OnePoint { local_point = cirp,
                                                       id = 0w0,
                                                       (* PERF uninitialized in Box2D *)
-                                                      normal_impulse = 0.0,
-                                                      tangent_impulse = 0.0 }}))
+                                                      normal_impulse = ref 0.0,
+                                                      tangent_impulse = ref 0.0 }}))
             else if u2 <= 0.0
             then (if distance_squared(c_local, v2) > radius * radius
                   then raise NoCollision
@@ -391,8 +391,8 @@ struct
                                   points = OnePoint { local_point = cirp,
                                                       id = 0w0,
                                                       (* PERF uninitialized in Box2D *)
-                                                      normal_impulse = 0.0,
-                                                      tangent_impulse = 0.0 }}))
+                                                      normal_impulse = ref 0.0,
+                                                      tangent_impulse = ref 0.0 }}))
             else let
                      val face_center : vec2 = 0.5 *: (v1 :+: v2)
                      val separation : real = dot2 (c_local :-: face_center,
@@ -405,8 +405,8 @@ struct
                                     points = OnePoint { local_point = cirp,
                                                         id = 0w0,
                                                         (* PERF uninitialized in Box2D *)
-                                                        normal_impulse = 0.0,
-                                                        tangent_impulse = 0.0 }})
+                                                        normal_impulse = ref 0.0,
+                                                        tangent_impulse = ref 0.0 }})
                  end
         end
       end handle NoCollision => NONE
@@ -669,8 +669,8 @@ struct
                       SOME { local_point = mul_ttransformv (xf2, #v cp),
                              id = id,
                              (* PERF uninitialized in Box2D *)
-                             normal_impulse = 0.0,
-                             tangent_impulse = 0.0 }
+                             normal_impulse = ref 0.0,
+                             tangent_impulse = ref 0.0 }
                   end
               else NONE
            end) [cp1, cp2]

@@ -30,21 +30,22 @@ struct
   open D.C
 
   fun get_world_manifold (c : contact) =
-      let
-          val fix_a = D.C.get_fixture_a c
-          val fix_b = D.C.get_fixture_b c
-          val body_a = D.F.get_body fix_a
-          val body_b = D.F.get_body fix_b
-          val shape_a = D.F.get_shape fix_a
-          val shape_b = D.F.get_shape fix_b
-
-          val manifold = D.C.get_manifold c
-      in
-          BDDCollision.create_world_manifold
-          (manifold,
-           D.B.get_xf body_a, BDDShape.get_radius shape_a,
-           D.B.get_xf body_b, BDDShape.get_radius shape_b)
-      end
+      case D.C.get_manifold c of
+          NONE => NONE
+        | SOME manifold =>
+          let
+              val fix_a = D.C.get_fixture_a c
+              val fix_b = D.C.get_fixture_b c
+              val body_a = D.F.get_body fix_a
+              val body_b = D.F.get_body fix_b
+              val shape_a = D.F.get_shape fix_a
+              val shape_b = D.F.get_shape fix_b
+          in
+             SOME (BDDCollision.create_world_manifold
+                       (manifold,
+                        D.B.get_xf body_a, BDDShape.get_radius shape_a,
+                        D.B.get_xf body_b, BDDShape.get_radius shape_b))
+          end
 
 
   (* Update the contact manifold and touching status.
@@ -55,7 +56,7 @@ struct
     let
       val () = dprint (fn () => "-> Update contact.\n")
 
-      val old_manifold = get_manifold c
+      val mbe_old_manifold = get_manifold c
       (* Re-enable this contact. *)
       val () = set_flag (c, FLAG_ENABLED)
 
@@ -83,41 +84,35 @@ struct
           in
               touching := BDDCollision.test_overlap(shape_a, shape_b, xf_a, xf_b);
               (* Sensors don't generate manifolds. *)
-              (* PERF all we're trying to do here is clear the manifold;
-                 Box2D sets its point count to 0. Again, would be
-                 nicer if manifold was just a datatype. *)
-              set_manifold (c, { typ = #typ manifold,
-                                 points = Array.fromList nil,
-                                 local_normal = #local_normal manifold,
-                                 local_point = #local_point manifold,
-                                 point_count = 0 })
+              set_manifold (c, NONE)
           end
       else
           let
-              val manifold = evaluate (c, xf_a, xf_b)
+              val mbe_manifold = evaluate (c, xf_a, xf_b)
           in
-              set_manifold (c, manifold);
-              touching := #point_count manifold > 0;
-              (* Match old contact ids to new contact ids and copy the
-                 stored impulses to warm start the solver. *)
-              for 0 (#point_count manifold - 1)
-              (fn i =>
-               let val normal_impulse = ref 0.0
-                   val tangent_impulse = ref 0.0
-                   val { local_point, id = id2, ... } =
-                       Array.sub(#points manifold, i)
-               in
-                   Array.app (fn mp1 =>
-                              if #id mp1 = id2
-                              then (normal_impulse := #normal_impulse mp1;
-                                    tangent_impulse := #tangent_impulse mp1)
-                              else ()) (#points old_manifold);
-                   Array.update (#points manifold, i,
-                                 { local_point = local_point,
-                                   normal_impulse = !normal_impulse,
-                                   tangent_impulse = !tangent_impulse,
-                                   id = id2 })
-               end);
+              set_manifold (c, mbe_manifold);
+              case mbe_manifold of
+                  NONE => touching := false
+                | SOME manifold =>
+                  (touching := true;
+                   (case mbe_old_manifold of
+                        NONE => ()
+                      | SOME old_manifold =>
+                        (* Match old contact ids to new contact ids and copy the
+                           stored impulses to warm start the solver. *)
+                        BDDCollision.app_one_or_two
+                            (fn p =>
+                                let
+                                    val { normal_impulse, tangent_impulse, id = id2, ... } = p
+                                in
+                                    BDDCollision.app_one_or_two
+                                        (fn mp1 =>
+                                            if #id mp1 = id2
+                                            then (normal_impulse := !(#normal_impulse mp1);
+                                                  tangent_impulse := !(#tangent_impulse mp1))
+                                            else ()) (BDDCollision.manifold_points old_manifold)
+                                end) (BDDCollision.manifold_points manifold)
+                   ));
 
               if !touching <> was_touching
               then
@@ -139,7 +134,9 @@ struct
          | _ => ());
 
       if not sensor andalso !touching
-      then D.W.get_pre_solve world (c, old_manifold)
+      then (case mbe_old_manifold of
+                NONE => () (* XXX ? *)
+              | SOME old_manifold => D.W.get_pre_solve world (c, old_manifold))
       else ();
 
       dprint (fn () => "<- done updating contact\n")
