@@ -94,9 +94,9 @@ struct
             val radius_b = BDDShape.get_radius shape_b
             val body_a = D.F.get_body fixture_a
             val body_b = D.F.get_body fixture_b
-            val manifold = D.C.get_manifold contact
+            val manifold = valOf (D.C.get_manifold contact)
 
-            val point_count = #point_count manifold
+            val point_count = Array.length (#points manifold)
             val () = assert (point_count > 0)
 
             fun one_pc_local_point jj = #local_point (Array.sub (#points manifold, jj))
@@ -150,8 +150,8 @@ fun initialize_velocity_constraints ({ step,
                 val fixture_b = D.C.get_fixture_b contact
                 val body_a = D.F.get_body fixture_a
                 val body_b = D.F.get_body fixture_b
-                val manifold = D.C.get_manifold contact
-                val point_count = #point_count manifold
+                val manifold = valOf (D.C.get_manifold contact)
+                val point_count = Array.length (#points manifold)
 
                 val index_a = D.B.get_island_index body_a
                 val index_b = D.B.get_island_index body_b
@@ -176,7 +176,7 @@ fun initialize_velocity_constraints ({ step,
                 val v_b = Array.sub(velocitiesv, index_b)
                 val w_b = Array.sub(velocitiesw, index_b)
 
-                val () = assert (#point_count manifold > 0)
+                val () = assert (point_count > 0)
 
                 val q_a = rotation a_a
                 val q_b = rotation a_b
@@ -660,7 +660,7 @@ fun warm_start ({ step,
     (fn ({contact_index, points, ... } : velocity_constraint) =>
         let
             val point_count = Array.length points
-            val manifold = D.C.get_manifold (Vector.sub(#contacts solver, contact_index))
+            val manifold = valOf (D.C.get_manifold (Vector.sub(#contacts solver, contact_index)))
         in
             for 0 (point_count - 1)
                 (fn j =>

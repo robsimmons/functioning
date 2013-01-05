@@ -79,7 +79,7 @@ fun contact cc = ("C", "Contact", "contact", "CONTACT",
                 (* Port note: made these non-optional. *)
                 ("fixture_a", cc "fixture"),
                 ("fixture_b", cc "fixture"),
-                ("manifold", "BDDTypes.manifold"),
+                ("manifold", "BDDTypes.manifold option"),
                 ("toi_count", "int"),
                 ("toi", "real"),
                 ("friction", "real"),
@@ -173,7 +173,7 @@ fun world cc = ("W", "World", "world", "WORLD",
               ("should_collide", cc "fixture" ^ " * " ^ cc "fixture" ^ " -> bool"),
               ("begin_contact", cc "contact" ^ " -> unit"),
               ("end_contact", cc "contact" ^ " -> unit"),
-              ("pre_solve", cc "contact" ^ " * BDDTypes.manifold -> unit"),
+              ("pre_solve", cc "contact" ^ " * BDDTypes.manifold option -> unit"),
               ("post_solve", cc "contact" ^ " * BDDDynamicsTypes.contact_impulse -> unit")])
 
 val master = ("BDDCells", "BDDCELLS")

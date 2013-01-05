@@ -140,7 +140,7 @@ sig
     val get_node_b : ('b, 'f, 'j) contact -> (('b, 'f, 'j) contactedge option)
     val get_fixture_a : ('b, 'f, 'j) contact -> (('b, 'f, 'j) fixture)
     val get_fixture_b : ('b, 'f, 'j) contact -> (('b, 'f, 'j) fixture)
-    val get_manifold : ('b, 'f, 'j) contact -> (BDDTypes.manifold)
+    val get_manifold : ('b, 'f, 'j) contact -> (BDDTypes.manifold option)
     val get_toi_count : ('b, 'f, 'j) contact -> (int)
     val get_toi : ('b, 'f, 'j) contact -> (real)
     val get_friction : ('b, 'f, 'j) contact -> (real)
@@ -154,7 +154,7 @@ sig
     val set_node_b : ('b, 'f, 'j) contact * (('b, 'f, 'j) contactedge option) -> unit
     val set_fixture_a : ('b, 'f, 'j) contact * (('b, 'f, 'j) fixture) -> unit
     val set_fixture_b : ('b, 'f, 'j) contact * (('b, 'f, 'j) fixture) -> unit
-    val set_manifold : ('b, 'f, 'j) contact * (BDDTypes.manifold) -> unit
+    val set_manifold : ('b, 'f, 'j) contact * (BDDTypes.manifold option) -> unit
     val set_toi_count : ('b, 'f, 'j) contact * (int) -> unit
     val set_toi : ('b, 'f, 'j) contact * (real) -> unit
     val set_friction : ('b, 'f, 'j) contact * (real) -> unit
@@ -169,7 +169,7 @@ sig
       node_b : ('b, 'f, 'j) contactedge option,
       fixture_a : ('b, 'f, 'j) fixture,
       fixture_b : ('b, 'f, 'j) fixture,
-      manifold : BDDTypes.manifold,
+      manifold : BDDTypes.manifold option,
       toi_count : int,
       toi : real,
       friction : real,
@@ -296,7 +296,7 @@ sig
     val get_should_collide : ('b, 'f, 'j) world -> (('b, 'f, 'j) fixture * ('b, 'f, 'j) fixture -> bool)
     val get_begin_contact : ('b, 'f, 'j) world -> (('b, 'f, 'j) contact -> unit)
     val get_end_contact : ('b, 'f, 'j) world -> (('b, 'f, 'j) contact -> unit)
-    val get_pre_solve : ('b, 'f, 'j) world -> (('b, 'f, 'j) contact * BDDTypes.manifold -> unit)
+    val get_pre_solve : ('b, 'f, 'j) world -> (('b, 'f, 'j) contact * BDDTypes.manifold option -> unit)
     val get_post_solve : ('b, 'f, 'j) world -> (('b, 'f, 'j) contact * BDDDynamicsTypes.contact_impulse -> unit)
 
     val set_flags : ('b, 'f, 'j) world * (Word32.word) -> unit
@@ -319,7 +319,7 @@ sig
     val set_should_collide : ('b, 'f, 'j) world * (('b, 'f, 'j) fixture * ('b, 'f, 'j) fixture -> bool) -> unit
     val set_begin_contact : ('b, 'f, 'j) world * (('b, 'f, 'j) contact -> unit) -> unit
     val set_end_contact : ('b, 'f, 'j) world * (('b, 'f, 'j) contact -> unit) -> unit
-    val set_pre_solve : ('b, 'f, 'j) world * (('b, 'f, 'j) contact * BDDTypes.manifold -> unit) -> unit
+    val set_pre_solve : ('b, 'f, 'j) world * (('b, 'f, 'j) contact * BDDTypes.manifold option -> unit) -> unit
     val set_post_solve : ('b, 'f, 'j) world * (('b, 'f, 'j) contact * BDDDynamicsTypes.contact_impulse -> unit) -> unit
 
     val new : {
@@ -343,7 +343,7 @@ sig
       should_collide : ('b, 'f, 'j) fixture * ('b, 'f, 'j) fixture -> bool,
       begin_contact : ('b, 'f, 'j) contact -> unit,
       end_contact : ('b, 'f, 'j) contact -> unit,
-      pre_solve : ('b, 'f, 'j) contact * BDDTypes.manifold -> unit,
+      pre_solve : ('b, 'f, 'j) contact * BDDTypes.manifold option -> unit,
       post_solve : ('b, 'f, 'j) contact * BDDDynamicsTypes.contact_impulse -> unit } -> ('b, 'f, 'j) world
     val eq : ('b, 'f, 'j) world * ('b, 'f, 'j) world -> bool
   end
