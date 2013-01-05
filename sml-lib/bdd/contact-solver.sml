@@ -35,8 +35,6 @@ struct
         tangent_speed : real,
         contact_index : int }
 
-  datatype manifold_enum = Circles | FaceA | FaceB
-
   type position_constraint =
        { manifold : manifold,
          index_a : int,
@@ -666,24 +664,6 @@ fun warm_start ({ step,
                         tangent_impulse := !(#tangent_impulse (Array.sub (points, j)))
                     end)
         end ) (#velocity_constraints solver)
-(*    Array.app
-    (fn ({contact_index, points, ... } : velocity_constraint) =>
-        let
-            val point_count = Array.length points
-            val mbe_manifold = D.C.get_manifold (Vector.sub(#contacts solver, contact_index))
-        in
-            case mbe_manifold of
-                NONE => ()
-              | SOME manifold =>
-                BDDCollision.appi_one_or_two
-                    (fn (j, pt) =>
-                        let
-                            val { normal_impulse, tangent_impulse, ... } = pt
-                        in
-                            normal_impulse := !(#normal_impulse (Array.sub (points, j)));
-                            tangent_impulse := !(#tangent_impulse (Array.sub (points, j)))
-                        end) (BDDCollision.manifold_points manifold)
-        end ) (#velocity_constraints solver) *)
 
   (* Port note: A class in Box2D; it's just a function that
      returns multiple values. *)
