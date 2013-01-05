@@ -38,9 +38,7 @@ struct
   datatype manifold_enum = Circles | FaceA | FaceB
 
   type position_constraint =
-       { local_points : BDDMath.vec2 Array.array,
-         local_normal : BDDMath.vec2,
-         local_point : BDDMath.vec2,
+       { manifold : manifold,
          index_a : int,
          index_b : int,
          inv_mass_a : real,
@@ -49,7 +47,6 @@ struct
          local_center_b : BDDMath.vec2,
          inv_i_a : real,
          inv_i_b : real,
-         typ : manifold_enum,
          radius_a : real,
          radius_b : real
        }
@@ -96,12 +93,13 @@ struct
             val radius_b = BDDShape.get_radius shape_b
             val body_a = D.F.get_body fixture_a
             val body_b = D.F.get_body fixture_b
-            val manifold = D.C.get_manifold contact
+            val manifold = valOf (D.C.get_manifold contact)
 
-            val point_count = #point_count manifold
-            val () = assert (point_count > 0)
-
-            fun one_pc_local_point jj = #local_point (Array.sub (#points manifold, jj))
+(*            val local_points = case BDDCollision.manifold_points manifold of
+                                   OnePoint {local_point, ...} => Array.fromList [local_point]
+                                 | TwoPoints (pt1, pt2) =>
+                                   Array.fromList [#local_point pt1, #local_point pt2]
+*)
 
             val pc = { index_a = D.B.get_island_index body_a,
                        index_b = D.B.get_island_index body_b,
@@ -111,12 +109,9 @@ struct
                        local_center_b = sweeplocalcenter (D.B.get_sweep body_b),
                        inv_i_a = D.B.get_inv_i body_a,
                        inv_i_b = D.B.get_inv_i body_b,
-                       local_normal = (#local_normal manifold),
-                       local_point = (#local_point manifold),
-                       local_points = Array.tabulate (point_count, one_pc_local_point),
+                       manifold = manifold,
                        radius_a = radius_a,
-                       radius_b = radius_b,
-                       typ = #typ manifold }
+                       radius_b = radius_b }
           in
               pc
           end
@@ -152,8 +147,8 @@ fun initialize_velocity_constraints ({ step,
                 val fixture_b = D.C.get_fixture_b contact
                 val body_a = D.F.get_body fixture_a
                 val body_b = D.F.get_body fixture_b
-                val manifold = D.C.get_manifold contact
-                val point_count = #point_count manifold
+                val manifold = valOf (D.C.get_manifold contact)
+                val points = BDDCollision.manifold_points manifold
 
                 val index_a = D.B.get_island_index body_a
                 val index_b = D.B.get_island_index body_b
@@ -178,8 +173,6 @@ fun initialize_velocity_constraints ({ step,
                 val v_b = Array.sub(velocitiesv, index_b)
                 val w_b = Array.sub(velocitiesw, index_b)
 
-                val () = assert (#point_count manifold > 0)
-
                 val q_a = rotation a_a
                 val q_b = rotation a_b
 
@@ -195,17 +188,16 @@ fun initialize_velocity_constraints ({ step,
 
                 val normal = #normal world_manifold
 
-                fun one_vc_point jj =
+                fun one_vc_point (cp, wp) =
                     let
-                        val cp = Array.sub(#points manifold, jj)
                         val (normal_impulse, tangent_impulse) =
                             if #warm_starting step
-                            then ((#dt_ratio step) * (#normal_impulse cp),
-                                  (#dt_ratio step) * (#tangent_impulse cp))
+                            then ((#dt_ratio step) * (!(#normal_impulse cp)),
+                                  (#dt_ratio step) * (!(#tangent_impulse cp)))
                             else (0.0, 0.0)
 
-                        val r_a = Array.sub(#points world_manifold, jj) :-: c_a
-                        val r_b = Array.sub(#points world_manifold, jj) :-: c_b
+                        val r_a = wp :-: c_a
+                        val r_b = wp :-: c_b
                         val rn_a = cross2vv(r_a, normal)
                         val rn_b = cross2vv(r_b, normal)
                         val k_normal = m_a + m_b + i_a * rn_a * rn_a + i_b * rn_b * rn_b
@@ -239,16 +231,14 @@ fun initialize_velocity_constraints ({ step,
                         }
                     end
 
-                val vc_points = Array.tabulate (point_count, one_vc_point)
+                val vc_points = BDDCollision.map2_one_or_two
+                                    one_vc_point points (#points world_manifold)
 
                 val (k, normal_mass, points) =
                     (* If we have two points, then prepare the block solver. *)
-                    if point_count = 2
-                    then
+                    case vc_points of
+                        TwoPoints (vcp1, vcp2) =>
                         let
-                            val vcp1 = Array.sub(vc_points, 0)
-                            val vcp2 = Array.sub(vc_points, 1)
-
                             val rn1_a = cross2vv(#r_a vcp1, normal)
                             val rn1_b = cross2vv(#r_b vcp1, normal)
                             val rn2_a = cross2vv(#r_a vcp2, normal)
@@ -268,19 +258,20 @@ fun initialize_velocity_constraints ({ step,
                                     val k = mat22with (k11, k12, k12, k22)
                                     val normal_mass = mat22inverse k
                                 in
-                                    (k, normal_mass, vc_points)
+                                    (k, normal_mass, Array.fromList [vcp1, vcp2])
                                 end
                             else
                                 (* The constraints are redundant; just use one.
                                      TODO_ERIN: use deepest? *)
                                 (mat22with (0.0, 0.0, 0.0, 0.0),
                                  mat22with (0.0, 0.0, 0.0, 0.0),
-                                 Array.tabulate(1, fn _ => Array.sub(vc_points, 0)))
+                                 Array.fromList [vcp1])
                         end
                     (* PERF uninitialized *)
-                    else (mat22with (0.0, 0.0, 0.0, 0.0),
-                          mat22with (0.0, 0.0, 0.0, 0.0),
-                          vc_points)
+                    | OnePoint vcp =>
+                      (mat22with (0.0, 0.0, 0.0, 0.0),
+                       mat22with (0.0, 0.0, 0.0, 0.0),
+                       Array.fromList [vcp])
 
             in
                 { points = points,
@@ -662,43 +653,38 @@ fun warm_start ({ step,
     (fn ({contact_index, points, ... } : velocity_constraint) =>
         let
             val point_count = Array.length points
-            val manifold = D.C.get_manifold (Vector.sub(#contacts solver, contact_index))
+            val mbe_manifold = D.C.get_manifold (Vector.sub(#contacts solver, contact_index))
         in
-            for 0 (point_count - 1)
-                (fn j =>
-                    let
-                        val { local_point, id, ... } =
-                            Array.sub(#points manifold, j)
-                    in
-                        Array.update (#points manifold, j,
-                                      { local_point = local_point,
-                                        id = id,
-                                        normal_impulse =
-                                        !(#normal_impulse (Array.sub (points, j))),
-                                        tangent_impulse =
-                                        !(#tangent_impulse (Array.sub (points, j))) })
-                    end)
+            case mbe_manifold of
+                NONE => ()
+              | SOME manifold =>
+                BDDCollision.appi_one_or_two
+                    (fn (j, pt) =>
+                        let
+                            val { normal_impulse, tangent_impulse, ... } = pt
+                        in
+                            normal_impulse := !(#normal_impulse (Array.sub (points, j)));
+                            tangent_impulse := !(#tangent_impulse (Array.sub (points, j)))
+                        end) (BDDCollision.manifold_points manifold)
         end ) (#velocity_constraints solver)
 
   (* Port note: A class in Box2D; it's just a function that
      returns multiple values. *)
-  fun position_solver_manifold (pc : position_constraint, xf_a, xf_b, index : int) :
+  fun position_solver_manifold (pc : position_constraint, xf_a, xf_b) :
       { normal : vec2, point : vec2, separation : real } =
-    case #typ pc of
-        E_Circles =>
+    case #manifold pc of
+        E_Circles {local_point = point_a, point = point_b} =>
           let
-              val point_a : vec2 = xf_a &*: (#local_point pc)
-              val point_b : vec2 = xf_b &*: (Array.sub(#local_points pc, 0))
               val normal = vec2normalized (point_b :-: point_a)
           in
               { normal = normal,
-                point = 0.5 *: (point_a :+: point_b),
+                points = OnePoint (0.5 *: (point_a :+: point_b)),
                 separation = dot2(point_b :-: point_a, normal) - #radius_a pc - #radius_b pc }
           end
-    | E_FaceA =>
+    | E_FaceA {points, local_normal, local_point} =>
           let
-              val normal = transformr xf_a @*: (#local_normal pc)
-              val plane_point = xf_a &*: (#local_point pc)
+              val normal = transformr xf_a @*: local_normal
+              val plane_point = xf_a &*: local_point
               val clip_point = xf_b &*: (Array.sub(#local_points pc, index))
               val separation : real =
                   dot2(clip_point :-: plane_point, normal) - #radius_a pc - #radius_b pc

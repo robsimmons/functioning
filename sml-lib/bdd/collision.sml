@@ -19,8 +19,16 @@ struct
   fun app_one_or_two f (OnePoint p) = f p
     | app_one_or_two f (TwoPoints (p1, p2)) = (f p1; f p2)
 
+  fun appi_one_or_two f (OnePoint p) = f (0, p)
+    | appi_one_or_two f (TwoPoints (p1, p2)) = (f (0, p1); f (1, p2))
+
   fun map_one_or_two f (OnePoint p) = OnePoint (f p)
     | map_one_or_two f (TwoPoints (p1, p2)) = TwoPoints (f p1, f p2)
+
+  fun map2_one_or_two f (OnePoint p) (OnePoint q) = OnePoint (f (p, q))
+    | map2_one_or_two f (TwoPoints (p1, p2)) (TwoPoints (q1, q2)) =
+      TwoPoints (f (p1, q1), f (p2, q2))
+    | map2_one_or_two _ _ _ = raise Fail "map2_one_or_two mismatch"
 
   fun exists_one_or_two f (OnePoint p) = f p
     | exists_one_or_two f (TwoPoints (p1, p2)) = f p1 orelse f p2

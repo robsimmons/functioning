@@ -8,6 +8,10 @@ signature BDDCOLLISION =
 sig
 
   val app_one_or_two : ('a -> unit) -> 'a BDDTypes.one_or_two -> unit
+  val appi_one_or_two : (int * 'a -> unit) -> 'a BDDTypes.one_or_two -> unit
+  val map_one_or_two : ('a -> 'b) -> 'a BDDTypes.one_or_two -> 'b BDDTypes.one_or_two
+  val map2_one_or_two : ('a * 'b -> 'c) -> 'a BDDTypes.one_or_two
+                        -> 'b BDDTypes.one_or_two -> 'c BDDTypes.one_or_two
 
   val manifold_points : BDDTypes.manifold -> BDDTypes.manifold_point BDDTypes.one_or_two
 
