@@ -84,12 +84,14 @@ struct
      All contact scenarios must be expressed in one of these types.
      This structure is stored across time steps, so we keep it small. *)
 
+  datatype 'a one_or_two = OnePoint of 'a
+                         | TwoPoints of 'a * 'a
+
   datatype manifold =
-           E_None
-         | E_Circles of {point : manifold_point, local_point : BDDMath.vec2}
-         | E_FaceA of { points : manifold_point array, local_normal : BDDMath.vec2,
+           E_Circles of {point : manifold_point, local_point : BDDMath.vec2}
+         | E_FaceA of { points : manifold_point one_or_two, local_normal : BDDMath.vec2,
                         local_point : BDDMath.vec2 }
-         | E_FaceB of { points : manifold_point array, local_normal : BDDMath.vec2,
+         | E_FaceB of { points : manifold_point one_or_two, local_normal : BDDMath.vec2,
                         local_point : BDDMath.vec2 }
 
 
@@ -99,7 +101,7 @@ struct
         normal : BDDMath.vec2,
         (* world contact point (point of intersection)
            Up to BDDSettings.max_manifold_points *)
-        points : BDDMath.vec2 array }
+        points : BDDMath.vec2 one_or_two }
 
   (* This is used for determining the state of contact points. *)
   datatype point_state =

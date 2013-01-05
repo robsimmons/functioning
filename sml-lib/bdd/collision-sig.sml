@@ -22,7 +22,8 @@ sig
      manifold1 to manifold2. So state1 is either persist or remove
      while state2 is either add or persist. *)
   val get_point_states : BDDTypes.manifold * BDDTypes.manifold ->
-                         BDDTypes.point_state array * BDDTypes.point_state array
+                         BDDTypes.point_state BDDTypes.one_or_two *
+                         BDDTypes.point_state BDDTypes.one_or_two
 
 
   (* True if the bounds are sorted. *)
@@ -50,7 +51,7 @@ sig
   (* Compute the collision manifold between two circles. *)
   val collide_circles : BDDCircle.circle * BDDMath.transform *
                         BDDCircle.circle * BDDMath.transform ->
-                        BDDTypes.manifold
+                        BDDTypes.manifold option
 
   (* Pack contact_id from components (all ints must be in [0, 255]). *)
   val contact_id : { index_a : int, index_b : int,
@@ -72,12 +73,12 @@ sig
   (* Compute the collision manifold between a polygon and a circle. *)
   val collide_polygon_and_circle : BDDPolygon.polygon * BDDMath.transform *
                                    BDDCircle.circle * BDDMath.transform ->
-                                   BDDTypes.manifold
+                                   BDDTypes.manifold option
 
   (* Compute the collision manifold between two polygons. *)
   val collide_polygons : BDDPolygon.polygon * BDDMath.transform *
                          BDDPolygon.polygon * BDDMath.transform ->
-                         BDDTypes.manifold
+                         BDDTypes.manifold option
 
   (* Determine if two generic shapes overlap. *)
   val test_overlap : BDDShape.shape * BDDShape.shape *
