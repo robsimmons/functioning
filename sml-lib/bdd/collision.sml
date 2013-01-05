@@ -16,6 +16,11 @@ struct
 
   exception BDDCollision of string
 
+  fun get_one_or_two (OnePoint p, 0) = p
+    | get_one_or_two (TwoPoints (p1, p2), 0) = p1
+    | get_one_or_two (TwoPoints (p1, p2), 1) = p2
+    | get_one_or_two _ = raise Fail "get_one_or_two out of bounds"
+
   fun app_one_or_two f (OnePoint p) = f p
     | app_one_or_two f (TwoPoints (p1, p2)) = (f p1; f p2)
 
@@ -33,8 +38,7 @@ struct
   fun exists_one_or_two f (OnePoint p) = f p
     | exists_one_or_two f (TwoPoints (p1, p2)) = f p1 orelse f p2
 
-  fun exists_manifold f E_None = false
-    | exists_manifold f (E_Circles {point, ...}) = f point
+  fun exists_manifold f (E_Circles {point, ...}) = f point
     | exists_manifold f (E_FaceA {points, ...}) = exists_one_or_two f points
     | exists_manifold f (E_FaceB {points, ...}) = exists_one_or_two f points
 

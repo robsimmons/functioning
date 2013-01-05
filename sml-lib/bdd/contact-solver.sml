@@ -670,47 +670,47 @@ fun warm_start ({ step,
 
   (* Port note: A class in Box2D; it's just a function that
      returns multiple values. *)
-  fun position_solver_manifold (pc : position_constraint, xf_a, xf_b) :
-      { normal : vec2, point : vec2, separation : real } =
+  fun position_solver_manifold (pc : position_constraint, xf_a, xf_b, index : int) :
+      { normal : vec2,  point : vec2, separation : real } =
     case #manifold pc of
-        E_Circles {local_point = point_a, point = point_b} =>
+        E_Circles {local_point, point } =>
           let
+              val point_a = xf_a &*: local_point
+              val point_b = xf_b &*: (#local_point point)
               val normal = vec2normalized (point_b :-: point_a)
           in
               { normal = normal,
-                points = OnePoint (0.5 *: (point_a :+: point_b)),
-                separation = dot2(point_b :-: point_a, normal) - #radius_a pc - #radius_b pc }
+                point = 0.5 *: (point_a :+: point_b),
+                separation = dot2(point_b :-: point_a, normal) -
+                             #radius_a pc - #radius_b pc
+              }
           end
     | E_FaceA {points, local_normal, local_point} =>
           let
               val normal = transformr xf_a @*: local_normal
               val plane_point = xf_a &*: local_point
-              val clip_point = xf_b &*: (Array.sub(#local_points pc, index))
+              val pt = BDDCollision.get_one_or_two (points, index)
+              val clip_point = xf_b &*: (#local_point pt)
               val separation : real =
                   dot2(clip_point :-: plane_point, normal) - #radius_a pc - #radius_b pc
           in
-              dprint (fn () => "    facea: pp " ^ vtos plane_point ^
-                     " cp " ^ vtos clip_point ^
-                     " sep " ^ rtos separation ^ "\n");
               { normal = normal,
-                separation = separation,
-                point = clip_point }
+                point = clip_point,
+                separation = separation }
           end
-    | E_FaceB =>
+    | E_FaceB {points, local_normal, local_point } =>
           let
-              val normal = transformr xf_b @*: (#local_normal pc)
-              val plane_point = xf_b &*: (#local_point pc)
-              val clip_point = xf_a &*: (Array.sub(#local_points pc, index))
+              val normal = transformr xf_b @*: local_normal
+              val plane_point = xf_b &*: local_point
+              val pt = BDDCollision.get_one_or_two (points, index)
+              val clip_point = xf_a &*: (#local_point pt)
               val separation : real =
                   dot2(clip_point :-: plane_point, normal) - #radius_a pc - #radius_b pc
           in
-              dprint (fn () => "    faceb: pp " ^ vtos plane_point ^
-                     " cp " ^ vtos clip_point ^
-                     " sep " ^ rtos separation ^ "\n");
               (* Ensure normal points from A to B. *)
               { normal = vec2neg normal,
-                separation = separation,
-                point = clip_point }
+                point = clip_point,
+                separation = separation }
           end
 
   (* Sequential solver. *)
@@ -756,8 +756,8 @@ fun warm_start ({ step,
             val a_b = ref (Array.sub(positionsa, index_b))
         in
             (* Solve normal constraints. *)
-            for 0 (Array.length (#local_points pc) - 1)
-            (fn j =>
+            BDDCollision.appi_one_or_two
+            (fn (j, _) =>
              let
                 val q_a = rotation (!a_a)
                 val q_b = rotation (!a_b)
@@ -802,7 +802,7 @@ fun warm_start ({ step,
                  a_a := (!a_a) - (i_a * cross2vv (r_a, p));
                  c_b := (!c_b) :+: (m_b *: p);
                  a_b := (!a_b) + (i_b * cross2vv (r_b, p))
-             end);
+             end) (BDDCollision.manifold_points (#manifold pc));
             Array.update(positionsc, index_a, !c_a);
             Array.update(positionsa, index_a, !a_a);
             Array.update(positionsc, index_b, !c_b);

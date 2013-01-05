@@ -48,7 +48,7 @@ struct
   val contact_points = (ref []) : contact_point list ref
 
   fun pre_solve (contact, old_manifold) =
-      let val manifold = BDD.Contact.get_manifold contact
+      let (*val manifold = BDD.Contact.get_manifold contact
           val (state1, state2) = BDDCollision.get_point_states (old_manifold, manifold)
           val world_manifold = BDD.Contact.get_world_manifold contact
           val points = #points world_manifold
@@ -56,7 +56,7 @@ struct
               let val cp = CP {position = p, state = Array.sub (state2, i)}
               in contact_points := (cp :: (!contact_points))
               end
-          val () = Array.appi addpoint points
+          val () = Array.appi addpoint points *)
       in
           ()
       end

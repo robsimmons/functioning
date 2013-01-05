@@ -7,6 +7,7 @@
 signature BDDCOLLISION =
 sig
 
+  val get_one_or_two : 'a BDDTypes.one_or_two * int -> 'a
   val app_one_or_two : ('a -> unit) -> 'a BDDTypes.one_or_two -> unit
   val appi_one_or_two : (int * 'a -> unit) -> 'a BDDTypes.one_or_two -> unit
   val map_one_or_two : ('a -> 'b) -> 'a BDDTypes.one_or_two -> 'b BDDTypes.one_or_two
