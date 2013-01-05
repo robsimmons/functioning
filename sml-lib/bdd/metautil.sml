@@ -173,7 +173,7 @@ fun world cc = ("W", "World", "world", "WORLD",
               ("should_collide", cc "fixture" ^ " * " ^ cc "fixture" ^ " -> bool"),
               ("begin_contact", cc "contact" ^ " -> unit"),
               ("end_contact", cc "contact" ^ " -> unit"),
-              ("pre_solve", cc "contact" ^ " * BDDTypes.manifold -> unit"),
+              ("pre_solve", cc "contact" ^ " * BDDTypes.manifold option -> unit"),
               ("post_solve", cc "contact" ^ " * BDDDynamicsTypes.contact_impulse -> unit")])
 
 val master = ("BDDCells", "BDDCELLS")

@@ -106,7 +106,7 @@ struct
     should_collide : (('b, 'f, 'j) fixturecell * ('b, 'f, 'j) fixturecell -> bool) ref,
     begin_contact : (('b, 'f, 'j) contactcell -> unit) ref,
     end_contact : (('b, 'f, 'j) contactcell -> unit) ref,
-    pre_solve : (('b, 'f, 'j) contactcell * BDDTypes.manifold -> unit) ref,
+    pre_solve : (('b, 'f, 'j) contactcell * BDDTypes.manifold option -> unit) ref,
     post_solve : (('b, 'f, 'j) contactcell * BDDDynamicsTypes.contact_impulse -> unit) ref }
 
   type ('b, 'f, 'j) body = ('b, 'f, 'j) bodycell  type ('b, 'f, 'j) fixture = ('b, 'f, 'j) fixturecell  type ('b, 'f, 'j) contact = ('b, 'f, 'j) contactcell  type ('b, 'f, 'j) contactedge = ('b, 'f, 'j) contactedgecell  type ('b, 'f, 'j) joint = ('b, 'f, 'j) jointcell  type ('b, 'f, 'j) jointedge = ('b, 'f, 'j) jointedgecell  type ('b, 'f, 'j) world = ('b, 'f, 'j) worldcell

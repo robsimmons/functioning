@@ -134,9 +134,7 @@ struct
          | _ => ());
 
       if not sensor andalso !touching
-      then (case mbe_old_manifold of
-                NONE => () (* XXX ? *)
-              | SOME old_manifold => D.W.get_pre_solve world (c, old_manifold))
+      then D.W.get_pre_solve world (c, mbe_old_manifold)
       else ();
 
       dprint (fn () => "<- done updating contact\n")
