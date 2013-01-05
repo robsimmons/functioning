@@ -30,9 +30,9 @@ struct
           fun integrate_onebody ii =
                let
                  val c = Array.sub(positionsc, ii)
-                 val a = ref (Array.sub(positionsa, ii))
+                 val a = (Array.sub(positionsa, ii))
                  val v = Array.sub(velocitiesv, ii)
-                 val w = ref (Array.sub(velocitiesw, ii))
+                 val w = (Array.sub(velocitiesw, ii))
 
                  (* Check for large velocities. *)
                  val translation : vec2 = h *: (vec2immut v)
@@ -52,8 +52,6 @@ struct
                  val () = vec2mutpluseq (c, h *: vec2immut v)
                  val () = a := !a + h * !w
 
-                 val () = Array.update (positionsa, ii, !a)
-                 val () = Array.update (velocitiesw, ii, !w)
                in
                    case mbe_bodies of
                        NONE => ()
@@ -114,13 +112,13 @@ struct
                   val () = D.B.set_island_index (b, ii)
                   val sweep = D.B.get_sweep b
                   val c = sweepc sweep
-                  val a = sweepa sweep
+                  val a = ref (sweepa sweep)
                   val v = ref (D.B.get_linear_velocity b)
                   val w = ref (D.B.get_angular_velocity b)
               in
                   (* Store positions for continuous collision. *)
                   sweep_set_c0 (sweep, c);
-                  sweep_set_a0 (sweep, a);
+                  sweep_set_a0 (sweep, !a);
                   (case D.B.get_typ b of
                        T.Dynamic =>
                        let
@@ -148,11 +146,11 @@ struct
                            dprint (fn () => "  v: " ^ vtos (!v) ^ "\n" ^
                                             "  w: " ^ rtos (!w) ^ "\n" ^
                                             "  c: " ^ vtos c ^ "\n" ^
-                                            "  a: " ^ rtos a ^ "\n")
+                                            "  a: " ^ rtos (!a) ^ "\n")
 
                        end
                      | _ => ());
-                  {c = vec2mut c, a = a, v = vec2mut (!v), w = !w}
+                  {c = vec2mut c, a = a, v = vec2mut (!v), w = w}
               end
 
           val vectors = Vector.mapi onebody bodies
@@ -231,10 +229,10 @@ struct
                   val body = Vector.sub (bodies, ii)
                   val sweep = D.B.get_sweep body
               in
-                  sweep_set_a (sweep, Array.sub(positionsa, ii));
+                  sweep_set_a (sweep, !(Array.sub(positionsa, ii)));
                   sweep_set_c (sweep, vec2immut (Array.sub(positionsc, ii)));
                   D.B.set_linear_velocity (body, vec2immut (Array.sub(velocitiesv, ii)));
-                  D.B.set_angular_velocity (body, Array.sub(velocitiesw, ii));
+                  D.B.set_angular_velocity (body, !(Array.sub(velocitiesw, ii)));
                   D.B.synchronize_transform body
               end
           val () = for 0 (count - 1) copy_back_one
@@ -306,12 +304,12 @@ struct
               Array.tabulate (count,
                            fn ii => vec2mut (sweepc (D.B.get_sweep (Vector.sub(bodies, ii)))))
           val positionsa =
-              Array.tabulate (count, fn ii => sweepa (D.B.get_sweep (Vector.sub(bodies, ii))))
+              Array.tabulate (count, fn ii => ref (sweepa (D.B.get_sweep (Vector.sub(bodies, ii)))))
           val velocitiesv =
               Array.tabulate (count,
                            fn ii => vec2mut (D.B.get_linear_velocity (Vector.sub(bodies, ii))))
           val velocitiesw =
-              Array.tabulate (count, fn ii => D.B.get_angular_velocity (Vector.sub(bodies, ii)))
+              Array.tabulate (count, fn ii => ref (D.B.get_angular_velocity (Vector.sub(bodies, ii))))
 
           val () = Vector.appi (fn (ii, b) => D.B.set_island_index (b, ii)) bodies
 
@@ -340,9 +338,9 @@ struct
           val sweep_a = D.B.get_sweep (Vector.sub(bodies, toi_index_a))
           val sweep_b = D.B.get_sweep (Vector.sub(bodies, toi_index_b))
           val () = sweep_set_c0 (sweep_a, vec2immut (Array.sub(positionsc, toi_index_a)))
-          val () = sweep_set_a0 (sweep_a, Array.sub(positionsa, toi_index_a))
+          val () = sweep_set_a0 (sweep_a, !(Array.sub(positionsa, toi_index_a)))
           val () = sweep_set_c0 (sweep_b, vec2immut (Array.sub(positionsc, toi_index_b)))
-          val () = sweep_set_a0 (sweep_b, Array.sub(positionsa, toi_index_b))
+          val () = sweep_set_a0 (sweep_b, !(Array.sub(positionsa, toi_index_b)))
 
           (* No warm starting is needed for TOI events because warm
              starting impulses were applied in the discrete solver. *)

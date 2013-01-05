@@ -83,8 +83,8 @@ fun new {local_anchor_a : vec2,
                 val aA = Array.sub(positionsa, !m_indexA)
                 val aB = Array.sub(positionsa, !m_indexB)
 
-                val qA = rotation aA
-                val qB = rotation aB
+                val qA = rotation (!aA)
+                val qB = rotation (!aB)
                 val () = m_rA := qA @*: (m_local_anchor_a :-: !m_local_center_a)
                 val () = m_rB := qB @*: (m_local_anchor_b :-: !m_local_center_b)
 
@@ -130,7 +130,7 @@ fun new {local_anchor_a : vec2,
                          else ()
 
                 val () = if !m_enable_limit (* and fixed_rotation = false? *)
-                         then let val joint_angle = aB - aA - m_reference_angle
+                         then let val joint_angle = (!aB) - (!aA) - m_reference_angle
                                   val (ix, iy) = (vec3x (!m_impulse), vec3y (!m_impulse))
                                   val () = if abs (!m_upper_angle - !m_lower_angle)
                                               < 2.0 * BDDSettings.angular_slop
@@ -156,6 +156,8 @@ fun new {local_anchor_a : vec2,
 
                 val () = if #warm_starting step
                          then let
+                                 fun pluseq (rf, x) = rf := (!rf) + x
+                                 fun minuseq (rf, x) = rf := (!rf) - x
                                  val dt_ratio = #dt_ratio step
                                  (* Scale impulses to support a variable time step. *)
                                   val () = m_impulse := dt_ratio *% !m_impulse
@@ -163,18 +165,14 @@ fun new {local_anchor_a : vec2,
                                   val p = vec2 (vec3x (!m_impulse), vec3y (!m_impulse))
                                   val () = vec2mutminuseq (Array.sub(velocitiesv, !m_indexA),
                                                            mA *: p)
-                                  val () = Array.update
-                                           (velocitiesw, !m_indexA,
-                                            (Array.sub(velocitiesw, !m_indexA)) -
-                                            iA * (cross2vv (!m_rA, p) + !m_motor_impulse
-                                                   + (vec3z (!m_impulse))))
+                                  val () = minuseq (Array.sub(velocitiesw, !m_indexA),
+                                                    iA * (cross2vv (!m_rA, p) + !m_motor_impulse
+                                                          + (vec3z (!m_impulse))))
                                   val () = vec2mutpluseq (Array.sub(velocitiesv, !m_indexB),
                                                           mB *: p)
-                                  val () = Array.update
-                                           (velocitiesw, !m_indexB,
-                                            Array.sub(velocitiesw, !m_indexB) +
-                                            iB * (cross2vv (!m_rB, p) + !m_motor_impulse
-                                                   + (vec3z (!m_impulse))))
+                                  val () = pluseq (Array.sub(velocitiesw, !m_indexB),
+                                                   iB * (cross2vv (!m_rB, p) + !m_motor_impulse
+                                                         + (vec3z (!m_impulse))))
                               in () end
                          else (m_impulse := vec3 (0.0, 0.0, 0.0);
                                m_motor_impulse := 0.0)
@@ -190,9 +188,9 @@ fun new {local_anchor_a : vec2,
             let
 
                 val vA = Array.sub(velocitiesv, !m_indexA)
-                val wA = ref (Array.sub(velocitiesw, !m_indexA))
+                val wA = Array.sub(velocitiesw, !m_indexA)
                 val vB = Array.sub(velocitiesv, !m_indexB)
-                val wB = ref (Array.sub(velocitiesw, !m_indexB))
+                val wB = Array.sub(velocitiesw, !m_indexB)
 
                 val mA = !m_invMassA
                 val mB = !m_invMassB
@@ -286,8 +284,7 @@ fun new {local_anchor_a : vec2,
                              in () end
 
             in
-               Array.update (velocitiesw, !m_indexA, !wA);
-               Array.update (velocitiesw, !m_indexB, !wB)
+                ()
             end
 
         fun solve_position_constraints { step,
@@ -296,9 +293,9 @@ fun new {local_anchor_a : vec2,
                                          velocitiesv,
                                          velocitiesw } =
             let
-                val aA = ref (Array.sub(positionsa, !m_indexA))
+                val aA = Array.sub(positionsa, !m_indexA)
                 val cA = Array.sub(positionsc, !m_indexA)
-                val aB = ref (Array.sub(positionsa, !m_indexB))
+                val aB = Array.sub(positionsa, !m_indexB)
                 val cB = Array.sub(positionsc, !m_indexB)
 
                 val iA = !m_invIA
@@ -373,8 +370,7 @@ fun new {local_anchor_a : vec2,
                 val () = vec2mutpluseq(cB, mB *: impulse)
                 val () = aB := !aB + iB * cross2vv (rB, impulse)
 
-                val () = Array.update(positionsa, !m_indexA, !aA)
-                val () = Array.update(positionsa, !m_indexB, !aB)
+
             in positionError <= BDDSettings.linear_slop andalso
                !angularError <= BDDSettings.angular_slop
             end

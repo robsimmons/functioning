@@ -57,18 +57,18 @@ struct
   type ('b, 'f, 'j) pre_contact_solver =
       { step : BDDDynamicsTypes.time_step,
         positionsc : BDDMath.vec2mut Array.array,
-        positionsa : real Array.array,
+        positionsa : real ref Array.array,
         velocitiesv : BDDMath.vec2mut Array.array,
-        velocitiesw : real Array.array,
+        velocitiesw : real ref Array.array,
         position_constraints : position_constraint Array.array,
         contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector }
 
   type ('b, 'f, 'j) contact_solver =
       { step : BDDDynamicsTypes.time_step,
         positionsc : BDDMath.vec2mut Array.array,
-        positionsa : real Array.array,
+        positionsa : real ref Array.array,
         velocitiesv : BDDMath.vec2mut Array.array,
-        velocitiesw : real Array.array,
+        velocitiesw : real ref Array.array,
         position_constraints : position_constraint Array.array,
         velocity_constraints : velocity_constraint Array.array,
         contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector }
@@ -77,9 +77,9 @@ struct
   fun pre_contact_solver
       ({step = time_step : BDDDynamicsTypes.time_step,
         positionsc : BDDMath.vec2mut Array.array,
-        positionsa : real Array.array,
+        positionsa : real ref Array.array,
         velocitiesv : BDDMath.vec2mut Array.array,
-        velocitiesw : real Array.array},
+        velocitiesw : real ref Array.array},
        contacts : ('b, 'f, 'j) BDDDynamics.contact Vector.vector)
       : ('b, 'f, 'j) pre_contact_solver =
     let
@@ -178,8 +178,8 @@ fun initialize_velocity_constraints ({ step,
 
                 val () = assert (#point_count manifold > 0)
 
-                val q_a = rotation a_a
-                val q_b = rotation a_b
+                val q_a = rotation (!a_a)
+                val q_b = rotation (!a_b)
 
                 val xf_a = transform ((vec2immut c_a) :-: (q_a @*: local_center_a),
                                       q_a)
@@ -219,8 +219,8 @@ fun initialize_velocity_constraints ({ step,
 
                         (* Set up a velocity bias for restitution. *)
                         val v_rel : real = dot2(normal,
-                                                (vec2immut v_b) :+: cross2sv(w_b, r_b) :-:
-                                                (vec2immut v_a) :-: cross2sv(w_a, r_a))
+                                                (vec2immut v_b) :+: cross2sv(!w_b, r_b) :-:
+                                                (vec2immut v_a) :-: cross2sv(!w_a, r_a))
                         val velocity_bias =
                             if v_rel < ~ velocity_threshold
                             then ~restitution * v_rel
@@ -340,11 +340,9 @@ fun warm_start ({ step,
                 val w_b = Array.sub(velocitiesw, index_b)
 
               in
-                  Array.update (velocitiesw, index_a,
-                                w_a - i_a * cross2vv(r_a, p));
+                  w_a := (!w_a) - i_a * cross2vv(r_a, p);
                   vec2mutminuseq (v_a, m_a *: p);
-                  Array.update (velocitiesw, index_b,
-                                w_b + i_b * cross2vv(r_b, p));
+                  w_b := (!w_b) + i_b * cross2vv(r_b, p);
                   vec2mutpluseq (v_b, m_b *: p)
               end
           in
@@ -505,8 +503,8 @@ fun warm_start ({ step,
   let
       val point_count = Array.length points
 
-      val w_a : real ref = ref (Array.sub(velocitiesw, index_a))
-      val w_b : real ref = ref (Array.sub(velocitiesw, index_b))
+      val w_a : real ref = (Array.sub(velocitiesw, index_a))
+      val w_b : real ref = (Array.sub(velocitiesw, index_b))
       val v_a : vec2mut = (Array.sub(velocitiesv, index_a))
       val v_b : vec2mut = (Array.sub(velocitiesv, index_b))
       val tangent : vec2 = cross2vs (normal, 1.0)
@@ -637,8 +635,7 @@ fun warm_start ({ step,
           end
       | _ => raise BDDContactSolver "can only solve 1 or 2-point contacts");
 
-      Array.update(velocitiesw, index_a, !w_a);
-      Array.update(velocitiesw, index_b, !w_b)
+      ()
 
 (*
       dprint (fn () => "      aft alv " ^ vtos (!v_a) ^
@@ -760,9 +757,9 @@ fun warm_start ({ step,
                     else (0.0, 0.0)
 
             val c_a = Array.sub(positionsc, index_a)
-            val a_a = ref (Array.sub(positionsa, index_a))
+            val a_a = Array.sub(positionsa, index_a)
             val c_b = Array.sub(positionsc, index_b)
-            val a_b = ref (Array.sub(positionsa, index_b))
+            val a_b = Array.sub(positionsa, index_b)
         in
             (* Solve normal constraints. *)
             for 0 (Array.length (#local_points pc) - 1)
@@ -811,9 +808,7 @@ fun warm_start ({ step,
                  a_a := (!a_a) - (i_a * cross2vv (r_a, p));
                  vec2mutpluseq (c_b, m_b *: p);
                  a_b := (!a_b) + (i_b * cross2vv (r_b, p))
-             end);
-            Array.update(positionsa, index_a, !a_a);
-            Array.update(positionsa, index_b, !a_b)
+             end)
         end
     in
       Array.app oneconstraint position_constraints;

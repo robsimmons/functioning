@@ -87,9 +87,9 @@ struct
 
   type solver_data = { step : time_step,
                        positionsc : BDDMath.vec2mut Array.array,
-                       positionsa : real Array.array,
+                       positionsa : real ref Array.array,
                        velocitiesv : BDDMath.vec2mut Array.array,
-                       velocitiesw : real Array.array
+                       velocitiesw : real ref Array.array
                      }
 
   type joint_dispatch = { init_velocity_constraints : solver_data -> unit,
