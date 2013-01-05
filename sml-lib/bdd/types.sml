@@ -33,10 +33,10 @@ struct
         fraction : real }
 
   (* Packed bytes, high to low:
-     reference_edge
-     incident_edge
-     incident_vertex
-     flip 
+     index_a
+     index_b
+     type_a
+     type_b
      Accessors in BDDCollision.
 
      Port note: In Box2D this is a union with a field "key",

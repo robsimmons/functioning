@@ -440,9 +440,6 @@ struct
        constraints. *)
     fun solve (world : world, step : T.time_step) =
       let
-        (* Port note: Box2D creates an island on the stack and keeps reusing
-           it. I made it just be a function, for simplicity.
-           PERF: Did doing this make some of the counts dead? *)
         val () = dprint (fn () => "SOLVE.\n")
 
 (*
@@ -470,17 +467,21 @@ struct
                       (get_joint_list world)
 
         (* Build and simulate all awake islands. *)
-        (* Port note: The Box2D original uses an explicit stack.
-           I rewrote it as a recursive function. This can change
-           the order that bodies are added, but should result
-           in the same set. The approach is to look at every body
-           in the world and find all connected bodies using a
-           depth-first graph traversal. Once the island flag is
-           set, it means it has already been accounted for. The
-           exception is static bodies: These participate in islands
-           but don't count as edges. (This is okay because we know
-           they never move.) They're treated somewhat specially in
-           the following; for example, they can't be used as seeds. *)
+        (* Port note: It's possible to avoid the need for an explicit
+           stack here; just make a recursive call to |explore| instead
+           of pushing to |stack|. Doing this can change the order that
+           bodies are added, but should result in the same set.
+           However, the body order is important if we want to exactly
+           match the behavior of the original.
+
+           The approach is to look at every body in the world and find
+           all connected bodies using a depth-first graph traversal.
+           Once the island flag is set, it means it has already been
+           accounted for. The exception is static bodies: These
+           participate in islands but don't count as edges. (This is
+           okay because we know they never move.) They're treated
+           somewhat specially in the following; for example, they
+           can't be used as seeds. *)
 
        fun one_seed (seed : body) =
          if D.B.get_flag (seed, D.B.FLAG_ISLAND)
@@ -493,12 +494,6 @@ struct
          then ()
          else
          let
-           val XXX_xf = transformposition (Body.get_transform seed)
-           val () = dprint (fn () =>
-                            "Try seed @" ^
-                            Real.fmt (StringCvt.FIX (SOME 2)) (vec2x XXX_xf) ^ "," ^
-                            Real.fmt (StringCvt.FIX (SOME 2)) (vec2y XXX_xf) ^ "\n")
-
            (* Accumulates arguments for island solver. *)
            val bodies = ref nil
            val joints = ref nil
@@ -517,10 +512,6 @@ struct
                then raise BDDWorld "expected body to be active in stack"
                else
                let
-                   (* Port note: Added this here, since it has to be done
-                      before exploring a node in order to get termination;
-                      Box2D does it right before inserting into its stack. *)
-                   (* val () = D.B.set_flag (b, D.B.FLAG_ISLAND)*)
                    (* Add to island. *)
                    val () = bodies := b :: !bodies
                    (* Make sure body is awake. *)

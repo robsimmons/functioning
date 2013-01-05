@@ -83,10 +83,10 @@ fun new {local_anchor_a : vec2,
                 val aA = Array.sub(positionsa, !m_indexA)
                 val aB = Array.sub(positionsa, !m_indexB)
 
-                val qA = mat22angle aA
-                val qB = mat22angle aB
-                val () = m_rA := qA +*: (m_local_anchor_a :-: !m_local_center_a)
-                val () = m_rB := qB +*: (m_local_anchor_b :-: !m_local_center_b)
+                val qA = rotation aA
+                val qB = rotation aB
+                val () = m_rA := qA @*: (m_local_anchor_a :-: !m_local_center_a)
+                val () = m_rB := qB @*: (m_local_anchor_b :-: !m_local_center_b)
 
 	(* J = [-I -r1_skew I r2_skew]
 	       [ 0       -1 0       1]
@@ -350,10 +350,10 @@ fun new {local_anchor_a : vec2,
 
 
                 (* Solve point-to-point constraint. *)
-                val qA = mat22angle (!aA)
-                val qB = mat22angle (!aB)
-                val rA = qA +*: (m_local_anchor_a :-: !m_local_center_a)
-                val rB = qB +*: (m_local_anchor_b :-: !m_local_center_b)
+                val qA = rotation (!aA)
+                val qB = rotation (!aB)
+                val rA = qA @*: (m_local_anchor_a :-: !m_local_center_a)
+                val rB = qB @*: (m_local_anchor_b :-: !m_local_center_b)
                 val C = !cB :+: rB :-: !cA :-: rA
                 val positionError = vec2length C
                 val mA = D.B.get_inv_mass bA
