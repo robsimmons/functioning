@@ -35,6 +35,8 @@ struct
         tangent_speed : real,
         contact_index : int }
 
+  datatype manifold_enum = Circles | FaceA | FaceB
+
   type position_constraint =
        { local_points : BDDMath.vec2 Array.array,
          local_normal : BDDMath.vec2,
@@ -47,7 +49,7 @@ struct
          local_center_b : BDDMath.vec2,
          inv_i_a : real,
          inv_i_b : real,
-         typ : BDDTypes.manifold_type,
+         typ : manifold_enum,
          radius_a : real,
          radius_b : real
        }
