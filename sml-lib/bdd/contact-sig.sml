@@ -31,12 +31,12 @@ sig
 
   (* Get the contact manifold, which should not be modified unless you
      understand the internals of BoxDiaDia. *)
-  val get_manifold : contact -> BDDTypes.manifold
+  val get_manifold : contact -> BDDTypes.manifold option
 
   (* Get the world manifold. *)
   (* TODO: Weird that I don't get the number of points in the
      array. It'll be the same as in the manifold above. *)
-  val get_world_manifold : contact -> BDDTypes.world_manifold
+  val get_world_manifold : contact -> BDDTypes.world_manifold option
 
   (* Is this contact touching? *)
   val is_touching : contact -> bool
@@ -57,7 +57,7 @@ sig
 
   (* Evaluate this contact with your transforms to compute a manifold. *)
   val evaluate : contact * BDDMath.transform * BDDMath.transform ->
-      BDDTypes.manifold
+      BDDTypes.manifold option
 
   (* Internal. XXX split into internal/external interfaces *)
   val update : contact * world -> unit

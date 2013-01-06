@@ -465,7 +465,7 @@ struct
 
     fun evaluate (c : ('b, 'f, 'j) contact,
                   xfa : BDDMath.transform, xfb : BDDMath.transform) :
-        BDDTypes.manifold =
+        BDDTypes.manifold option =
         case (F.get_shape (get_fixture_a c), F.get_shape (get_fixture_b c)) of
             (BDDShape.Polygon pa, BDDShape.Polygon pb) =>
                 BDDCollision.collide_polygons(pa, xfa, pb, xfb)
@@ -498,12 +498,7 @@ struct
             val c =           BDDCells.C.new { flags = FLAG_ENABLED,
                            fixture_a = fixture_a,
                            fixture_b = fixture_b,
-                           manifold = { point_count = 0,
-                                        (* PERF uninitialized in Box2D. *)
-                                        typ = E_Circles,
-                                        points = Array.fromList nil,
-                                        local_normal = vec2 (0.0, 0.0),
-                                        local_point = vec2 (0.0, 0.0) },
+                           manifold = NONE,
                            prev = NONE,
                            next = NONE,
                            node_a = NONE,

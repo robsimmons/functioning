@@ -19,10 +19,7 @@ struct
   fun create_world_manifold (manifold : manifold,
                              xfa : transform, radiusa : real,
                              xfb : transform, radiusb : real) : world_manifold =
-    if #point_count manifold = 0
-    then { normal = vec2 (0.0, 0.0),
-           points = Array.fromList nil }
-    else case #typ manifold of
+    case #typ manifold of
         E_Circles =>
             let
                 val pointa = multransformv(xfa, #local_point manifold)
@@ -57,9 +54,10 @@ struct
                     in
                         0.5 *: (ca :+: cb)
                     end
+                val point_count = Array.length (#points manifold)
             in
                 { normal = normal,
-                  points = Array.tabulate(#point_count manifold, one_point) }
+                  points = Array.tabulate(point_count, one_point) }
             end
 
       | E_FaceB =>
@@ -76,40 +74,49 @@ struct
                     in
                         0.5 *: (ca :+: cb)
                     end
+                val point_count = Array.length (#points manifold)
             in
                 (* Ensure normal points from A to B. *)
                 { normal = vec2neg normal,
-                  points = Array.tabulate(#point_count manifold, one_point) }
+                  points = Array.tabulate(point_count, one_point) }
             end
 
 
-  fun get_point_states (manifold1 : manifold, manifold2 : manifold) =
+  fun get_point_states (manifold1 : manifold option, manifold2 : manifold option) =
       let
           val state1 = Array.array(max_manifold_points, NullState)
           val state2 = Array.array(max_manifold_points, NullState)
+          val points1 = case manifold1 of
+                            NONE => Array.fromList []
+                          | SOME manifold => # points manifold
+          val points2 = case manifold2 of
+                            NONE => Array.fromList []
+                          | SOME manifold => # points manifold
+          val point_count1 = Array.length points1
+          val point_count2 = Array.length points2
       in
           (* Detect persists and removes. *)
-          for 0 (#point_count manifold1 - 1)
+          for 0 ( point_count1 - 1)
           (fn i =>
-           let val id : contact_id = #id (Array.sub(#points manifold1, i))
+           let val id : contact_id = #id (Array.sub(points1, i))
            in
                Array.update(state1, i, RemoveState);
-               for 0 (#point_count manifold2 - 1)
+               for 0 (point_count2 - 1)
                (fn j =>
-                if #id (Array.sub(#points manifold2, j)) = id
+                if #id (Array.sub(points2, j)) = id
                 then Array.update(state1, i, PersistState)
                 else ())
            end);
 
           (* Detect persists and adds. *)
-          for 0 (#point_count manifold2 - 1)
+          for 0 (point_count2 - 1)
           (fn i =>
-           let val id : contact_id = #id (Array.sub(#points manifold2, i))
+           let val id : contact_id = #id (Array.sub(points2, i))
            in
                Array.update(state2, i, AddState);
-               for 0 (#point_count manifold1 - 1)
+               for 0 (point_count1 - 1)
                (fn j =>
-                if #id (Array.sub(#points manifold1, j)) = id
+                if #id (Array.sub(points1, j)) = id
                 then Array.update(state2, i, PersistState)
                 else ())
            end);
@@ -237,7 +244,7 @@ struct
   fun collide_circles (circlea : BDDCircle.circle,
                        xfa : transform,
                        circleb : BDDCircle.circle,
-                       xfb : transform) : manifold =
+                       xfb : transform) : manifold option =
       let
           val pa : vec2 = xfa &*: #p circlea
           val pb : vec2 = xfb &*: #p circleb
@@ -248,25 +255,17 @@ struct
           val rb = #radius circleb
           val radius = ra + rb
       in
-          (* PERF would it work to return NONE? The client
-             code can't be accessing these fields; they're
-             not even initialized in the original code. *)
           if dist_sqr > radius * radius
-          then { point_count = 0,
-                 typ = E_Circles,
-                 points = Array.fromList nil,
-                 local_normal = vec2(0.0, 0.0),
-                 local_point = vec2(0.0, 0.0) }
+          then NONE
           else
-              { typ = E_Circles,
-                points = Array.fromList [{ local_point = #p circleb,
-                                           id = 0w0,
-                                           (* uninitialized in original *)
-                                           normal_impulse = 0.0,
-                                           tangent_impulse = 0.0 }],
-                local_point = #p circlea,
-                local_normal = vec2(0.0, 0.0),
-                point_count = 1 }
+              SOME { typ = E_Circles,
+                     points = Array.fromList [{ local_point = #p circleb,
+                                                id = 0w0,
+                                                (* uninitialized in original *)
+                                                normal_impulse = 0.0,
+                                                tangent_impulse = 0.0 }],
+                     local_point = #p circlea,
+                     local_normal = vec2(0.0, 0.0) }
       end
 
   (* Sutherland-Hodgman clipping.
@@ -328,7 +327,7 @@ struct
   fun collide_polygon_and_circle ({ centroid = _, vertices, normals } : BDDPolygon.polygon,
                                   xfa : BDDMath.transform,
                                   { p = cirp, radius = cirr } : BDDCircle.circle,
-                                  xfb : BDDMath.transform) : BDDTypes.manifold =
+                                  xfb : BDDMath.transform) : BDDTypes.manifold option =
       let
         (* Compute circle position in the frame of the polygon. *)
         val c : vec2 = xfb &*: cirp
@@ -369,15 +368,14 @@ struct
         (* If the center is inside the polygon ... *)
         if separation < epsilon
         then
-            { point_count = 1,
-              typ = E_FaceA,
-              local_normal = Array.sub(normals, !normal_index),
-              local_point = 0.5 *: (v1 :+: v2),
-              points = Array.fromList [{ local_point = cirp,
-                                         id = 0w0,
-                                         (* PERF uninitialized in Box2D *)
-                                         normal_impulse = 0.0,
-                                         tangent_impulse = 0.0 }] }
+            SOME { typ = E_FaceA,
+                   local_normal = Array.sub(normals, !normal_index),
+                   local_point = 0.5 *: (v1 :+: v2),
+                   points = Array.fromList [{ local_point = cirp,
+                                              id = 0w0,
+                                              (* PERF uninitialized in Box2D *)
+                                              normal_impulse = 0.0,
+                                              tangent_impulse = 0.0 }] }
         else
         let
             (* Compute barycentric coordinates. *)
@@ -387,8 +385,8 @@ struct
             if u1 <= 0.0
             then (if distance_squared(c_local, v1) > radius * radius
                   then raise NoCollision
-                  else { point_count = 1,
-                         typ = E_FaceA,
+                  else SOME
+                       { typ = E_FaceA,
                          local_normal = vec2normalized (c_local :-: v1),
                          local_point = v1,
                          points = Array.fromList [{ local_point = cirp,
@@ -399,41 +397,33 @@ struct
             else if u2 <= 0.0
             then (if distance_squared(c_local, v2) > radius * radius
                   then raise NoCollision
-                  else { point_count = 1,
-                         typ = E_FaceA,
-                         local_normal = vec2normalized(c_local :-: v2),
-                         local_point = v2,
-                         points = Array.fromList [{ local_point = cirp,
-                                                    id = 0w0,
-                                                    (* PERF uninitialized in Box2D *)
-                                                    normal_impulse = 0.0,
-                                                    tangent_impulse = 0.0 }] })
+                  else SOME
+                        { typ = E_FaceA,
+                          local_normal = vec2normalized(c_local :-: v2),
+                          local_point = v2,
+                          points = Array.fromList [{ local_point = cirp,
+                                                     id = 0w0,
+                                                     (* PERF uninitialized in Box2D *)
+                                                     normal_impulse = 0.0,
+                                                     tangent_impulse = 0.0 }] })
             else let
                      val face_center : vec2 = 0.5 *: (v1 :+: v2)
                      val separation : real = dot2 (c_local :-: face_center,
                                                    Array.sub(normals, vert_index1))
                  in if separation > radius
                     then raise NoCollision
-                    else { point_count = 1,
-                           typ = E_FaceA,
-                           local_normal = Array.sub(normals, vert_index1),
-                           local_point = face_center,
-                           points = Array.fromList [{ local_point = cirp,
-                                                      id = 0w0,
-                                                      (* PERF uninitialized in Box2D *)
-                                                      normal_impulse = 0.0,
-                                                      tangent_impulse = 0.0 }] }
+                    else SOME {
+                                typ = E_FaceA,
+                                local_normal = Array.sub(normals, vert_index1),
+                                local_point = face_center,
+                                points = Array.fromList [{ local_point = cirp,
+                                                           id = 0w0,
+                                                           (* PERF uninitialized in Box2D *)
+                                                           normal_impulse = 0.0,
+                                                           tangent_impulse = 0.0 }] }
                  end
         end
-      end handle NoCollision =>
-          (* XXX should return NONE in the no collision case.
-             These are uninitialized in Box2D, and I guess client
-             code just checks point_count. *)
-          { point_count = 0,
-            typ = E_Circles,
-            points = Array.fromList nil,
-            local_normal = vec2(0.0, 0.0),
-            local_point = vec2(0.0, 0.0) }
+      end handle NoCollision => NONE
 
   (* Find the separation between poly1 and poly2 for a give edge normal on poly1. *)
   fun edge_separation (poly1 : BDDPolygon.polygon,
@@ -594,7 +584,7 @@ struct
   fun collide_polygons (polya : BDDPolygon.polygon,
                         xfa : BDDMath.transform,
                         polyb : BDDPolygon.polygon,
-                        xfb : BDDMath.transform) : BDDTypes.manifold =
+                        xfb : BDDMath.transform) : BDDTypes.manifold option =
     let
       (* Find edge normal of max separation on A - return if separating axis is found
          Find edge normal of max separation on B - return if separation axis is found
@@ -701,22 +691,10 @@ struct
 
       val points = Array.fromList points
     in
-        { local_normal = local_normal,
-          local_point = plane_point,
-          point_count = Array.length points,
-          typ = typ,
-          points = points }
-    end handle NoCollision _ =>
-        let in
-            (* dprint (fn () => "NO: " ^ s ^ "\n"); *)
-            (* XXX should return NONE in the no collision case.
-               These are uninitialized in Box2D, and I guess client
-               code just checks point_count. *)
-            { point_count = 0,
-              typ = E_Circles,
-              points = Array.fromList nil,
-              local_normal = vec2(0.0, 0.0),
-              local_point = vec2(0.0, 0.0) }
-        end
+        SOME { local_normal = local_normal,
+               local_point = plane_point,
+               typ = typ,
+               points = points }
+    end handle NoCollision _ => NONE
 
 end

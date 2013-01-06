@@ -323,7 +323,7 @@ sig
        not called for sensors. If you set the number of contact points
        to zero, you will not get an EndContact callback. However, you
        may get a BeginContact callback the next step. *)
-    val set_pre_solve : world * (contact * BDDTypes.manifold -> unit) -> unit
+    val set_pre_solve : world * (contact * BDDTypes.manifold option -> unit) -> unit
 
     (* This lets you inspect a contact after the solver is finished. This
        is useful for inspecting impulses. The contact manifold does

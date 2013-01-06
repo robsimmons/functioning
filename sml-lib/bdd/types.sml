@@ -89,13 +89,10 @@ struct
         (* the points of contact.
            up to BDDSettings.max_manifold_points *)
         points : manifold_point array,
-        (* not used for Type::e_points (? is this an out of date 
-           comment? -tom7) *)
+        (* not used for Type::e_circles *)
         local_normal : BDDMath.vec2,
         (* usage depends on manifold type *)
-        local_point : BDDMath.vec2,
-        (* the number of manifold points *)
-        point_count : int }
+        local_point : BDDMath.vec2 }
 
   (* This is used to compute the current state of a contact manifold. *)
   type world_manifold =
