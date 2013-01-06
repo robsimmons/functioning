@@ -689,7 +689,8 @@ struct
               else NONE
            end) [cp1, cp2]
 
-      val points = Array.fromList points
+      val points = if List.null points then raise NoCollision ""
+                   else Array.fromList points
     in
         SOME { local_normal = local_normal,
                local_point = plane_point,
