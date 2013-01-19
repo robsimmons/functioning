@@ -207,7 +207,7 @@ struct
                       | D.J.RevoluteDef rd => BDDRevoluteJoint.new rd
                       | D.J.PrismaticDef pd => BDDPrismaticJoint.new pd
                       | _ => raise BDDWorld "Unimplemented"
-            val joint = D.J.new (world, constructor, def)
+            val joint = D.J.new (constructor, def)
             (* Connect to the world list. *)
             val () = case get_joint_list world of
                 NONE => ()
