@@ -210,12 +210,6 @@ sig
     val get_body_a : ('b, 'f, 'j) joint -> (('b, 'f, 'j) body)
     val get_body_b : ('b, 'f, 'j) joint -> (('b, 'f, 'j) body)
     val get_data : ('b, 'f, 'j) joint -> ('j)
-    val get_local_center_a : ('b, 'f, 'j) joint -> (BDDMath.vec2)
-    val get_local_center_b : ('b, 'f, 'j) joint -> (BDDMath.vec2)
-    val get_inv_mass_a : ('b, 'f, 'j) joint -> (real)
-    val get_inv_i_a : ('b, 'f, 'j) joint -> (real)
-    val get_inv_mass_b : ('b, 'f, 'j) joint -> (real)
-    val get_inv_i_b : ('b, 'f, 'j) joint -> (real)
 
     val set_flags : ('b, 'f, 'j) joint * (Word8.word) -> unit
     val set_typ : ('b, 'f, 'j) joint * (BDDDynamicsTypes.joint_type option) -> unit
@@ -227,12 +221,6 @@ sig
     val set_body_a : ('b, 'f, 'j) joint * (('b, 'f, 'j) body) -> unit
     val set_body_b : ('b, 'f, 'j) joint * (('b, 'f, 'j) body) -> unit
     val set_data : ('b, 'f, 'j) joint * ('j) -> unit
-    val set_local_center_a : ('b, 'f, 'j) joint * (BDDMath.vec2) -> unit
-    val set_local_center_b : ('b, 'f, 'j) joint * (BDDMath.vec2) -> unit
-    val set_inv_mass_a : ('b, 'f, 'j) joint * (real) -> unit
-    val set_inv_i_a : ('b, 'f, 'j) joint * (real) -> unit
-    val set_inv_mass_b : ('b, 'f, 'j) joint * (real) -> unit
-    val set_inv_i_b : ('b, 'f, 'j) joint * (real) -> unit
 
     val new : {
       flags : Word8.word,
@@ -244,13 +232,7 @@ sig
       edge_b : ('b, 'f, 'j) jointedge,
       body_a : ('b, 'f, 'j) body,
       body_b : ('b, 'f, 'j) body,
-      data : 'j,
-      local_center_a : BDDMath.vec2,
-      local_center_b : BDDMath.vec2,
-      inv_mass_a : real,
-      inv_i_a : real,
-      inv_mass_b : real,
-      inv_i_b : real } -> ('b, 'f, 'j) joint
+      data : 'j } -> ('b, 'f, 'j) joint
     val eq : ('b, 'f, 'j) joint * ('b, 'f, 'j) joint -> bool
   end
 

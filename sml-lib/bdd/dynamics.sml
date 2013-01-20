@@ -173,13 +173,7 @@ struct
                                          edge_b = G.new (body_a),
                                          body_a = body_a,
                                          body_b = body_b,
-                                         data = user_data,
-                                         local_center_a = vec2 (0.0, 0.0),
-                                         local_center_b = vec2 (0.0, 0.0),
-                                         inv_mass_a = 0.0,
-                                         inv_i_a = 0.0,
-                                         inv_mass_b = 0.0,
-                                         inv_i_b = 0.0
+                                         data = user_data
                                        }
             val (dispatch, methods) = constructor joint
             val () = set_dispatch (joint, SOME dispatch)

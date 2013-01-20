@@ -116,15 +116,7 @@ fun joint cc = ("J", "Joint", "joint", "JOINT",
               ("edge_b", cc "jointedge" ^ ""),
               ("body_a", cc "body" ^ ""),
               ("body_b", cc "body" ^ ""),
-              ("data", "'j"),
-              (* Cache here per time step to reduce cache misses.
-                 PERF: This is probably not a good idea in the SML port. *)
-              ("local_center_a", "BDDMath.vec2"),
-              ("local_center_b", "BDDMath.vec2"),
-              ("inv_mass_a", "real"),
-              ("inv_i_a", "real"),
-              ("inv_mass_b", "real"),
-              ("inv_i_b", "real")])
+              ("data", "'j")])
 
 (* A joint edge is used to connect bodies and joints together
    in a joint graph where each body is a node and each joint
